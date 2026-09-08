@@ -64,10 +64,29 @@ function fetchSequence(...reponses: Response[]) {
 const MESSAGES: ChatMessage[] = [{ role: 'user', content: 'Génère des QCM.' }]
 
 describe('table de routage', () => {
-  it('suit l’ordre DeepSeek → Qwen → GLM', () => {
+  it('suit l’ordre DeepSeek → Qwen → GLM sur le texte', () => {
     expect(ROUTES.questions).toEqual(['deepseekFlash', 'qwenFlash', 'glmFlash'])
-    expect(ROUTES.correction[0]).toBe('deepseekPro')
+  })
+
+  it('route la correction vers les deux modèles de raisonnement', () => {
+    // docs/STACK-IA.md § 0 : deepseek-v4-pro puis glm-5.3, pas les modèles
+    // Flash qui n'apportent rien sur une copie notée.
+    expect(ROUTES.correction).toEqual(['deepseekPro', 'glmPro'])
     expect(MODELS.deepseekPro.thinking).toBe(true)
+    expect(MODELS.deepseekPro.reasoningEffort).toBe('high')
+  })
+
+  it('route la vision vers GLM avant Qwen', () => {
+    // glm-5.3-flash a la vision native ; côté Qwen c'est qwen3-vl-flash et
+    // non qwen3.8-flash (docs/STACK-IA.md § 2.1 et 3.1).
+    expect(ROUTES.student_card).toEqual([
+      'deepseekVision',
+      'glmFlash',
+      'qwenVlFlash',
+    ])
+    expect(MODELS.glmFlash.capabilities).toContain('vision')
+    expect(MODELS.qwenFlash.capabilities).not.toContain('vision')
+    expect(MODELS.qwenVlFlash.capabilities).toContain('vision')
   })
 
   it('réussit sur le premier fournisseur sans appeler les suivants', async () => {
@@ -79,6 +98,7 @@ describe('table de routage', () => {
       messages: MESSAGES,
       env: ENV,
       fetchImpl: impl,
+      retryDelayMs: 0,
       recordUsage: (u) => void usages.push(u),
     })
 
@@ -100,6 +120,7 @@ describe('table de routage', () => {
       messages: MESSAGES,
       env: ENV,
       fetchImpl: impl,
+      retryDelayMs: 0,
     })
 
     expect(appels).toEqual(['deepseek-v4-flash', 'qwen3.8-flash'])
@@ -119,6 +140,7 @@ describe('table de routage', () => {
       messages: MESSAGES,
       env: ENV,
       fetchImpl: impl,
+      retryDelayMs: 0,
       recordUsage: (u) => void usages.push(u),
     })
 
@@ -150,6 +172,7 @@ describe('table de routage', () => {
       messages: MESSAGES,
       env: ENV,
       fetchImpl: impl,
+      retryDelayMs: 0,
     })
 
     expect(res.attempts[0].outcome).toBe('schema_error')
@@ -176,6 +199,7 @@ describe('table de routage', () => {
       messages: avecImage,
       env: ENV,
       fetchImpl: impl,
+      retryDelayMs: 0,
     })
 
     // deepseekVision traite les images : il est appelé en premier et suffit.
@@ -191,6 +215,7 @@ describe('table de routage', () => {
       messages: MESSAGES,
       env: { DASHSCOPE_API_KEY: 'qw' } as unknown as NodeJS.ProcessEnv,
       fetchImpl: impl,
+      retryDelayMs: 0,
     })
 
     expect(appels).toEqual(['qwen3.8-flash'])
@@ -212,6 +237,7 @@ describe('table de routage', () => {
         messages: MESSAGES,
         env: ENV,
         fetchImpl: impl,
+        retryDelayMs: 0,
       }),
     ).rejects.toBeInstanceOf(AiError)
   })
@@ -226,6 +252,7 @@ describe('table de routage', () => {
       messages: MESSAGES,
       env: ENV,
       fetchImpl: impl,
+      retryDelayMs: 0,
     })
 
     expect(res.attempts[0].outcome).toBe('success')
@@ -252,5 +279,160 @@ describe('estimation du coût', () => {
       cacheHitTokens: 0,
     })
     expect(cout).toBeCloseTo(spec.pricing.input + spec.pricing.output, 6)
+  })
+})
+
+describe('réessai avant bascule', () => {
+  it('réessaie trois fois sur 429 puis bascule', async () => {
+    const { impl, appels } = fetchSequence(
+      erreurHttp(429),
+      erreurHttp(429),
+      erreurHttp(429),
+      reponse(QUESTIONS_VALIDES),
+    )
+
+    const res = await runAiTask({
+      task: 'questions',
+      messages: MESSAGES,
+      env: ENV,
+      fetchImpl: impl,
+      retryDelayMs: 0,
+    })
+
+    // Trois tentatives chez DeepSeek, puis Qwen (docs/STACK-IA.md § 1.7).
+    expect(appels).toEqual([
+      'deepseek-v4-flash',
+      'deepseek-v4-flash',
+      'deepseek-v4-flash',
+      'qwen3.8-flash',
+    ])
+    expect(res.provider).toBe('qwen')
+    expect(res.attempts.filter((a) => a.outcome === 'http_error')).toHaveLength(3)
+  })
+
+  it('ne réessaie pas un 500 : il bascule tout de suite', async () => {
+    const { impl, appels } = fetchSequence(
+      erreurHttp(500),
+      reponse(QUESTIONS_VALIDES),
+    )
+
+    await runAiTask({
+      task: 'questions',
+      messages: MESSAGES,
+      env: ENV,
+      fetchImpl: impl,
+      retryDelayMs: 0,
+    })
+
+    expect(appels).toEqual(['deepseek-v4-flash', 'qwen3.8-flash'])
+  })
+
+  it('réessaie un contenu vide renvoyé en mode JSON', async () => {
+    const { impl, appels } = fetchSequence(
+      reponse(''),
+      reponse(QUESTIONS_VALIDES),
+    )
+
+    const res = await runAiTask({
+      task: 'questions',
+      messages: MESSAGES,
+      env: ENV,
+      fetchImpl: impl,
+      retryDelayMs: 0,
+    })
+
+    expect(res.attempts[0].outcome).toBe('empty_content')
+    // Même fournisseur : le contenu vide est un aléa, pas une panne.
+    expect(appels).toEqual(['deepseek-v4-flash', 'deepseek-v4-flash'])
+    expect(res.provider).toBe('deepseek')
+  })
+})
+
+describe('paramètres envoyés au fournisseur', () => {
+  /** Capture le corps du PREMIER appel — celui adressé à DeepSeek. */
+  async function corpsEnvoye(
+    task: 'questions' | 'correction',
+    reponses: Response[],
+  ): Promise<Record<string, unknown>> {
+    let corps: Record<string, unknown> | null = null
+    const impl = (async (_url: unknown, init?: unknown) => {
+      if (corps === null) corps = JSON.parse((init as { body: string }).body)
+      return reponses.shift() ?? erreurHttp(503)
+    }) as unknown as typeof fetch
+
+    await runAiTask({
+      task,
+      messages: MESSAGES,
+      env: ENV,
+      fetchImpl: impl,
+      retryDelayMs: 0,
+      userId: 'etudiant_123',
+    }).catch(() => undefined)
+
+    return corps ?? {}
+  }
+
+  it('donne de la latitude aux QCM et de la rigueur aux corrections', async () => {
+    const qcm = await corpsEnvoye('questions', [reponse(QUESTIONS_VALIDES)])
+    expect(qcm.temperature).toBe(0.7)
+    expect(qcm.max_tokens).toBe(8000)
+    expect(qcm.response_format).toEqual({ type: 'json_object' })
+
+    const corr = await corpsEnvoye('correction', [erreurHttp(500)])
+    expect(corr.temperature).toBe(0.2)
+    expect(corr.max_tokens).toBe(4000)
+  })
+
+  it('n’envoie user_id et thinking qu’à DeepSeek', async () => {
+    const chezDeepSeek = await corpsEnvoye('correction', [erreurHttp(500)])
+    expect(chezDeepSeek.user_id).toBe('etudiant_123')
+    expect(chezDeepSeek.thinking).toEqual({ type: 'enabled' })
+    expect(chezDeepSeek.reasoning_effort).toBe('high')
+
+    // Deuxième maillon de la route correction : GLM. Ni user_id ni thinking.
+    let corpsGlm: Record<string, unknown> = {}
+    let appel = 0
+    const impl = (async (_url: unknown, init?: unknown) => {
+      appel++
+      if (appel === 1) return erreurHttp(500)
+      corpsGlm = JSON.parse((init as { body: string }).body)
+      return erreurHttp(500)
+    }) as unknown as typeof fetch
+
+    await runAiTask({
+      task: 'correction',
+      messages: MESSAGES,
+      env: ENV,
+      fetchImpl: impl,
+      retryDelayMs: 0,
+      userId: 'etudiant_123',
+    }).catch(() => undefined)
+
+    expect(corpsGlm.model).toBe('glm-5.3')
+    expect(corpsGlm.user_id).toBeUndefined()
+    expect(corpsGlm.thinking).toBeUndefined()
+    expect(corpsGlm.reasoning_effort).toBe('high')
+  })
+})
+
+describe('tarif heures pleines', () => {
+  const usage = { promptTokens: 1_000_000, completionTokens: 0, cacheHitTokens: 0 }
+  const creuses = new Date(Date.UTC(2026, 8, 9, 12, 0, 0)) // mercredi 12:00
+  const pleines = new Date(Date.UTC(2026, 8, 9, 7, 0, 0)) // mercredi 07:00
+
+  it('double le tarif DeepSeek en heures pleines', () => {
+    const bas = estimateCost(MODELS.deepseekFlash, usage, creuses)
+    const haut = estimateCost(MODELS.deepseekFlash, usage, pleines)
+    expect(bas).toBeCloseTo(0.22, 6)
+    expect(haut).toBeCloseTo(0.44, 6)
+  })
+
+  it('laisse Qwen et GLM insensibles à l’heure', () => {
+    for (const spec of [MODELS.qwenFlash, MODELS.glmFlash]) {
+      expect(estimateCost(spec, usage, creuses)).toBeCloseTo(
+        estimateCost(spec, usage, pleines),
+        6,
+      )
+    }
   })
 })

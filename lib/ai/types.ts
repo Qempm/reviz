@@ -30,21 +30,33 @@ export type Capability = 'text' | 'vision' | 'thinking'
 
 export type ProviderId = 'deepseek' | 'qwen' | 'glm'
 
+/** Tarifs en dollars par million de jetons. */
+export type Pricing = {
+  input: number
+  cacheHit: number
+  output: number
+}
+
+export type ReasoningEffort = 'low' | 'high' | 'max'
+
 export type ModelSpec = {
   provider: ProviderId
   model: string
-  capabilities: Capability[]
-  /** Active le mode raisonnement chez les fournisseurs qui l'exposent. */
+  capabilities: readonly Capability[]
+  /** Active le mode réflexion chez les fournisseurs qui l'exposent. */
   thinking?: boolean
   /**
-   * Tarifs en dollars par million de jetons.
-   *
-   * ATTENTION : valeurs provisoires. docs/STACK-IA.md, qui devait porter les
-   * tarifs réels, n'existe pas encore. `cost_usd_estimate` dans ai_usage n'a
-   * donc qu'une valeur indicative tant que ces nombres n'ont pas été
-   * confrontés aux grilles des fournisseurs.
+   * Intensité de raisonnement. GLM la met à « high » par défaut : la laisser
+   * implicite reviendrait à payer du raisonnement sur des tâches qui n'en
+   * demandent pas (docs/STACK-IA.md § 3.3).
    */
-  pricing: { input: number; output: number; cacheHit: number }
+  reasoningEffort?: ReasoningEffort
+  pricing: Pricing
+  /**
+   * Tarif heures pleines. DeepSeek facture le double entre 01:00–04:00 et
+   * 06:00–10:00 UTC en semaine depuis le 16/08/2026 (docs/STACK-IA.md § 1.2).
+   */
+  peakPricing?: Pricing
 }
 
 export type AttemptOutcome =
@@ -53,6 +65,7 @@ export type AttemptOutcome =
   | 'network_error'
   | 'invalid_json'
   | 'schema_error'
+  | 'empty_content'
   | 'skipped_capability'
 
 export type Attempt = {

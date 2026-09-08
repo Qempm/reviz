@@ -14,6 +14,12 @@ export type CompletionOptions = {
   maxTokens?: number
   /** Demande une réponse strictement JSON quand le fournisseur le supporte. */
   jsonMode?: boolean
+  /**
+   * Identifiant d'isolation DeepSeek : sépare cache et modération par
+   * étudiant. Jamais de donnée personnelle, seulement [a-zA-Z0-9_-]
+   * (docs/STACK-IA.md § 1.4). Ignoré par les autres fournisseurs.
+   */
+  userId?: string
   signal?: AbortSignal
   fetchImpl?: typeof fetch
 }
@@ -23,6 +29,14 @@ export type CompletionResult = {
   content: string
   usage: TokenUsage
   raw: unknown
+}
+
+/** Contenu vide renvoyé en mode JSON : à réessayer. */
+export class EmptyContentError extends Error {
+  constructor() {
+    super('Le modèle a renvoyé un contenu vide en mode JSON.')
+    this.name = 'EmptyContentError'
+  }
 }
 
 export class HttpError extends Error {
@@ -77,13 +91,25 @@ export async function complete(
 
   if (opts.maxTokens) body.max_tokens = opts.maxTokens
   if (opts.jsonMode) body.response_format = { type: 'json_object' }
-  if (opts.spec.thinking) body.thinking = { type: 'enabled' }
+
+  // `thinking` et `user_id` sont propres à DeepSeek : les envoyer ailleurs
+  // fait échouer la requête (docs/STACK-IA.md § 4.4).
+  if (opts.spec.provider === 'deepseek') {
+    if (opts.spec.thinking) body.thinking = { type: 'enabled' }
+    if (opts.userId) body.user_id = opts.userId
+  }
+
+  // DeepSeek Pro et GLM acceptent tous deux reasoning_effort.
+  if (opts.spec.reasoningEffort) {
+    body.reasoning_effort = opts.spec.reasoningEffort
+  }
 
   const res = await doFetch(`${base}/chat/completions`, {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
       authorization: `Bearer ${opts.apiKey}`,
+      ...PROVIDERS[opts.spec.provider].headers,
     },
     body: JSON.stringify(body),
     signal: opts.signal,
@@ -100,6 +126,12 @@ export async function complete(
   const content = raw?.choices?.[0]?.message?.content
   if (typeof content !== 'string') {
     throw new Error('Réponse sans contenu textuel exploitable.')
+  }
+
+  // DeepSeek renvoie parfois un contenu vide en mode JSON
+  // (docs/STACK-IA.md § 1.4). C'est un cas à réessayer, pas une réponse.
+  if (content.trim() === '') {
+    throw new EmptyContentError()
   }
 
   return { content, usage: parseUsage(raw), raw }
