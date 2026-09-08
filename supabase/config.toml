@@ -1,0 +1,7 @@
+# Configuration du projet Supabase Reviz.
+# Le `project_id` sert de nom à la pile locale ; il n'est pas la référence
+# du projet hébergé.
+project_id = "reviz"
+
+[db]
+major_version = 17
