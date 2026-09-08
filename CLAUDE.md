@@ -33,15 +33,23 @@ Variables d'environnement attendues dans `.env.local` (jamais commitées) : `NEX
 
 ## Design system
 
-Source de vérité : `docs/DESIGN.md` (exporté de Stitch) et, à défaut, ces règles :
+**Source de vérité : `docs/DESIGN.md`**, extrait des écrans Stitch réellement générés
+(projet `4246361917454252874`) et aligné sur les arbitrages du 8 septembre 2026
+(`docs/DESIGN.md` § 11). Le résumé ci-dessous en découle ; en cas de doute, ouvrir
+`docs/DESIGN.md`, ne jamais réinventer une valeur.
 
-- Fond crème `#FFF8E7`, cartes blanches, rayon 20 px, ombre douce. Écrans de célébration en jaune plein `#FFD23F`.
-- Accent principal jaune `#FFC300` (CTA, progression, podium n°1, streak). Orange `#FF6B2C` pour l'urgence et les compte à rebours. Bleu doux `#CFE0FF` pour le n°2 et les badges. Vert `#22C55E` / rouge `#EF4444` uniquement pour bonne / mauvaise réponse.
-- Typographie Nunito : 800 pour les chiffres héros (40–48 px) et titres, 700 pour les labels, 500 pour le corps (15–16 px). Pas de majuscules, pas de gris froid.
-- Composants : podium 2/1/3, carte streak à 7 losanges, carte héros orange avec avatars, barres de progression 10 px en pilule, QCM une question par écran avec 4 boutons pleine largeur, barre de navigation basse à 5 onglets (Accueil / Réviser / Corriger / Gains / Profil).
-- Mascotte (`public/mascotte/*.png`) sur accueil, réussite, échec, chargement, pack expiré. 24 avatars dans `public/avatars/`.
-- Mobile d'abord (390 px), zones tactiles ≥ 48 px, un seul CTA principal par écran, tutoiement, textes courts.
-- Tokens dans `tailwind.config.ts` : `reviz.cream`, `reviz.yellow`, `reviz.orange`, `reviz.blue`, `reviz.ink`, `reviz.muted`.
+- Fond `#fcf9f8` (blanc cassé chaud, **pas** un crème), cartes blanches `#ffffff`, ombre douce `0 4px 20px rgba(26,26,26,.06)`. Rayon dominant **12 px** (`rounded-xl`) ; 20 px réservé aux grandes cartes, 24 px à la carte héros, 28 px aux feuilles modales.
+- Accent principal jaune `#FFC300` (CTA, progression, podium n°1, streak). Orange `#fe6a2b` pour l'urgence et les compte à rebours. Bleu doux `#bccdeb` pour le n°2 et les badges. Encre `#1c1b1b`, texte secondaire `#4f4632` (brun chaud, jamais un gris froid).
+- ⚠️ Le jaune est le token `primary-container`. `primary` vaut `#785a00` et sert **au texte**, jamais à un fond de CTA.
+- **Palette strictement chaude : aucun vert de succès.** Une bonne réponse se célèbre en jaune (`#FFC300` / `#ffdf9a`), une mauvaise en `#ba1a1a` sur `#ffdad6`. Ne pas introduire `#22C55E` ni `#EF4444`.
+- Signature tactile : ombre pleine sans flou sous les éléments actionnables, réduite à l'appui — `shadow-[0_4px_0_#d9a400] active:translate-y-[2px] active:shadow-[0_2px_0_#d9a400]`. Arêtes : `#d9a400` sur jaune, `#d94e15` sur orange, `#d3c5ab` sur neutre, `#93000a` sur rouge.
+- Typographie **Nunito Sans** : 800 pour les chiffres héros (44 px, 38 px en mobile) et les titres, 700 pour les labels, 500 pour le corps (15–16 px). Majuscules réservées au seul niveau `caption` (11 px, +0.04em). Icônes Material Symbols Outlined.
+- Composants : podium 2/1/3 (blocs 128/96/80 px, n°3 en pêche `#ffdbcf`), carte streak à 7 carrés arrondis légèrement inclinés, carte héros orange avec avatars, barres de progression 10 px en pilule à remplissage plat, QCM une question par écran avec 4 boutons pleine largeur (fond blanc, sélection par fond `#ffdf9a`, **sans bordure**), barre de navigation basse plate de 80 px à 5 onglets (Accueil / Réviser / Corriger / Gains / Profil) dont l'actif est une pilule jaune — pas de bouton flottant central.
+- CTA principal : 56 px de haut, rayon 12 px, texte `headline-md`, fond `#FFC300` — `h-cta bg-reviz-yellow text-reviz-on-yellow text-headline-md rounded-xl shadow-tactile`.
+- Mascotte (`public/mascotte/*.png`) sur accueil, réussite, échec, chargement, pack expiré. 24 avatars dans `public/avatars/`. **À produire : Stitch n'a livré aucun asset local**, ses écrans pointent vers des images générées.
+- Mobile d'abord (390 px), zones tactiles ≥ 48 px, un seul CTA principal par écran, tutoiement, textes courts. Header collant de 64 px, `pb-[96px]` au-dessus de la nav, safe areas via `.pt-safe` / `.pb-safe`.
+- Pas de mode sombre au MVP (Stitch n'en a pas généré).
+- Tokens dans `tailwind.config.ts` : les alias métier `reviz.cream`, `reviz.yellow`, `reviz.orange`, `reviz.blue`, `reviz.ink`, `reviz.muted` (+ `card`, `yellow-soft`, `orange-soft`, `blue-soft`, `on-yellow`, `danger`, `border`, `edge.*`) pour le code qu'on écrit ; les rôles Material 3 (`surface`, `primary-container`, `on-surface`…) sont conservés en parallèle pour coller le markup Stitch sans le réécrire.
 
 ## Modèle de données (Supabase, schéma `public`)
 
@@ -105,11 +113,15 @@ Liste complète des 55 écrans dans `docs/SCREENS.md`.
 ## Premier message à envoyer à Claude Code
 
 ```
-Lis CLAUDE.md et docs/STACK-IA.md en entier avant de faire quoi que ce soit.
+Lis CLAUDE.md, docs/DESIGN.md et docs/STACK-IA.md en entier avant de faire quoi que ce soit.
 
 Ensuite, dans cet ordre, sans passer à l'étape suivante tant que la précédente ne compile pas :
 
-1. Initialise le projet Next.js 15 + TypeScript + Tailwind + Supabase (client et serveur), avec la structure de dossiers de CLAUDE.md, le fichier .env.example, et le tailwind.config.ts avec les tokens Reviz.
+1. Initialise le projet Next.js 15 + TypeScript + Tailwind + Supabase (client et serveur) à la racine, avec la structure de dossiers de CLAUDE.md et le fichier .env.example.
+   - `tailwind.config.ts` existe déjà et fait autorité : il porte les tokens Reviz figés depuis Stitch. **Ne pas le régénérer ni l'écraser** — si l'outil d'init en produit un, restaure celui du dépôt et reporte seulement le champ `content` si les chemins ont changé. Même consigne pour `docs/DESIGN.md`.
+   - Charge Nunito Sans via `next/font/google` (poids 500/600/700/800) exposée en `--font-nunito-sans`, plus la feuille Material Symbols Outlined.
+   - Pose les styles de base de docs/DESIGN.md § 8 : fond `#fcf9f8`, `overscroll-behavior: none`, `-webkit-tap-highlight-color: transparent`, utilitaires `.pt-safe` / `.pb-safe`, `viewport-fit=cover`.
+   - Le projet Android est dans `apps/android/` : ne rien y toucher, et vérifier après l'init que `apps/android/gradlew projects` passe toujours.
 2. Écris les migrations SQL Supabase pour tout le modèle de données, avec les politiques RLS, dans supabase/migrations/. Ajoute une migration de seed avec 3 universités béninoises (UAC, UAM, UP), 5 filières chacune, 4 matières par filière, et les 5 packs avec leurs prix.
 3. Construis le design system dans components/ui (liste dans CLAUDE.md) et une page /kitchen-sink qui les affiche tous, pour que je valide le rendu visuel avant les écrans.
 4. Implémente lib/ai : client OpenAI-compatible générique, table de routage DeepSeek → Qwen → GLM avec bascule sur erreur ou JSON invalide, détection des heures pleines DeepSeek, enregistrement dans ai_usage, et les schémas Zod des sorties (questions, fiches, correction, lecture de carte). Tests Vitest sur le routage et la validation.
