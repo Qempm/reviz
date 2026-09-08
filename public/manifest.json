@@ -1,0 +1,12 @@
+{
+  "name": "Reviz",
+  "short_name": "Reviz",
+  "description": "Révise tes cours, entraîne-toi sur des QCM et fais corriger tes copies.",
+  "lang": "fr",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fcf9f8",
+  "theme_color": "#fcf9f8",
+  "icons": []
+}

@@ -1,0 +1,13 @@
+import { createBrowserClient } from '@supabase/ssr'
+
+/**
+ * Client Supabase pour les composants client.
+ * N'utilise que la clé anonyme : toutes les lectures et écritures passent
+ * par les politiques RLS.
+ */
+export function createClient() {
+  return createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  )
+}

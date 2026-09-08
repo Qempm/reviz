@@ -1,0 +1,49 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Styles de base repris de docs/DESIGN.md § 8 — comportement des écrans
+ * Stitch. Ne pas modifier sans mettre à jour ce document.
+ */
+@layer base {
+  html,
+  body {
+    width: 100vw;
+    margin: 0;
+    padding: 0;
+    background-color: theme('colors.surface');
+    color: theme('colors.on-surface');
+    font-family: theme('fontFamily.sans');
+  }
+
+  body {
+    overscroll-behavior: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Le premier et le dernier bloc d'un écran ne doivent pas ajouter de marge. */
+  main > :first-child {
+    margin-top: 0 !important;
+  }
+
+  main > :last-child {
+    margin-bottom: 0 !important;
+  }
+}
+
+@layer utilities {
+  /* Encoches et barre gestuelle — cf. viewport-fit=cover dans app/layout.tsx. */
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
+
+/* Défilement sans barre visible, comme sur les maquettes. */
+::-webkit-scrollbar {
+  display: none;
+}

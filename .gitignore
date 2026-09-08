@@ -39,3 +39,6 @@ Thumbs.db
 *.iml
 .vscode/*
 !.vscode/extensions.json
+
+# Claude Code — réglages locaux à la machine (launch.json est partagé)
+.claude/settings.local.json
