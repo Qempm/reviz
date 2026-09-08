@@ -53,13 +53,15 @@ Variables d'environnement attendues dans `.env.local` (jamais commitées) : `NEX
 
 ## Modèle de données (Supabase, schéma `public`)
 
-- `profiles` : id (= auth.users.id), phone, first_name, university_id, faculty_id, study_year, avatar_key, verification_status (`none` | `pending` | `verified` | `rejected`), verified_until, referral_code (unique), referred_by, is_ambassador, created_at.
+- `profiles` : id (= auth.users.id), phone, first_name, university_id, faculty_id, study_year, avatar_key, verification_status (`none` | `pending` | `verified` | `rejected`), verified_until, referral_code (unique), referred_by, is_ambassador, xp_total, current_streak, longest_streak, last_validated_on, created_at.
 - `universities`, `faculties` (university_id, name), `subjects` (faculty_id, name).
 - `courses` : id, owner_id, subject_id, title, file_hash (unique par owner), storage_path, page_count, status (`uploaded` | `processing` | `ready` | `failed`), shared_with_faculty (bool), exam_date, created_at.
 - `chapters` : course_id, index, title, text, token_count, embedding (vector).
 - `questions` : chapter_id, type (`mcq` | `open`), statement, options (jsonb), answer, explanation, probability (`high` | `medium` | `low`), created_at.
 - `flashcards` : chapter_id, front, back.
 - `attempts` : user_id, question_id, is_correct, answered_at ; vue `subject_stats` (score moyen, questions faites, points faibles).
+- `xp_events` : user_id, reason (`correct_answer` | `quiz_completed` | `daily_goal` | `streak_bonus` | `course_added` | `correction_done` | `referral` | `adjustment`), amount, reference_id, created_at. **Journal en ajout seul**, comme `wallet_ledger` : une erreur se corrige par une ligne `adjustment`. `profiles.xp_total` en est un cache tenu par trigger, nécessaire au classement.
+- `daily_activity` : user_id, day, questions_answered, correct_answers, xp_earned, is_validated, clé primaire (user_id, day). Alimente la carte des 7 jours et le calcul des séries. Un jour est validé au-delà de `public.daily_goal()` questions (10 au départ) ; la série est le nombre de jours validés consécutifs. Fonction `streak_week()` pour l'affichage.
 - `corrections` : id, user_id, course_id, storage_paths (jsonb), status, grade, max_grade, rubric (jsonb), feedback (jsonb), model_used, created_at.
 - `packs` : code (`decouverte` | `controle` | `partiel` | `semestre` | `rattrapage`), price_fcfa, duration_days, corrections_included, subjects_limit, active_from, active_to.
 - `subscriptions` : user_id, pack_code, starts_at, ends_at, corrections_left, source (`payment` | `class_purchase` | `bonus`), payment_id. **Pas de renouvellement automatique** : à `ends_at`, l'accès s'arrête, point.
