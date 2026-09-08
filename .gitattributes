@@ -1,0 +1,33 @@
+# Fins de ligne — le dépôt stocke toujours du LF.
+# Sans ce fichier, core.autocrlf=true réécrit gradlew en CRLF au checkout
+# sous Windows, ce qui le rend inutilisable sous Git Bash et en CI Linux.
+* text=auto eol=lf
+
+# Scripts Unix : LF obligatoire, sinon « bad interpreter ».
+gradlew text eol=lf
+*.sh text eol=lf
+
+# Scripts Windows : CRLF obligatoire.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binaires : ne jamais convertir ni tenter de fusionner.
+*.jar binary
+*.keystore binary
+*.jks binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.mp3 binary
+*.mp4 binary
+
+# Diffs plus lisibles.
+*.md diff=markdown
