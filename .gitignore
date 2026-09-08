@@ -1,0 +1,41 @@
+# Dépendances
+node_modules/
+
+# Next.js
+/.next/
+/out/
+next-env.d.ts
+
+# Build
+/build/
+/dist/
+
+# Environnement — jamais de clé dans le dépôt
+.env
+.env.local
+.env*.local
+
+# Vercel
+.vercel
+
+# TypeScript
+*.tsbuildinfo
+
+# Tests
+/coverage/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Éditeurs (Android Studio garde ses propres règles dans apps/android/.gitignore)
+/.idea/
+*.iml
+.vscode/*
+!.vscode/extensions.json
