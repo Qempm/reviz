@@ -99,6 +99,10 @@ export const fr = {
     accesExpire: 'Ton pack est arrivé à terme',
     accesExpireDetail:
       'Tes cours et ton historique restent consultables. Réactive pour générer de nouveau.',
+    activerDecouverte: 'Activer gratuitement',
+    decouverteUtilisee: 'Découverte déjà utilisée',
+    activationImpossible: 'L’activation n’a pas abouti. Réessaie dans un instant.',
+    paiementBientot: 'Paiement Mobile Money bientôt disponible',
     sansReconduction:
       'Aucun prélèvement automatique. À la fin de la période, l’accès s’arrête, tout simplement.',
   },
@@ -149,6 +153,45 @@ export const fr = {
     jMoins: (j: number) =>
       j === 0 ? 'Examen aujourd’hui' : j === 1 ? 'Examen demain' : `J−${j}`,
     examenPasse: 'Examen passé',
+  },
+
+  depot: {
+    titre: 'Ajouter un cours',
+    sousTitre:
+      'Un PDF, un Word ou des photos. Reviz le découpe en chapitres et en tire des QCM.',
+    labelFichier: 'Choisis ton cours',
+    aideFichier: 'PDF, Word ou images. 25 Mo au maximum.',
+    labelTitre: 'Titre du cours',
+    aideTitre: 'Celui que tu reconnaîtras dans la liste.',
+    labelMatiere: 'La matière',
+    labelExamen: 'Date de l’examen (facultatif)',
+    aideExamen: 'Pour afficher le compte à rebours et prioriser les questions.',
+    envoyer: 'Envoyer mon cours',
+    envoi: 'Envoi en cours…',
+    // %s est remplacé par le pourcentage.
+    progression: (pct: number) => `Envoi ${pct} %`,
+
+    // Refus d'accès : la raison doit être dite, pas juste le refus.
+    aucunAcces: 'Il te faut un pack pour ajouter un cours',
+    aucunAccesDetail:
+      'Le pack Découverte est gratuit : une matière pendant trois jours.',
+    accesExpire: 'Ton pack est arrivé à terme',
+    accesExpireDetail:
+      'Tes cours restent consultables. Réactive pour en ajouter un nouveau.',
+    plafondMatieres: (n: number) =>
+      `Ton pack couvre ${n <= 1 ? 'une matière' : `${n} matières`}`,
+    plafondMatieresDetail:
+      'Prends un pack plus large pour ajouter une matière de plus.',
+    voirLesPacks: 'Voir les packs',
+
+    erreurs: {
+      fichierManquant: 'Choisis d’abord un fichier.',
+      matiereManquante: 'Choisis la matière du cours.',
+      titreManquant: 'Donne un titre à ton cours.',
+      dejaDepose: 'Tu as déjà déposé ce document.',
+      envoiImpossible: 'L’envoi a échoué. Vérifie ta connexion et réessaie.',
+      inconnue: 'Quelque chose a coincé de notre côté. Réessaie.',
+    },
   },
 
   session: {

@@ -120,7 +120,7 @@ export default async function TableauDeBord() {
               title={fr.tableauDeBord.aucuneMatiere}
               description={fr.tableauDeBord.aucuneMatiereDetail}
               action={
-                <Link href="/reviser" className="w-full">
+                <Link href="/reviser/ajouter" className="w-full">
                   <Button icon="add">{fr.tableauDeBord.ajouterCours}</Button>
                 </Link>
               }

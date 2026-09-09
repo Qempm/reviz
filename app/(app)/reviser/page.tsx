@@ -42,12 +42,9 @@ export default async function Reviser() {
         <p className="text-body-md text-reviz-muted">{fr.reviser.sousTitre}</p>
       </header>
 
-      <Button icon="add" disabled>
-        {fr.reviser.ajouterCours}
-      </Button>
-      <p className="-mt-space-12 text-center text-label-sm text-reviz-muted">
-        {fr.commun.bientot}
-      </p>
+      <Link href="/reviser/ajouter" className="block">
+        <Button icon="add">{fr.reviser.ajouterCours}</Button>
+      </Link>
 
       {liste.length === 0 ? (
         <Card>

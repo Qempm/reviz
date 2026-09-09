@@ -3,6 +3,7 @@ import { Button, Card, Icon } from '@/components/ui'
 import { createClient } from '@/lib/supabase/server'
 import { fr } from '@/lib/i18n/fr'
 import { etatAcces, type Subscription } from '@/lib/payments/subscriptions'
+import { BoutonDecouverte } from '@/components/reviz/bouton-decouverte'
 import { cn } from '@/lib/utils'
 
 /**
@@ -40,6 +41,12 @@ export default async function Boutique() {
   }))
 
   const acces = etatAcces(abonnements)
+
+  // Découverte est une fois pour toutes : le bouton doit le dire avant le
+  // clic, pas après le refus du serveur.
+  const decouverteUtilisee = (lignes ?? []).some(
+    (l) => l.pack_code === 'decouverte',
+  )
 
   return (
     <div className="flex flex-col gap-space-20">
@@ -136,9 +143,18 @@ export default async function Boutique() {
                 />
               </div>
 
-              <Button icon="shopping_cart" disabled>
-                {fr.boutique.choisir}
-              </Button>
+              {gratuit ? (
+                <BoutonDecouverte dejaUtilise={decouverteUtilisee} />
+              ) : (
+                <div className="flex flex-col gap-space-4">
+                  <Button icon="shopping_cart" disabled>
+                    {fr.boutique.choisir}
+                  </Button>
+                  <p className="text-center text-label-sm text-reviz-muted">
+                    {fr.boutique.paiementBientot}
+                  </p>
+                </div>
+              )}
             </Card>
           )
         })}
