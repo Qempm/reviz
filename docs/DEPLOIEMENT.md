@@ -51,6 +51,43 @@ DeepSeek (01:00–04:00 et 06:00–10:00 UTC, règle métier 6).
 
 2. **Plan Pro Vercel**, qui débloque les crons à la minute.
 
+3. **`pg_cron` + `pg_net` depuis Supabase**, gratuit et inclus. La base
+   appelle elle-même la route toutes les minutes :
+
+   ```sql
+   select cron.schedule(
+     'reviz-file-jobs', '* * * * *',
+     $$select net.http_post(
+         url := 'https://<domaine>/api/jobs/run',
+         headers := jsonb_build_object(
+           'Authorization',
+           'Bearer ' || (select decrypted_secret from vault.decrypted_secrets
+                         where name = 'CRON_SECRET')
+         )
+       )$$
+   );
+   ```
+
+   **À faire par le propriétaire, pas par un agent** : la planification a
+   besoin de `CRON_SECRET` dans le Vault Supabase
+   (`select vault.create_secret('…', 'CRON_SECRET')`), et un secret ne se
+   colle ni dans une migration versionnée ni dans une conversation.
+
+### Pourquoi il n'y a pas encore de déclenchement immédiat
+
+Le plan prévoyait `after()` de `next/server` pour lancer la file dans la
+foulée du dépôt, afin que la latence perçue soit nulle. Ce n'est pas encore
+branché, et pour une raison précise : **aucun des quatre traitements lourds
+n'existe** (`ingest_course`, `generate_questions`, `correct_copy`,
+`verify_card` attendent les clés IA). Or `lib/jobs/runner.ts` échoue
+*définitivement* sur un type sans traitement enregistré — délibérément, un
+type orphelin étant un défaut de code. Mettre un job `ingest_course` en file
+aujourd'hui le ferait donc passer en `failed` au premier passage du cron,
+sans aucun bénéfice.
+
+En attendant, **`courses.status = 'processing'` fait office de file
+d'attente** : la reprise se fera d'une requête, sans backfill compliqué.
+
 ---
 
 ## Connexion Google en production
