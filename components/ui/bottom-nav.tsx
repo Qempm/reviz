@@ -1,4 +1,7 @@
+'use client'
+
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { Icon } from './icon'
 
@@ -31,15 +34,21 @@ export function BottomNav({
   active,
   tabs = NAV_TABS,
 }: {
-  /** `href` de l'onglet courant. */
-  active: string
+  /** Force l'onglet actif. Sans cela, il suit la route courante. */
+  active?: string
   tabs?: NavTab[]
 }) {
+  const chemin = usePathname()
+  const courant = active ?? chemin
+
   return (
     <nav className="pb-safe fixed inset-x-0 bottom-0 z-50 bg-surface/90 shadow-nav backdrop-blur-xl">
       <div className="flex h-nav items-center justify-around px-space-8">
         {tabs.map((tab) => {
-          const isActive = tab.href === active
+          // « Accueil » ne s'allume que sur la racine exacte, sinon tous
+          // les chemins commenceraient par « / ».
+          const isActive =
+            tab.href === '/' ? courant === '/' : courant.startsWith(tab.href)
 
           return (
             <Link

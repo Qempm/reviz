@@ -9,6 +9,8 @@ export const fr = {
     reessayer: 'Réessayer',
     chargement: 'Un instant…',
     retour: 'Retour',
+    voirTout: 'Tout voir',
+    bientot: 'Bientôt disponible',
   },
 
   connexion: {
@@ -43,6 +45,63 @@ export const fr = {
         'On n’a pas pu envoyer le code. Vérifie ta connexion et réessaie.',
       inconnue: 'Quelque chose a coincé de notre côté. Réessaie.',
     },
+  },
+
+  tableauDeBord: {
+    salutation: (prenom: string) => `Bonjour ${prenom}`.trim(),
+    sousTitre: 'Prêt à réviser aujourd’hui ?',
+    streakVide: 'Réponds à 10 questions aujourd’hui pour lancer ta série.',
+    mesMatieres: 'Mes matières',
+    pointFaible: 'À revoir',
+    questionsFaites: (n: number) =>
+      n <= 1 ? `${n} question répondue` : `${n} questions répondues`,
+    aucuneMatiere: 'Aucune matière pour l’instant',
+    aucuneMatiereDetail:
+      'Ajoute ton premier cours et Reviz en tire des QCM et des fiches.',
+    ajouterCours: 'Ajouter un cours',
+  },
+
+  reviser: {
+    titre: 'Réviser',
+    aucunCours: 'Aucun cours déposé',
+    aucunCoursDetail:
+      'Envoie un PDF, un Word ou des photos de ton cours. Reviz s’occupe du reste.',
+    ajouterCours: 'Ajouter un cours',
+  },
+
+  corriger: {
+    titre: 'Corriger',
+    aucuneCorrection: 'Aucune copie corrigée',
+    aucuneCorrectionDetail:
+      'Photographie ta copie et son sujet, tu reçois une note et un barème détaillé.',
+    deposer: 'Déposer une copie',
+  },
+
+  gains: {
+    titre: 'Mes gains',
+    solde: 'Solde disponible',
+    retraitPossible: 'Tu peux demander un retrait.',
+    resteAvantRetrait: (n: number) =>
+      `Encore ${n.toLocaleString('fr-FR')} F avant de pouvoir retirer.`,
+    tonCode: 'Ton code parrain',
+    aideCode:
+      'Partage-le : tu touches 25 % de chaque paiement de tes filleuls pendant 12 mois.',
+    aucunFilleul: 'Aucun filleul pour l’instant',
+    aucunFilleulDetail:
+      'Un filleul compte dès qu’il est vérifié et qu’il a payé une première fois.',
+    filleulsPayants: (n: number) =>
+      n <= 1 ? `${n} filleul actif` : `${n} filleuls actifs`,
+  },
+
+  profil: {
+    titre: 'Mon profil',
+    sansTelephone: 'Aucun numéro renseigné',
+    verifie: 'Compte vérifié',
+    verifieDetail: 'Ta carte étudiante a été validée.',
+    nonVerifie: 'Compte non vérifié',
+    nonVerifieDetail:
+      'Ajoute ta carte étudiante pour débloquer le parrainage et les cours partagés.',
+    deconnexion: 'Me déconnecter',
   },
 
   inscription: {
