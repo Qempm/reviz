@@ -42,7 +42,12 @@ export function BottomNav({
   const courant = active ?? chemin
 
   return (
-    <nav className="pb-safe fixed inset-x-0 bottom-0 z-50 bg-surface/90 shadow-nav backdrop-blur-xl">
+    <nav
+      // Même colonne que le contenu et l'en-tête. Sans « max-w-app », la
+      // barre s'étirait d'un bord à l'autre sur tablette pendant que le
+      // reste de l'écran restait dans sa colonne de 440 px.
+      className="pb-safe fixed inset-x-0 bottom-0 z-50 mx-auto w-full max-w-app bg-surface/90 shadow-nav backdrop-blur-xl"
+    >
       <div className="flex h-nav items-center justify-around px-space-8">
         {tabs.map((tab) => {
           // « Accueil » ne s'allume que sur la racine exacte, sinon tous
