@@ -46,3 +46,7 @@ Thumbs.db
 # Supabase — état local de la liaison, propre à la machine
 supabase/.temp/
 supabase/.branches/
+# Vercel a posé « .env* », trop large : il avalerait .env.example, qui doit
+# rester versionné comme gabarit.
+.env*
+!.env.example
