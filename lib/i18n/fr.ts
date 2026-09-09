@@ -61,6 +61,40 @@ export const fr = {
     ajouterCours: 'Ajouter un cours',
   },
 
+  boutique: {
+    titre: 'Les packs',
+    sousTitre: 'Tu paies une fois, pour une durée précise. Rien ne se renouvelle.',
+    recommande: 'Conseillé',
+    gratuit: 'Gratuit',
+    duree: (j: number) => (j <= 1 ? `${j} jour d’accès` : `${j} jours d’accès`),
+    corrections: (n: number) =>
+      n === 0
+        ? 'Aucune correction incluse'
+        : n <= 1
+          ? `${n} correction de copie`
+          : `${n} corrections de copie`,
+    matieres: (n: number | null) =>
+      n === null
+        ? 'Toutes tes matières'
+        : n <= 1
+          ? `${n} matière`
+          : `${n} matières`,
+    choisir: 'Choisir ce pack',
+    accesActif: (j: number) =>
+      j <= 1 ? 'Ton accès finit aujourd’hui' : `Accès actif encore ${j} jours`,
+    correctionsRestantes: (n: number) =>
+      n === 0
+        ? 'Plus de correction disponible'
+        : n <= 1
+          ? `${n} correction restante`
+          : `${n} corrections restantes`,
+    accesExpire: 'Ton pack est arrivé à terme',
+    accesExpireDetail:
+      'Tes cours et ton historique restent consultables. Réactive pour générer de nouveau.',
+    sansReconduction:
+      'Aucun prélèvement automatique. À la fin de la période, l’accès s’arrête, tout simplement.',
+  },
+
   reviser: {
     titre: 'Réviser',
     aucunCours: 'Aucun cours déposé',
@@ -101,6 +135,7 @@ export const fr = {
     nonVerifie: 'Compte non vérifié',
     nonVerifieDetail:
       'Ajoute ta carte étudiante pour débloquer le parrainage et les cours partagés.',
+    voirLesPacks: 'Les packs et mon accès',
     deconnexion: 'Me déconnecter',
   },
 
