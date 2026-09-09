@@ -132,7 +132,42 @@ changement de schéma, sinon le code compile contre une base qui n'existe plus.
 
 ---
 
-## 6. Ce qui reste à décider
+## 6. Activer l'authentification par téléphone
+
+**À faire, sinon la connexion ne marche pas.** Vérifié sur le projet :
+l'appel `POST /auth/v1/otp` répond
+
+```json
+{"code":400,"error_code":"phone_provider_disabled","msg":"Unsupported phone provider"}
+```
+
+Seul le fournisseur `email` est actif. Dans `Authentication → Sign In / Providers`,
+activer **Phone**, puis choisir comment le code part.
+
+### Option retenue par l'architecture : Send SMS Hook vers n8n
+
+CLAUDE.md pose que « Reviz n'appelle jamais l'API WhatsApp directement » : les
+messages passent par n8n. Le *Send SMS Hook* de Supabase colle exactement à
+cela — Supabase génère et vérifie le code, mais délègue son acheminement à un
+webhook.
+
+`Authentication → Hooks → Send SMS hook` → URL du workflow n8n, qui reçoit le
+numéro et le code puis envoie le WhatsApp. Aucun code applicatif à changer :
+`signInWithOtp` et `verifyOtp` fonctionnent à l'identique quel que soit
+l'acheminement.
+
+### Alternative : un fournisseur SMS
+
+Twilio, MessageBird ou Vonage se configurent directement dans la même page.
+Plus simple à mettre en route, mais facturé au message et sans le canal
+WhatsApp que les étudiants utilisent déjà.
+
+> Vérifie la disponibilité des Auth Hooks sur ton plan avant de t'engager :
+> si elle est réservée aux plans payants, le fournisseur SMS est le repli.
+
+---
+
+## 7. Ce qui reste à décider
 
 - **Dimension des embeddings.** `chapters.embedding` est en `vector(1024)`,
   d'après Qwen `text-embedding-v3`, seul fournisseur d'embeddings de la pile.
