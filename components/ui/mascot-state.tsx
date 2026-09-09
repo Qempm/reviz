@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { Icon } from './icon'
 
@@ -25,8 +25,13 @@ export type MascotStateProps = {
  *
  * Les visuels attendus dans `public/mascotte/` n'existent pas encore : Stitch
  * n'a livré aucun asset local, ses écrans pointaient vers des images générées
- * (docs/DESIGN.md § 9). En leur absence, on affiche une pastille de repli
- * plutôt qu'une image cassée, pour que le kitchen-sink reste lisible.
+ * (docs/DESIGN.md § 9).
+ *
+ * Le repli est donc l'état **par défaut**, et l'image ne remplace la pastille
+ * qu'une fois chargée pour de bon. L'inverse — tenter l'image puis basculer
+ * sur `onError` — montrait l'icône de fichier cassé le temps que la requête
+ * échoue : sur cinq écrans, à chaque affichage, tant que les PNG ne sont pas
+ * livrés. Le jour où ils arrivent, ce composant les prend sans être touché.
  */
 const MOODS: Record<
   MascotMood,
@@ -71,12 +76,37 @@ export function MascotState({
   size = 120,
   children,
 }: MascotStateProps) {
-  const [imageManquante, setImageManquante] = useState(false)
+  const [imageDisponible, setImageDisponible] = useState(false)
   const m = MOODS[mood]
+  const source = `/mascotte/${mood}.png`
+
+  useEffect(() => {
+    // Chargement hors du DOM : rien n'est affiché avant que l'image existe,
+    // donc aucune icône de fichier cassé ne peut apparaître.
+    setImageDisponible(false)
+
+    const image = new Image()
+    let annule = false
+    image.onload = () => !annule && setImageDisponible(true)
+    image.src = source
+
+    return () => {
+      annule = true
+    }
+  }, [source])
 
   return (
     <div className="flex flex-col items-center gap-space-16 text-center">
-      {imageManquante ? (
+      {imageDisponible ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={source}
+          alt=""
+          width={size}
+          height={size}
+          className="object-contain"
+        />
+      ) : (
         <span
           className={cn(
             'flex items-center justify-center rounded-full',
@@ -88,16 +118,6 @@ export function MascotState({
         >
           <Icon name={m.icon} size={Math.round(size * 0.45)} filled />
         </span>
-      ) : (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={`/mascotte/${mood}.png`}
-          alt=""
-          width={size}
-          height={size}
-          className="object-contain"
-          onError={() => setImageManquante(true)}
-        />
       )}
 
       <div className="flex flex-col gap-space-4">

@@ -398,6 +398,13 @@ export type Database = {
             foreignKeyName: "flashcards_chapter_id_fkey"
             columns: ["chapter_id"]
             isOneToOne: false
+            referencedRelation: "chapter_stats"
+            referencedColumns: ["chapter_id"]
+          },
+          {
+            foreignKeyName: "flashcards_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
             referencedRelation: "chapters"
             referencedColumns: ["id"]
           },
@@ -658,6 +665,13 @@ export type Database = {
           type?: Database["public"]["Enums"]["question_type"]
         }
         Relationships: [
+          {
+            foreignKeyName: "questions_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapter_stats"
+            referencedColumns: ["chapter_id"]
+          },
           {
             foreignKeyName: "questions_chapter_id_fkey"
             columns: ["chapter_id"]
@@ -987,6 +1001,36 @@ export type Database = {
           },
         ]
       }
+      chapter_stats: {
+        Row: {
+          chapter_id: string | null
+          course_id: string | null
+          index: number | null
+          is_weak: boolean | null
+          nb_fiches: number | null
+          nb_justes: number | null
+          nb_questions: number | null
+          nb_tentees: number | null
+          taux: number | null
+          title: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chapters_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "course_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chapters_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       course_overview: {
         Row: {
           created_at: string | null
@@ -1039,6 +1083,7 @@ export type Database = {
       }
       subject_stats: {
         Row: {
+          attempts_total: number | null
           average_score: number | null
           correct_count: number | null
           faculty_id: string | null

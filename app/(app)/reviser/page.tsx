@@ -1,6 +1,14 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { Button, Card, Chip, CircularProgress, EmptyState, Icon } from '@/components/ui'
+import {
+  Button,
+  Card,
+  Chip,
+  CircularProgress,
+  EmptyState,
+  Icon,
+  ProgressBar,
+} from '@/components/ui'
 import { createClient } from '@/lib/supabase/server'
 import { fr } from '@/lib/i18n/fr'
 
@@ -21,13 +29,22 @@ export default async function Reviser() {
 
   // La RLS filtre : mes cours, ceux partagés dans ma faculté, et les
   // démonstrations. Aucun filtre à écrire ici.
-  const { data: cours } = await supabase
-    .from('course_overview')
-    .select(
-      'id, title, status, is_demo, subject_name, exam_date, nb_chapitres, nb_questions, nb_fiches, nb_tentees',
-    )
-    .order('is_demo', { ascending: false })
-    .order('created_at', { ascending: false })
+  const [{ data: cours }, { data: matieres }] = await Promise.all([
+    supabase
+      .from('course_overview')
+      .select(
+        'id, title, status, is_demo, subject_name, exam_date, nb_chapitres, nb_questions, nb_fiches, nb_tentees',
+      )
+      .order('is_demo', { ascending: false })
+      .order('created_at', { ascending: false }),
+    // Écran D3 : la maîtrise par matière, calculée sur la dernière tentative
+    // de chaque question depuis 20260910120000. Les plus faibles d'abord :
+    // c'est là qu'il faut aller travailler.
+    supabase
+      .from('subject_stats')
+      .select('subject_id, subject_name, questions_answered, average_score, is_weak')
+      .order('average_score', { ascending: true }),
+  ])
 
   // La vue `course_overview` type toutes ses colonnes en nullable, comme
   // toute vue Postgres : on écarte les lignes sans identifiant plutôt que
@@ -45,6 +62,44 @@ export default async function Reviser() {
       <Link href="/reviser/ajouter" className="block">
         <Button icon="add">{fr.reviser.ajouterCours}</Button>
       </Link>
+
+      {/* Maîtrise par matière (écran D3) --------------------------------- */}
+      {(matieres ?? []).length > 0 ? (
+        <section className="flex flex-col gap-space-12">
+          <h2 className="text-headline-lg text-reviz-ink">
+            {fr.reviser.mesMatieres}
+          </h2>
+          <Card>
+            {(matieres ?? []).map((m) => {
+              const taux = m.average_score === null ? 0 : Number(m.average_score)
+
+              return (
+                <div key={m.subject_id} className="flex flex-col gap-space-4">
+                  <div className="flex items-baseline justify-between gap-space-8">
+                    <span className="flex items-center gap-space-4">
+                      <span className="text-label-md text-reviz-ink">
+                        {m.subject_name}
+                      </span>
+                      {m.is_weak ? (
+                        <Chip tone="danger" icon="priority_high">
+                          {fr.reviser.aRevoir}
+                        </Chip>
+                      ) : null}
+                    </span>
+                    <span className="shrink-0 text-label-sm text-reviz-muted">
+                      {fr.reviser.surQuestions(m.questions_answered ?? 0)}
+                    </span>
+                  </div>
+                  <ProgressBar
+                    value={taux}
+                    label={fr.reviser.maitrise(Math.round(taux * 100))}
+                  />
+                </div>
+              )
+            })}
+          </Card>
+        </section>
+      ) : null}
 
       {liste.length === 0 ? (
         <Card>

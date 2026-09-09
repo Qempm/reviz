@@ -29,6 +29,7 @@ import type { MascotMood, QuizOptionState, SegmentState } from '@/components/ui'
 import { BottomSheet } from '@/components/ui/bottom-sheet'
 import { Confetti } from '@/components/reviz/confetti'
 import { PaquetFiches } from '@/components/reviz/paquet-fiches'
+import { CoursEnTraitement } from '@/components/reviz/cours-en-traitement'
 
 /**
  * Page de validation visuelle du design system.
@@ -502,6 +503,17 @@ export default function KitchenSink() {
         {/* Métier ------------------------------------------------------------ */}
         <Section titre="PaquetFiches" reference="§ 7">
           <PaquetFiches fiches={FICHES_DEMO} />
+        </Section>
+
+        <Section titre="CoursEnTraitement" reference="§ 7">
+          <Card>
+            <p className="text-label-sm text-reviz-muted">
+              Écran d’attente : des étapes qui défilent plutôt qu’une barre de
+              progression, qu’on ne saurait pas mesurer honnêtement. Se
+              rafraîchit dix fois à cadence décroissante, puis s’arrête.
+            </p>
+            <CoursEnTraitement />
+          </Card>
         </Section>
 
         {/* Navigation ------------------------------------------------------- */}

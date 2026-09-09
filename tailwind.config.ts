@@ -244,6 +244,23 @@ const config: Config = {
         'screen-margin-tablet': '1.5rem',
       },
 
+      // Animations en CSS pur : Motion ne se charge que sur les écrans qui
+      // en ont vraiment besoin (voir components/ui/index.ts).
+      keyframes: {
+        apparition: {
+          from: { opacity: '0', transform: 'translateY(6px)' },
+          to: { opacity: '1', transform: 'translateY(0)' },
+        },
+        pulsation: {
+          '0%, 100%': { opacity: '0.35', transform: 'scale(0.85)' },
+          '50%': { opacity: '1', transform: 'scale(1)' },
+        },
+      },
+      animation: {
+        apparition: 'apparition 0.22s cubic-bezier(0.22, 1, 0.36, 1)',
+        pulsation: 'pulsation 1.2s ease-in-out infinite',
+      },
+
       borderRadius: {
         // Échelle réellement compilée par Stitch (ROUND_EIGHT).
         // Ne PAS reprendre celle du front-matter de son designMd :

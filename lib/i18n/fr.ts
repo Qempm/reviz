@@ -124,6 +124,11 @@ export const fr = {
         questions <= 1 ? `${questions} question` : `${questions} questions`,
         fiches <= 1 ? `${fiches} fiche` : `${fiches} fiches`,
       ].join(' · '),
+    mesMatieres: 'Ma maîtrise',
+    maitrise: (pct: number) => `${pct} % de maîtrise`,
+    surQuestions: (n: number) =>
+      n <= 1 ? `sur ${n} question` : `sur ${n} questions`,
+    aRevoir: 'À revoir',
     seulementDemo:
       'Ce cours est là pour te montrer le principe. Dépose le tien pour de vrai.',
   },
@@ -135,6 +140,19 @@ export const fr = {
       'Reviz lit ton document, le découpe en chapitres et en tire des questions.',
     traitementAstuce:
       'Tu peux fermer l’application : on te prévient dès que c’est prêt.',
+    // Messages qui défilent pendant l'attente. L'étudiant doit sentir qu'il
+    // se passe quelque chose, sans qu'on lui mente sur une progression
+    // qu'on ne mesure pas.
+    traitementEtapes: [
+      'Lecture de ton document…',
+      'Découpage en chapitres…',
+      'Repérage des notions importantes…',
+      'Rédaction des questions…',
+      'Préparation des fiches…',
+    ],
+    traitementLong:
+      'C’est plus long que d’habitude. Reviens dans quelques minutes, ton cours continue d’être préparé.',
+    actualiser: 'Actualiser',
     echecTitre: 'On n’a pas réussi à lire ce cours',
     echecDetail:
       'Le document est peut-être trop flou ou protégé. Réessaie avec un autre fichier.',
@@ -148,6 +166,20 @@ export const fr = {
     voirFiches: (n: number) => (n <= 1 ? 'Voir la fiche' : `Voir les ${n} fiches`),
     decompteChapitre: (questions: number, fiches: number) =>
       `${questions} question${questions <= 1 ? '' : 's'} · ${fiches} fiche${fiches <= 1 ? '' : 's'}`,
+    ongletProbables: 'Qui va tomber',
+    ongletChapitres: 'Chapitres',
+    ongletFiches: 'Fiches',
+    ongletFaibles: 'À revoir',
+    probableHaute: 'Très probable',
+    probableMoyenne: 'Possible',
+    probableBasse: 'Peu probable',
+    aucuneProbable: 'Aucune question probable',
+    aucuneProbableDetail:
+      'Les questions arrivent quand la préparation du cours est finie.',
+    aucunFaible: 'Rien à revoir pour l’instant',
+    aucunFaibleDetail:
+      'Fais une session : les notions que tu rates apparaîtront ici.',
+    voirLeChapitre: 'Ouvrir le chapitre',
     aucunChapitre: 'Aucun chapitre',
     aucunChapitreDetail: 'Ce cours n’a pas encore été découpé.',
     jMoins: (j: number) =>
@@ -237,6 +269,17 @@ export const fr = {
     // Le score n'a pas été enregistré : on le dit, sans dramatiser.
     echecEnregistrement:
       'On n’a pas pu enregistrer cette session. Ton score s’affiche quand même.',
+  },
+
+  chapitre: {
+    // %s est remplacé par le numéro.
+    numero: (n: number) => `Chapitre ${n}`,
+    contenu: 'Le cours',
+    fiches: 'Les fiches du chapitre',
+    questions: (n: number) =>
+      n <= 1 ? `${n} question` : `${n} questions`,
+    aucunTexte: 'Ce chapitre n’a pas encore de contenu.',
+    reviser: 'Réviser ce chapitre',
   },
 
   fiches: {

@@ -1,24 +1,27 @@
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
+import { Button, Card, Chip, CircularProgress, Icon, MascotState } from '@/components/ui'
+import { CoursEnTraitement } from '@/components/reviz/cours-en-traitement'
 import {
-  Button,
-  Card,
-  Chip,
-  CircularProgress,
-  EmptyState,
-  Icon,
-  MascotState,
-} from '@/components/ui'
+  OngletsCours,
+  type ChapitreVue,
+  type QuestionProbable,
+} from '@/components/reviz/onglets-cours'
+import type { Fiche } from '@/components/reviz/paquet-fiches'
 import { createClient } from '@/lib/supabase/server'
 import { fr } from '@/lib/i18n/fr'
 
 /**
- * Écran D4 — Page cours.
+ * Écran D4 — page cours.
  *
  * Trois états selon `courses.status` : en traitement, prêt, échoué. Un cours
  * qui vient d'être déposé n'a ni chapitre ni question : montrer une page vide
  * laisserait croire à une panne.
  */
+
+/** Questions probables montrées d'emblée. Au-delà, la liste devient un mur. */
+const PROBABLES_MAX = 20
+
 /**
  * Jours restants avant l'examen, `null` s'il est passé.
  *
@@ -53,30 +56,18 @@ export default async function PageCours({
   } = await supabase.auth.getUser()
   if (!user) redirect('/connexion')
 
-  const [{ data: cours }, { data: chapitres }] = await Promise.all([
-    supabase
-      .from('course_overview')
-      .select(
-        'id, title, status, is_demo, subject_name, exam_date, page_count, nb_chapitres, nb_questions, nb_fiches, nb_tentees',
-      )
-      .eq('id', id)
-      .maybeSingle(),
-    supabase
-      .from('chapters')
-      .select('id, index, title, questions(count), flashcards(count)')
-      .eq('course_id', id)
-      .order('index'),
-  ])
+  const { data: cours } = await supabase
+    .from('course_overview')
+    .select(
+      'id, title, status, is_demo, subject_name, exam_date, nb_chapitres, nb_questions, nb_fiches, nb_tentees',
+    )
+    .eq('id', id)
+    .maybeSingle()
 
   // La RLS renvoie simplement rien si le cours n'est pas lisible : on ne
   // distingue pas « inexistant » de « pas à toi », ce qui évite de révéler
   // l'existence du cours d'un autre.
   if (!cours) notFound()
-
-  const jours = cours.exam_date ? joursAvant(cours.exam_date) : null
-  const total = cours.nb_questions ?? 0
-  const faites = cours.nb_tentees ?? 0
-  const progression = total > 0 ? faites / total : 0
 
   if (cours.status === 'failed') {
     return (
@@ -95,20 +86,66 @@ export default async function PageCours({
     )
   }
 
-  if (cours.status !== 'ready') {
-    return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-space-24">
-        <MascotState
-          mood="chargement"
-          title={fr.cours.traitementTitre}
-          description={fr.cours.traitementDetail}
-        />
-        <Card size="sm">
-          <p className="text-label-sm text-reviz-muted">{fr.cours.traitementAstuce}</p>
-        </Card>
-      </div>
-    )
-  }
+  if (cours.status !== 'ready') return <CoursEnTraitement />
+
+  // Trois lectures en parallèle : le contenu du cours ne change pas d'une
+  // requête à l'autre, autant ne pas les enchaîner.
+  const [{ data: chapitres }, { data: questions }, { data: cartes }] =
+    await Promise.all([
+      supabase
+        .from('chapter_stats')
+        .select('chapter_id, index, title, nb_questions, nb_fiches, nb_tentees, nb_justes, taux, is_weak')
+        .eq('course_id', id)
+        .order('index'),
+      supabase
+        .from('questions')
+        .select('id, statement, answer, explanation, probability, chapters!inner(course_id, title)')
+        .eq('chapters.course_id', id)
+        .order('probability')
+        .limit(PROBABLES_MAX),
+      supabase
+        .from('flashcards')
+        .select('id, front, back, chapters!inner(course_id, title)')
+        .eq('chapters.course_id', id)
+        .order('id'),
+    ])
+
+  const vueChapitres: ChapitreVue[] = (chapitres ?? [])
+    .filter((c) => c.chapter_id !== null)
+    .map((c) => ({
+      id: c.chapter_id as string,
+      index: c.index ?? 0,
+      titre: c.title ?? '',
+      nbQuestions: c.nb_questions ?? 0,
+      nbFiches: c.nb_fiches ?? 0,
+      nbTentees: c.nb_tentees ?? 0,
+      nbJustes: c.nb_justes ?? 0,
+      // `taux` est un `numeric` : PostgREST le sérialise en chaîne pour ne
+      // pas perdre de précision. Le convertir ici, une fois.
+      taux: c.taux === null ? null : Number(c.taux),
+      faible: c.is_weak ?? false,
+    }))
+
+  const probables: QuestionProbable[] = (questions ?? []).map((q) => ({
+    id: q.id,
+    statement: q.statement,
+    answer: q.answer,
+    explanation: q.explanation,
+    probability: q.probability,
+    chapitre: q.chapters?.title ?? null,
+  }))
+
+  const fiches: Fiche[] = (cartes ?? []).map((f) => ({
+    id: f.id,
+    front: f.front,
+    back: f.back,
+    chapitre: f.chapters?.title ?? null,
+  }))
+
+  const jours = cours.exam_date ? joursAvant(cours.exam_date) : null
+  const total = cours.nb_questions ?? 0
+  const faites = cours.nb_tentees ?? 0
+  const progression = total > 0 ? faites / total : 0
 
   return (
     <div className="flex flex-col gap-space-20">
@@ -143,7 +180,7 @@ export default async function PageCours({
         ) : null}
       </div>
 
-      {/* Progression ------------------------------------------------------- */}
+      {/* Progression et session ------------------------------------------- */}
       <Card>
         <div className="flex items-center gap-space-20">
           <CircularProgress value={progression} size={88}>
@@ -176,53 +213,12 @@ export default async function PageCours({
         )}
       </Card>
 
-      {/* Chapitres --------------------------------------------------------- */}
-      <section className="flex flex-col gap-space-12">
-        <div className="flex items-baseline justify-between">
-          <h2 className="text-headline-lg text-reviz-ink">{fr.cours.chapitres}</h2>
-          {(cours.nb_fiches ?? 0) > 0 ? (
-            <Link
-              href={`/cours/${id}/fiches`}
-              className="text-label-md text-primary"
-            >
-              {fr.cours.voirFiches(cours.nb_fiches ?? 0)}
-            </Link>
-          ) : null}
-        </div>
-
-        {chapitres && chapitres.length > 0 ? (
-          <div className="flex flex-col gap-space-8">
-            {chapitres.map((ch) => {
-              const nbQ = (ch.questions as unknown as { count: number }[])[0]?.count ?? 0
-              const nbF = (ch.flashcards as unknown as { count: number }[])[0]?.count ?? 0
-
-              return (
-                <Card key={ch.id} size="sm">
-                  <div className="flex items-center gap-space-12">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-reviz-yellow-soft text-label-lg text-primary">
-                      {ch.index}
-                    </span>
-                    <span className="flex flex-1 flex-col">
-                      <span className="text-label-lg text-reviz-ink">{ch.title}</span>
-                      <span className="text-label-sm text-reviz-muted">
-                        {fr.cours.decompteChapitre(nbQ, nbF)}
-                      </span>
-                    </span>
-                  </div>
-                </Card>
-              )
-            })}
-          </div>
-        ) : (
-          <Card>
-            <EmptyState
-              icon="menu_book"
-              title={fr.cours.aucunChapitre}
-              description={fr.cours.aucunChapitreDetail}
-            />
-          </Card>
-        )}
-      </section>
+      <OngletsCours
+        courseId={id}
+        chapitres={vueChapitres}
+        probables={probables}
+        fiches={fiches}
+      />
     </div>
   )
 }
