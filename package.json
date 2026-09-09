@@ -9,7 +9,12 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "db:link": "supabase link --project-ref",
+    "db:push": "supabase db push",
+    "db:push:dry": "supabase db push --dry-run",
+    "db:types": "supabase gen types typescript --linked > lib/supabase/database.types.ts",
+    "db:diff": "supabase db diff"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.7",

@@ -42,3 +42,7 @@ Thumbs.db
 
 # Claude Code — réglages locaux à la machine (launch.json est partagé)
 .claude/settings.local.json
+
+# Supabase — état local de la liaison, propre à la machine
+supabase/.temp/
+supabase/.branches/
