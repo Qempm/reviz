@@ -2,8 +2,16 @@
 
 import { useState } from 'react'
 import {
+  Avatar,
   BottomNav,
   Button,
+  Chip,
+  CircularProgress,
+  Countdown,
+  FileDropzone,
+  Skeleton,
+  Stepper,
+  Tabs,
   Card,
   EmptyState,
   HeroCard,
@@ -18,6 +26,8 @@ import {
   Toast,
 } from '@/components/ui'
 import type { MascotMood, QuizOptionState, SegmentState } from '@/components/ui'
+import { BottomSheet } from '@/components/ui/bottom-sheet'
+import { Confetti } from '@/components/reviz/confetti'
 
 /**
  * Page de validation visuelle du design system.
@@ -81,6 +91,10 @@ const MOODS: MascotMood[] = [
 export default function KitchenSink() {
   const [choix, setChoix] = useState<number | null>(1)
   const [correction, setCorrection] = useState(false)
+  const [ongletActif, setOngletActif] = useState('probables')
+  const [feuilleOuverte, setFeuilleOuverte] = useState(false)
+  const [celebre, setCelebre] = useState(false)
+  const [fichiers, setFichiers] = useState<string[]>([])
 
   const etatOption = (i: number): QuizOptionState => {
     if (correction) {
@@ -319,6 +333,147 @@ export default function KitchenSink() {
               ))}
             </div>
           </Card>
+        </Section>
+
+        {/* Lot 0 : nouveaux composants -------------------------------------- */}
+        <Section titre="Chip" reference="lot 0">
+          <div className="flex flex-wrap gap-space-8">
+            <Chip>Neutre</Chip>
+            <Chip tone="jaune" icon="stars">+25 XP</Chip>
+            <Chip tone="orange" icon="hourglass_top">J-3</Chip>
+            <Chip tone="bleu" icon="school">L2 Droit</Chip>
+            <Chip tone="danger" icon="priority_high">À revoir</Chip>
+          </div>
+        </Section>
+
+        <Section titre="Avatar" reference="lot 0">
+          <div className="flex items-center gap-space-12">
+            <Avatar nom="Aminata" size={64} ring="jaune" />
+            <Avatar nom="Moussa" size={56} ring="bleu" />
+            <Avatar nom="Kofi" size={56} ring="peche" />
+            <Avatar nom="Sarah" size={40} />
+            <Avatar avatarKey="07" nom="Test" size={40} />
+          </div>
+          <p className="text-label-sm text-reviz-muted">
+            Le dernier pointe vers /avatars/07.png : il retombe sur l’initiale
+            tant que les visuels ne sont pas livrés.
+          </p>
+        </Section>
+
+        <Section titre="CircularProgress" reference="lot 0">
+          <div className="flex items-center gap-space-16">
+            {[0.78, 0.42, 1].map((v) => (
+              <CircularProgress key={v} value={v}>
+                <span className="text-label-md text-reviz-ink">
+                  {Math.round(v * 100)}%
+                </span>
+              </CircularProgress>
+            ))}
+          </div>
+        </Section>
+
+        <Section titre="Tabs" reference="lot 0">
+          <Card>
+            <Tabs
+              actif={ongletActif}
+              onChange={setOngletActif}
+              onglets={[
+                { id: 'probables', label: 'Questions probables', icon: 'local_fire_department' },
+                { id: 'chapitres', label: 'Chapitres', icon: 'menu_book', compteur: 6 },
+                { id: 'fiches', label: 'Fiches', icon: 'style', compteur: 12 },
+                { id: 'faibles', label: 'Points faibles', icon: 'bolt', compteur: 3 },
+              ]}
+            >
+              <p className="text-body-md text-reviz-muted">
+                Contenu de l’onglet « {ongletActif} ». La barre défile
+                horizontalement plutôt que de tronquer les libellés.
+              </p>
+            </Tabs>
+          </Card>
+        </Section>
+
+        <Section titre="Stepper" reference="lot 0">
+          <Card>
+            <Stepper etapes={['Fichier', 'Matière', 'Examen']} courante={1} />
+          </Card>
+        </Section>
+
+        <Section titre="Countdown" reference="lot 0">
+          <Card>
+            <Countdown jusqua={new Date(Date.now() + 3 * 86400000 + 5 * 3600000)}>
+              {({ jours, heures, minutes }) => (
+                <span className="text-headline-lg text-reviz-ink">
+                  J-{jours} · {heures} h {minutes} min
+                </span>
+              )}
+            </Countdown>
+          </Card>
+        </Section>
+
+        <Section titre="Skeleton" reference="lot 0">
+          <Card>
+            <Skeleton className="h-6 w-2/3" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-cta w-full" />
+          </Card>
+        </Section>
+
+        <Section titre="FileDropzone" reference="lot 0">
+          <FileDropzone
+            label="Ajouter ton cours"
+            hint="PDF, Word ou photos — 25 Mo maximum"
+            accept="application/pdf,image/*"
+            multiple
+            tailleMax={26214400}
+            onChange={(f) => setFichiers(f.map((x) => x.file.name))}
+          />
+          {fichiers.length > 0 ? (
+            <p className="text-label-sm text-reviz-muted">
+              Choisi : {fichiers.join(', ')}
+            </p>
+          ) : null}
+        </Section>
+
+        <Section titre="BottomSheet et Confetti" reference="lot 0">
+          <div className="flex flex-col gap-space-12">
+            <Button variant="secondary" icon="expand_less" onClick={() => setFeuilleOuverte(true)}>
+              Ouvrir la feuille
+            </Button>
+            <Button
+              icon="celebration"
+              onClick={() => {
+                setCelebre(false)
+                setTimeout(() => setCelebre(true), 30)
+              }}
+            >
+              Lancer les confettis
+            </Button>
+            <p className="text-label-sm text-reviz-muted">
+              Les confettis chargent leur bibliothèque au premier clic seulement,
+              et ne partent pas si les animations sont réduites.
+            </p>
+          </div>
+
+          <Confetti actif={celebre} intensite="franc" />
+
+          <BottomSheet
+            ouverte={feuilleOuverte}
+            onFermer={() => setFeuilleOuverte(false)}
+            titre="Choisir une matière"
+          >
+            <div className="flex flex-col gap-space-8">
+              {['Microéconomie', 'Droit constitutionnel', 'Statistiques'].map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setFeuilleOuverte(false)}
+                  className="flex min-h-[56px] items-center rounded-xl border-2 border-reviz-border px-space-16 text-left text-label-lg text-reviz-ink"
+                >
+                  {m}
+                </button>
+              ))}
+            </div>
+          </BottomSheet>
         </Section>
 
         {/* Navigation ------------------------------------------------------- */}

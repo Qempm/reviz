@@ -1,3 +1,4 @@
+import { HEAVY_JOB_TYPES } from '@/lib/ai/peak-hours'
 import type { JobType } from './types'
 
 /**
@@ -85,9 +86,14 @@ export function messageErreur(error: unknown, max = 1000): string {
   return brut.length > max ? `${brut.slice(0, max - 1)}…` : brut
 }
 
-/** Types de jobs considérés comme lourds, au sens de la règle métier 6. */
-export const HEAVY_JOB_TYPES: readonly JobType[] = ['ingest_course']
+/**
+ * Types de jobs lourds, au sens de la règle métier 6.
+ *
+ * Réexporté depuis `lib/ai/peak-hours.ts` plutôt que redéfini : la liste
+ * existait en double, avec deux types différents.
+ */
+export { HEAVY_JOB_TYPES }
 
 export function estLourd(type: JobType): boolean {
-  return HEAVY_JOB_TYPES.includes(type)
+  return (HEAVY_JOB_TYPES as readonly string[]).includes(type)
 }

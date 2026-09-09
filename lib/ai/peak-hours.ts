@@ -16,7 +16,13 @@ const CRENEAUX: ReadonlyArray<readonly [number, number]> = [
   [6, 10],
 ]
 
-/** Types de jobs considérés comme lourds. */
+/**
+ * Types de jobs considérés comme lourds.
+ *
+ * Défini ici et réexporté par `lib/jobs/policy.ts`, jamais dupliqué : deux
+ * définitions divergentes rendraient `import { HEAVY_JOB_TYPES } from '@/lib/ai'`
+ * et `from '@/lib/jobs'` différents, ce qui est indétectable à la lecture.
+ */
 export const HEAVY_JOB_TYPES = ['ingest_course'] as const
 export type HeavyJobType = (typeof HEAVY_JOB_TYPES)[number]
 
