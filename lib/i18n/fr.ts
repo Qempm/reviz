@@ -45,6 +45,21 @@ export const fr = {
     },
   },
 
+  inscription: {
+    titre: 'On fait connaissance',
+    sousTitre:
+      'Ces informations servent à te proposer les bons cours et à te situer dans ta faculté.',
+    labelPrenom: 'Ton prénom',
+    labelUniversite: 'Ton université',
+    labelFiliere: 'Ta filière',
+    labelAnnee: 'Ton année',
+    /** L1, L2… puis M1, M2 au-delà de la licence. */
+    annee: (n: number) => (n <= 3 ? `L${n}` : `M${n - 3}`),
+    labelParrain: 'Code parrain (facultatif)',
+    aideParrain: 'Si un camarade t’a donné son code, il touche une commission.',
+    terminer: 'Terminer mon inscription',
+  },
+
   // Le numéro reste demandé à l'inscription, mais facultatif : il ne sert
   // qu'aux notifications WhatsApp (CLAUDE.md, règle métier 3).
   telephone: {

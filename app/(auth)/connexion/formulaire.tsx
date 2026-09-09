@@ -152,6 +152,9 @@ export function FormulaireConnexion() {
                   setCode(v)
                   setErreur(null)
                 }}
+                // Six chiffres saisis ou collés : on valide sans attendre un
+                // appui de plus.
+                onComplete={soumettreCode}
                 error={Boolean(erreur)}
                 disabled={enCours}
               />
