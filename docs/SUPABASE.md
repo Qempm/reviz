@@ -132,38 +132,58 @@ changement de schéma, sinon le code compile contre une base qui n'existe plus.
 
 ---
 
-## 6. Activer l'authentification par téléphone
+## 6. Activer les méthodes de connexion
 
-**À faire, sinon la connexion ne marche pas.** Vérifié sur le projet :
-l'appel `POST /auth/v1/otp` répond
+Décision du 9 septembre 2026 : connexion par **Google** ou par **code à
+6 chiffres envoyé par email**. L'OTP téléphone est abandonné ; le numéro reste
+une donnée de profil facultative.
 
-```json
-{"code":400,"error_code":"phone_provider_disabled","msg":"Unsupported phone provider"}
+### État constaté sur le projet
+
+| Fournisseur | État | Action |
+| --- | --- | --- |
+| `email` | actif | vérifier le gabarit, voir ci-dessous |
+| `google` | **désactivé** | à configurer |
+
+### Google
+
+1. **Google Cloud Console** → `APIs & Services → Credentials` → *Create OAuth
+   client ID*, type **Web application**.
+2. Dans *Authorized redirect URIs*, mettre l'URL de rappel Supabase :
+   `https://<référence>.supabase.co/auth/v1/callback`.
+3. Reporter *Client ID* et *Client Secret* dans Supabase,
+   `Authentication → Sign In / Providers → Google`.
+4. Dans `Authentication → URL Configuration`, ajouter aux *Redirect URLs* :
+   `http://localhost:3000/auth/rappel` et l'URL Vercel une fois déployé.
+
+L'application redirige vers `/auth/rappel`, qui échange le code contre une
+session puis oriente vers `/inscription` si le profil n'existe pas encore.
+
+### Email : le gabarit décide de ce que reçoit l'étudiant
+
+⚠️ **Point à vérifier avant tout test.** Par défaut, le gabarit *Magic Link* de
+Supabase ne contient que `{{ .ConfirmationURL }}` : l'étudiant reçoit un
+**lien**, pas un code. L'écran de connexion attend six chiffres — sans
+modification du gabarit, il n'y a rien à saisir.
+
+Dans `Authentication → Email Templates → Magic Link`, faire apparaître le
+jeton, par exemple :
+
+```html
+<p>Ton code Reviz : <strong>{{ .Token }}</strong></p>
+<p>Il expire dans une heure.</p>
 ```
 
-Seul le fournisseur `email` est actif. Dans `Authentication → Sign In / Providers`,
-activer **Phone**, puis choisir comment le code part.
+### Le service d'email intégré ne tient pas en production
 
-### Option retenue par l'architecture : Send SMS Hook vers n8n
+Le SMTP fourni par Supabase est **fortement limité** (quelques messages par
+heure) et explicitement réservé aux tests. Dès les premiers étudiants, il faut
+un SMTP dédié — Resend, SendGrid, Brevo — dans
+`Project Settings → Authentication → SMTP Settings`. Sans cela, les codes
+cesseront de partir sans prévenir, et l'inscription se bloquera en silence.
 
-CLAUDE.md pose que « Reviz n'appelle jamais l'API WhatsApp directement » : les
-messages passent par n8n. Le *Send SMS Hook* de Supabase colle exactement à
-cela — Supabase génère et vérifie le code, mais délègue son acheminement à un
-webhook.
-
-`Authentication → Hooks → Send SMS hook` → URL du workflow n8n, qui reçoit le
-numéro et le code puis envoie le WhatsApp. Aucun code applicatif à changer :
-`signInWithOtp` et `verifyOtp` fonctionnent à l'identique quel que soit
-l'acheminement.
-
-### Alternative : un fournisseur SMS
-
-Twilio, MessageBird ou Vonage se configurent directement dans la même page.
-Plus simple à mettre en route, mais facturé au message et sans le canal
-WhatsApp que les étudiants utilisent déjà.
-
-> Vérifie la disponibilité des Auth Hooks sur ton plan avant de t'engager :
-> si elle est réservée aux plans payants, le fournisseur SMS est le repli.
+> À noter : Supabase refuse les adresses de domaines de test comme
+> `example.com`. Pour un essai, utiliser une adresse réellement délivrable.
 
 ---
 

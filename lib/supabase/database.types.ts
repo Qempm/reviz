@@ -532,7 +532,7 @@ export type Database = {
           is_ambassador: boolean
           last_validated_on: string | null
           longest_streak: number
-          phone: string
+          phone: string | null
           referral_code: string
           referred_by: string | null
           student_card_hash: string | null
@@ -552,7 +552,7 @@ export type Database = {
           is_ambassador?: boolean
           last_validated_on?: string | null
           longest_streak?: number
-          phone: string
+          phone?: string | null
           referral_code?: string
           referred_by?: string | null
           student_card_hash?: string | null
@@ -572,7 +572,7 @@ export type Database = {
           is_ambassador?: boolean
           last_validated_on?: string | null
           longest_streak?: number
-          phone?: string
+          phone?: string | null
           referral_code?: string
           referred_by?: string | null
           student_card_hash?: string | null

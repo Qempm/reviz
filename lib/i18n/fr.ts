@@ -12,34 +12,47 @@ export const fr = {
   },
 
   connexion: {
-    titreTelephone: 'Ton numéro',
-    sousTitreTelephone:
-      'On t’envoie un code par WhatsApp. Pas de mot de passe à retenir.',
-    labelTelephone: 'Numéro de téléphone',
-    pays: 'Pays',
+    titre: 'Bienvenue sur Reviz',
+    sousTitre:
+      'Connecte-toi pour retrouver tes cours, tes QCM et tes corrections.',
+
+    avecGoogle: 'Continuer avec Google',
+    ou: 'ou',
+
+    labelEmail: 'Ton email',
+    aideEmail: 'On t’envoie un code à 6 chiffres. Pas de mot de passe à retenir.',
     envoyerCode: 'Recevoir le code',
 
     titreCode: 'Le code',
-    // %s est remplacé par le numéro masqué.
-    sousTitreCode: 'On vient d’envoyer 6 chiffres au %s.',
-    changerNumero: 'Ce n’est pas mon numéro',
+    // %s est remplacé par l'adresse email.
+    sousTitreCode: 'On vient d’envoyer 6 chiffres à %s.',
+    changerEmail: 'Ce n’est pas mon email',
     valider: 'Valider',
     renvoyer: 'Renvoyer le code',
     // %s est remplacé par le nombre de secondes.
     renvoyerDans: 'Nouveau code dans %s s',
 
     erreurs: {
-      vide: 'Entre ton numéro pour continuer.',
-      longueur: 'Ce numéro ne ressemble pas à un numéro %s.',
-      pays_inconnu: 'On ne reconnaît pas cet indicatif.',
+      emailInvalide: 'Cette adresse ne ressemble pas à un email.',
       codeIncomplet: 'Il manque des chiffres.',
       codeInvalide: 'Ce code ne marche pas. Vérifie, ou demandes-en un nouveau.',
       codeExpire: 'Ce code a expiré. Demandes-en un nouveau.',
       tropDeTentatives: 'Trop d’essais. Patiente une minute avant de réessayer.',
+      googleAnnule: 'Connexion Google annulée.',
       envoiImpossible:
         'On n’a pas pu envoyer le code. Vérifie ta connexion et réessaie.',
       inconnue: 'Quelque chose a coincé de notre côté. Réessaie.',
     },
+  },
+
+  // Le numéro reste demandé à l'inscription, mais facultatif : il ne sert
+  // qu'aux notifications WhatsApp (CLAUDE.md, règle métier 3).
+  telephone: {
+    label: 'Numéro WhatsApp (facultatif)',
+    aide: 'Pour recevoir tes rappels de révision. Tu peux l’ajouter plus tard.',
+    pays: 'Pays',
+    erreurLongueur: 'Ce numéro ne ressemble pas à un numéro %s.',
+    dejaUtilise: 'Ce numéro est déjà lié à un autre compte.',
   },
 } as const
 

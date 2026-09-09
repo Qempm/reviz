@@ -1,16 +1,20 @@
 'use server'
 
+import { headers } from 'next/headers'
+import { redirect } from 'next/navigation'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
-import { normaliserTelephone, paysParCode, PAYS_PAR_DEFAUT } from '@/lib/auth/phone'
 
 /**
  * Actions d'authentification.
  *
- * L'OTP est géré par Supabase Auth : c'est lui qui génère le code, le stocke
- * et le vérifie. Sa livraison passe par le « Send SMS Hook » configuré côté
- * Supabase, qui appelle n8n, qui envoie le WhatsApp — Reviz n'appelle jamais
- * l'API WhatsApp directement (CLAUDE.md, section Stack).
+ * Deux portes d'entrée depuis le 9 septembre 2026 : Google, et un code à
+ * 6 chiffres envoyé par email. L'OTP téléphone est abandonné — le numéro reste
+ * une donnée de profil facultative (CLAUDE.md, règle métier 3).
+ *
+ * Le code par email plutôt qu'un lien magique : sur un Android d'entrée de
+ * gamme avec une connexion instable, quitter l'app pour ouvrir un lien puis y
+ * revenir est un point d'abandon. Six chiffres se recopient.
  *
  * Toute action valide son entrée par Zod et répond `{ ok, data | error }`.
  */
@@ -19,91 +23,74 @@ export type Reponse<T = undefined> =
   | { ok: true; data: T }
   | { ok: false; error: string; champ?: string }
 
-const envoiSchema = z.object({
-  telephone: z.string().min(1).max(30),
-  pays: z.string().length(2).default('BJ'),
+const emailSchema = z.object({
+  email: z.string().trim().toLowerCase().email().max(320),
 })
 
 const verificationSchema = z.object({
-  telephone: z.string().min(1).max(30),
+  email: z.string().trim().toLowerCase().email().max(320),
   code: z.string().regex(/^\d{6}$/),
 })
 
 /**
- * Traduit les erreurs Supabase en messages utilisables.
- *
- * Les messages bruts sont en anglais et parlent de « OTP » : inutilisables
- * tels quels devant un étudiant.
+ * Traduit les erreurs Supabase, en anglais et techniques, en messages
+ * affichables devant un étudiant.
  */
-function traduireErreur(message: string): { cle: string; texte: string } {
+function traduireErreur(message: string): string {
   const m = message.toLowerCase()
 
   if (m.includes('expired')) {
-    return { cle: 'codeExpire', texte: 'Ce code a expiré. Demandes-en un nouveau.' }
+    return 'Ce code a expiré. Demandes-en un nouveau.'
   }
-  if (m.includes('invalid') || m.includes('incorrect')) {
-    return {
-      cle: 'codeInvalide',
-      texte: 'Ce code ne marche pas. Vérifie, ou demandes-en un nouveau.',
-    }
+  if (m.includes('invalid') || m.includes('incorrect') || m.includes('token')) {
+    return 'Ce code ne marche pas. Vérifie, ou demandes-en un nouveau.'
   }
-  if (m.includes('rate limit') || m.includes('too many')) {
-    return {
-      cle: 'tropDeTentatives',
-      texte: 'Trop d’essais. Patiente une minute avant de réessayer.',
-    }
+  if (m.includes('rate limit') || m.includes('too many') || m.includes('security purposes')) {
+    return 'Trop d’essais. Patiente une minute avant de réessayer.'
   }
-  return {
-    cle: 'inconnue',
-    texte: 'Quelque chose a coincé de notre côté. Réessaie.',
+  if (m.includes('signups not allowed') || m.includes('disabled')) {
+    return 'Les inscriptions sont fermées pour le moment.'
   }
+  return 'Quelque chose a coincé de notre côté. Réessaie.'
 }
 
-/** Demande l'envoi d'un code à usage unique. */
-export async function envoyerCode(
-  entree: z.input<typeof envoiSchema>,
-): Promise<Reponse<{ telephone: string }>> {
-  const parsed = envoiSchema.safeParse(entree)
+/** URL de base du site, pour les retours OAuth. */
+async function origine(): Promise<string> {
+  const h = await headers()
+  // Derrière Vercel, l'hôte réel est dans x-forwarded-host.
+  const hote = h.get('x-forwarded-host') ?? h.get('host') ?? 'localhost:3000'
+  const protocole = h.get('x-forwarded-proto') ?? (hote.startsWith('localhost') ? 'http' : 'https')
+  return `${protocole}://${hote}`
+}
+
+/** Envoie un code à 6 chiffres par email. */
+export async function envoyerCodeEmail(
+  entree: z.input<typeof emailSchema>,
+): Promise<Reponse<{ email: string }>> {
+  const parsed = emailSchema.safeParse(entree)
   if (!parsed.success) {
-    return { ok: false, error: 'Entre ton numéro pour continuer.', champ: 'telephone' }
-  }
-
-  const pays = paysParCode(parsed.data.pays) ?? PAYS_PAR_DEFAUT
-  const numero = normaliserTelephone(parsed.data.telephone, pays)
-
-  if (!numero.ok) {
-    const messages: Record<string, string> = {
-      vide: 'Entre ton numéro pour continuer.',
-      longueur: `Ce numéro ne ressemble pas à un numéro ${pays.nom}.`,
-      pays_inconnu: 'On ne reconnaît pas cet indicatif.',
+    return {
+      ok: false,
+      error: 'Cette adresse ne ressemble pas à un email.',
+      champ: 'email',
     }
-    return { ok: false, error: messages[numero.raison], champ: 'telephone' }
   }
 
   const supabase = await createClient()
   const { error } = await supabase.auth.signInWithOtp({
-    phone: numero.e164,
-    // Le profil est créé après vérification, pas ici : on ne veut pas de
-    // compte fantôme pour chaque numéro saisi par erreur.
+    email: parsed.data.email,
     options: { shouldCreateUser: true },
   })
 
   if (error) {
-    const t = traduireErreur(error.message)
-    return {
-      ok: false,
-      error:
-        t.cle === 'inconnue'
-          ? 'On n’a pas pu envoyer le code. Vérifie ta connexion et réessaie.'
-          : t.texte,
-    }
+    return { ok: false, error: traduireErreur(error.message) }
   }
 
-  return { ok: true, data: { telephone: numero.e164 } }
+  return { ok: true, data: { email: parsed.data.email } }
 }
 
-/** Vérifie le code et ouvre la session. */
-export async function verifierCode(
+/** Vérifie le code reçu par email et ouvre la session. */
+export async function verifierCodeEmail(
   entree: z.input<typeof verificationSchema>,
 ): Promise<Reponse<{ profilExistant: boolean }>> {
   const parsed = verificationSchema.safeParse(entree)
@@ -113,17 +100,15 @@ export async function verifierCode(
 
   const supabase = await createClient()
   const { data, error } = await supabase.auth.verifyOtp({
-    phone: parsed.data.telephone,
+    email: parsed.data.email,
     token: parsed.data.code,
-    type: 'sms',
+    type: 'email',
   })
 
   if (error || !data.user) {
-    return { ok: false, error: traduireErreur(error?.message ?? '').texte, champ: 'code' }
+    return { ok: false, error: traduireErreur(error?.message ?? ''), champ: 'code' }
   }
 
-  // Le profil existe-t-il déjà ? Il décide de la suite : tableau de bord pour
-  // un retour, parcours d'inscription pour une première fois.
   const { data: profil } = await supabase
     .from('profiles')
     .select('id')
@@ -131,4 +116,43 @@ export async function verifierCode(
     .maybeSingle()
 
   return { ok: true, data: { profilExistant: profil !== null } }
+}
+
+/**
+ * Démarre la connexion Google.
+ *
+ * Redirige vers Google, qui renverra vers /auth/rappel avec un code à
+ * échanger contre une session.
+ */
+export async function connexionGoogle(suite?: string): Promise<void> {
+  const supabase = await createClient()
+  const base = await origine()
+
+  const rappel = new URL('/auth/rappel', base)
+  if (suite) rappel.searchParams.set('suite', suite)
+
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: rappel.toString(),
+      queryParams: {
+        // Force le choix du compte : sur un téléphone partagé, enchaîner
+        // sans écran de sélection connecterait le mauvais étudiant.
+        prompt: 'select_account',
+      },
+    },
+  })
+
+  if (error || !data.url) {
+    redirect(`/connexion?erreur=${encodeURIComponent(traduireErreur(error?.message ?? ''))}`)
+  }
+
+  redirect(data.url)
+}
+
+/** Ferme la session. */
+export async function deconnexion(): Promise<void> {
+  const supabase = await createClient()
+  await supabase.auth.signOut()
+  redirect('/connexion')
 }

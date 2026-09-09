@@ -17,7 +17,7 @@ Distribution : web app hébergée + APK Capacitor (coquille WebView) partagé pa
 ## Stack (ne pas dévier sans en discuter)
 
 - **Next.js 15 (App Router) + TypeScript + Tailwind CSS**, déployé sur Vercel. PWA (manifest + service worker via `next-pwa` ou équivalent) pour le mode hors ligne des QCM déjà chargés.
-- **Supabase** : Postgres, Auth (OTP par téléphone), Storage (cours, copies, cartes étudiantes, avatars), Edge Functions si besoin, `pgvector` pour les embeddings des chapitres.
+- **Supabase** : Postgres, Auth (**Google et email**, code à 6 chiffres par email — l'OTP téléphone est abandonné depuis le 9 septembre 2026), Storage (cours, copies, cartes étudiantes, avatars), Edge Functions si besoin, `pgvector` pour les embeddings des chapitres.
 - **IA** : appels directs depuis les routes serveur Next.js, jamais depuis le client. Fournisseurs (format OpenAI Chat Completions) :
   - DeepSeek `deepseek-v4-flash` (base `https://api.deepseek.com`) pour QCM, fiches, questions probables.
   - DeepSeek `deepseek-v4-flash-vision-exp` pour lire les photos (copies, cartes).
@@ -53,7 +53,7 @@ Variables d'environnement attendues dans `.env.local` (jamais commitées) : `NEX
 
 ## Modèle de données (Supabase, schéma `public`)
 
-- `profiles` : id (= auth.users.id), phone, first_name, university_id, faculty_id, study_year, avatar_key, verification_status (`none` | `pending` | `verified` | `rejected`), verified_until, referral_code (unique), referred_by, is_ambassador, xp_total, current_streak, longest_streak, last_validated_on, created_at.
+- `profiles` : id (= auth.users.id), phone (**facultatif et non vérifié** : sert aux notifications WhatsApp, pas d'identité ; unique quand renseigné), first_name, university_id, faculty_id, study_year, avatar_key, verification_status (`none` | `pending` | `verified` | `rejected`), verified_until, referral_code (unique), referred_by, is_ambassador, xp_total, current_streak, longest_streak, last_validated_on, created_at.
 - `universities`, `faculties` (university_id, name), `subjects` (faculty_id, name).
 - `courses` : id, owner_id, subject_id, title, file_hash (unique par owner), storage_path, page_count, status (`uploaded` | `processing` | `ready` | `failed`), shared_with_faculty (bool), exam_date, created_at.
 - `chapters` : course_id, index, title, text, token_count, embedding (vector).
@@ -78,7 +78,7 @@ RLS activée sur toutes les tables : un utilisateur ne lit et n'écrit que ses p
 
 1. Paiement unique par pack. Aucun prélèvement récurrent. À l'expiration : lecture seule des cours et de l'historique, écran « pack expiré » avec réactivation.
 2. Commission parrain 25 % (35 % ambassadeur) sur chaque paiement du filleul pendant 12 mois, créditée dans `wallet_ledger` au webhook de paiement réussi. Seuil de retrait 3 000 F. Un filleul ne compte que s'il est vérifié et a payé au moins une fois.
-3. Anti-fraude : un même numéro ou une même carte étudiante ne peut créer qu'un compte ; un parrain ne peut pas être son propre filleul.
+3. Anti-fraude : **la carte étudiante est la seule barrière « un compte par personne »** depuis que le téléphone est facultatif — une même carte ne peut créer qu'un compte. Un numéro renseigné reste unique, mais comme il n'est ni obligatoire ni vérifié, il ne constitue plus une preuve. Un parrain ne peut pas être son propre filleul.
 4. Cache IA par `file_hash` : un document déjà traité par quelqu'un dans la même faculté n'est jamais re-traité.
 5. Plafonds : 150 pages par cours, 200 questions générées par cours, 300 questions répondues par jour et par étudiant, 5 corrections par jour même en pack illimité.
 6. Les traitements lourds (`ingest_course`) ne s'exécutent pas entre 01:00–04:00 et 06:00–10:00 UTC du lundi au vendredi (heures pleines DeepSeek), sauf si le job attend depuis plus de 20 minutes.
@@ -98,7 +98,7 @@ RLS activée sur toutes les tables : un utilisateur ne lit et n'écrit que ses p
 ## Écrans du MVP (ordre de construction)
 
 1. Design system Tailwind + composants `ui` (Button, Card, ProgressBar, Podium, StreakCard, HeroCard, QuizOption, BottomNav, Toast, EmptyState, MascotState).
-2. Auth : numéro + OTP, université / filière / année, code parrain, photo carte (job `verify_card`), connexion.
+2. Auth : Google ou email (code à 6 chiffres), université / filière / année, code parrain, téléphone facultatif, photo carte (job `verify_card`), connexion.
 3. Tableau de bord.
 4. Ajout de cours → job `ingest_course` → `generate_questions` → page matière → session QCM → résultat.
 5. Boutique → paiement FedaPay → webhook → activation → écran confirmation / échec / pack expiré.
