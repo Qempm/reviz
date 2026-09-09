@@ -122,6 +122,13 @@ la garder lisible rend les journaux d'exécution exploitables.
 | `npm run db:push:dry` | montre ce qui serait appliqué, sans rien faire |
 | `npm run db:diff` | écart entre le schéma local et la base liée |
 | `npm run db:types` | régénère les types TypeScript depuis le schéma |
+| `npm run db:types:check` | régénère et échoue si le fichier a bougé — dérive entre base et dépôt |
+
+`lib/supabase/database.types.ts` est **généré, pas écrit à la main**. Les trois
+clients (`client.ts`, `server.ts`, `admin.ts`) sont paramétrés par le type
+`Database` qu'il exporte : une table, une colonne ou une valeur d'énumération
+inexistante devient une erreur de compilation. À régénérer après tout
+changement de schéma, sinon le code compile contre une base qui n'existe plus.
 
 ---
 

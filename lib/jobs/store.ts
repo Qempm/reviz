@@ -1,6 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
+import type { Database } from '@/lib/supabase/database.types'
 import type { JobStore } from './runner'
-import type { Job, JobStatus, JobType } from './types'
+import type { Job, JobPayload, JobType } from './types'
 
 /**
  * Magasin Supabase de la file.
@@ -9,24 +10,17 @@ import type { Job, JobStatus, JobType } from './types'
  * fermée au client (supabase/migrations/20260908120600_rls.sql).
  */
 
-type LigneJob = {
-  id: string
-  type: JobType
-  payload: Record<string, unknown> | null
-  status: JobStatus
-  attempts: number
-  last_error: string | null
-  run_after: string
-  created_at: string
-  started_at: string | null
-  finished_at: string | null
-}
+/**
+ * La ligne telle que la base la définit, et non une copie écrite à la main :
+ * un écart entre le schéma et ce fichier devient une erreur de compilation.
+ */
+type LigneJob = Database['public']['Tables']['jobs']['Row']
 
 export function versJob(ligne: LigneJob): Job {
   return {
     id: ligne.id,
     type: ligne.type,
-    payload: ligne.payload ?? {},
+    payload: (ligne.payload ?? {}) as JobPayload,
     status: ligne.status,
     attempts: ligne.attempts,
     lastError: ligne.last_error,
@@ -50,7 +44,7 @@ export function createSupabaseJobStore(): JobStore {
       })
 
       if (error) throw new Error(`Prise de jobs impossible : ${error.message}`)
-      return ((data ?? []) as LigneJob[]).map(versJob)
+      return (data ?? []).map(versJob)
     },
 
     async markDone(id) {
@@ -94,7 +88,7 @@ export function createSupabaseJobStore(): JobStore {
 /** Met un job en file. À appeler depuis les Server Actions et les webhooks. */
 export async function enqueueJob(opts: {
   type: JobType
-  payload?: Record<string, unknown>
+  payload?: JobPayload
   runAfter?: Date
 }): Promise<string> {
   const supabase = createAdminClient()
@@ -110,5 +104,5 @@ export async function enqueueJob(opts: {
     .single()
 
   if (error) throw new Error(`Mise en file impossible : ${error.message}`)
-  return (data as { id: string }).id
+  return data.id
 }

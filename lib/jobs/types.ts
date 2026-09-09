@@ -1,4 +1,12 @@
+import type { Json } from '@/lib/supabase/database.types'
+
 /** File de traitement : types partagés (CLAUDE.md, section Stack). */
+
+/**
+ * Charge utile d'un job. `Json` et non `unknown` : la valeur part en colonne
+ * jsonb, elle doit être sérialisable. Le typage l'impose désormais.
+ */
+export type JobPayload = Record<string, Json>
 
 export type JobType =
   | 'ingest_course'
@@ -12,7 +20,7 @@ export type JobStatus = 'queued' | 'running' | 'done' | 'failed'
 export type Job = {
   id: string
   type: JobType
-  payload: Record<string, unknown>
+  payload: JobPayload
   status: JobStatus
   /** Déjà incrémenté par claim_jobs au moment où le job est pris. */
   attempts: number

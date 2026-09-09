@@ -24,4 +24,11 @@ export {
 export type { Issue } from './policy'
 
 export { PermanentJobError } from './types'
-export type { Job, JobType, JobStatus, JobHandler, JobContext } from './types'
+export type {
+  Job,
+  JobType,
+  JobStatus,
+  JobPayload,
+  JobHandler,
+  JobContext,
+} from './types'
