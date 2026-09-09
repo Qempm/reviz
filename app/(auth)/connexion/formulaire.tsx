@@ -1,32 +1,36 @@
 'use client'
 
 import { useEffect, useState, useTransition } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { Button, Icon, OtpInput, TextField } from '@/components/ui'
+import { useSearchParams } from 'next/navigation'
+import { Button, Card, Icon, MascotState, TextField } from '@/components/ui'
 import { fr, t } from '@/lib/i18n/fr'
-import { connexionGoogle, envoyerCodeEmail, verifierCodeEmail } from '../actions'
+import { connexionGoogle, envoyerCodeEmail } from '../actions'
 
 /**
- * B1 — Connexion par Google ou par code reçu par email.
+ * B1 — Connexion par Google ou par lien reçu par email.
  *
  * Google d'abord : sur Android le compte est déjà là, c'est un seul geste.
  * L'email reste la porte pour qui n'a pas de compte Google.
+ *
+ * L'email envoie un lien, pas un code à recopier. La saisie du code à six
+ * chiffres est écrite et testée — `OtpInput`, `lib/auth/otp.ts` et l'action
+ * `verifierCodeEmail` — mais elle attend que le gabarit d'email porte
+ * `{{ .Token }}`. Tant que ce n'est pas fait, montrer un champ vide devant un
+ * mail qui ne contient aucun code serait une impasse.
  *
  * Séparé de page.tsx parce que useSearchParams force le rendu côté client :
  * sans frontière Suspense au-dessus, le prérendu de la route échoue.
  */
 
-/** Délai avant de pouvoir redemander un code. */
+/** Délai avant de pouvoir redemander un lien. */
 const DELAI_RENVOI_S = 45
 
 export function FormulaireConnexion() {
-  const router = useRouter()
   const params = useSearchParams()
   const suite = params.get('suite')
 
-  const [etape, setEtape] = useState<'choix' | 'code'>('choix')
+  const [etape, setEtape] = useState<'choix' | 'envoye'>('choix')
   const [email, setEmail] = useState('')
-  const [code, setCode] = useState('')
   const [erreur, setErreur] = useState<string | null>(params.get('erreur'))
   const [compteur, setCompteur] = useState(0)
   const [enCours, demarrer] = useTransition()
@@ -39,7 +43,7 @@ export function FormulaireConnexion() {
 
   const emailValide = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim())
 
-  function demanderCode() {
+  function envoyerLien() {
     setErreur(null)
     demarrer(async () => {
       const r = await envoyerCodeEmail({ email })
@@ -47,149 +51,109 @@ export function FormulaireConnexion() {
         setErreur(r.error)
         return
       }
-      setEtape('code')
+      setEtape('envoye')
       setCompteur(DELAI_RENVOI_S)
     })
   }
 
-  function soumettreCode() {
-    if (code.length < 6) {
-      setErreur(fr.connexion.erreurs.codeIncomplet)
-      return
-    }
-    setErreur(null)
-    demarrer(async () => {
-      const r = await verifierCodeEmail({ email, code })
-      if (!r.ok) {
-        setErreur(r.error)
-        setCode('')
-        return
-      }
-      router.replace(r.data.profilExistant ? (suite ?? '/') : '/inscription')
-    })
+  if (etape === 'envoye') {
+    return (
+      <main className="mx-auto flex min-h-screen w-full max-w-app flex-col justify-between px-screen-margin-mobile pb-space-32 pt-space-48">
+        <div className="flex flex-1 flex-col items-center justify-center gap-space-24">
+          <MascotState
+            mood="chargement"
+            title={fr.connexion.lienEnvoye}
+            description={t(fr.connexion.lienEnvoyeDetail, email)}
+          />
+
+          <Card size="sm">
+            <div className="flex items-start gap-space-12">
+              <Icon name="lightbulb" size={22} className="text-primary" />
+              <p className="text-label-sm text-reviz-muted">
+                {fr.connexion.lienAstuce}
+              </p>
+            </div>
+          </Card>
+        </div>
+
+        <div className="flex flex-col gap-space-12">
+          <Button
+            variant="secondary"
+            icon="refresh"
+            disabled={compteur > 0 || enCours}
+            onClick={envoyerLien}
+          >
+            {compteur > 0
+              ? t(fr.connexion.renvoyerDans, compteur)
+              : fr.connexion.renvoyerLien}
+          </Button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setEtape('choix')
+              setErreur(null)
+            }}
+            className="min-h-[48px] text-label-md text-reviz-muted"
+          >
+            {fr.connexion.changerEmail}
+          </button>
+        </div>
+      </main>
+    )
   }
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-app flex-col px-screen-margin-mobile pb-space-32 pt-space-48">
       <div className="flex flex-1 flex-col gap-space-32">
-        {etape === 'choix' ? (
-          <>
-            <header className="flex flex-col gap-space-8">
-              <h1 className="text-headline-xl text-reviz-ink">
-                {fr.connexion.titre}
-              </h1>
-              <p className="text-body-md text-reviz-muted">
-                {fr.connexion.sousTitre}
-              </p>
-            </header>
+        <header className="flex flex-col gap-space-8">
+          <h1 className="text-headline-xl text-reviz-ink">{fr.connexion.titre}</h1>
+          <p className="text-body-md text-reviz-muted">{fr.connexion.sousTitre}</p>
+        </header>
 
-            <div className="flex flex-col gap-space-20">
-              <Button
-                variant="secondary"
-                onClick={() => demarrer(() => connexionGoogle(suite ?? undefined))}
-                disabled={enCours}
-              >
-                <GoogleLogo />
-                {fr.connexion.avecGoogle}
-              </Button>
+        <div className="flex flex-col gap-space-20">
+          <Button
+            variant="secondary"
+            onClick={() => demarrer(() => connexionGoogle(suite ?? undefined))}
+            disabled={enCours}
+          >
+            <GoogleLogo />
+            {fr.connexion.avecGoogle}
+          </Button>
 
-              <div className="flex items-center gap-space-12">
-                <span className="h-px flex-1 bg-reviz-border" />
-                <span className="text-label-sm text-reviz-muted">
-                  {fr.connexion.ou}
-                </span>
-                <span className="h-px flex-1 bg-reviz-border" />
-              </div>
+          <div className="flex items-center gap-space-12">
+            <span className="h-px flex-1 bg-reviz-border" />
+            <span className="text-label-sm text-reviz-muted">{fr.connexion.ou}</span>
+            <span className="h-px flex-1 bg-reviz-border" />
+          </div>
 
-              <TextField
-                id="email"
-                label={fr.connexion.labelEmail}
-                type="email"
-                inputMode="email"
-                autoComplete="email"
-                placeholder="prenom@exemple.com"
-                hint={fr.connexion.aideEmail}
-                error={erreur ?? undefined}
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value)
-                  setErreur(null)
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && emailValide) demanderCode()
-                }}
-              />
-            </div>
-          </>
-        ) : (
-          <>
-            <header className="flex flex-col gap-space-8">
-              <button
-                type="button"
-                onClick={() => {
-                  setEtape('choix')
-                  setCode('')
-                  setErreur(null)
-                }}
-                className="flex min-h-[48px] w-fit items-center gap-space-4 text-label-md text-reviz-muted"
-              >
-                <Icon name="arrow_back" size={20} />
-                {fr.connexion.changerEmail}
-              </button>
-
-              <h1 className="text-headline-xl text-reviz-ink">
-                {fr.connexion.titreCode}
-              </h1>
-              <p className="text-body-md text-reviz-muted">
-                {t(fr.connexion.sousTitreCode, email)}
-              </p>
-            </header>
-
-            <div className="flex flex-col gap-space-16">
-              <OtpInput
-                value={code}
-                onChange={(v) => {
-                  setCode(v)
-                  setErreur(null)
-                }}
-                // Six chiffres saisis ou collés : on valide sans attendre un
-                // appui de plus.
-                onComplete={soumettreCode}
-                error={Boolean(erreur)}
-                disabled={enCours}
-              />
-
-              {erreur ? (
-                <span role="alert" className="text-label-sm text-reviz-danger">
-                  {erreur}
-                </span>
-              ) : null}
-
-              <button
-                type="button"
-                disabled={compteur > 0 || enCours}
-                onClick={demanderCode}
-                className="min-h-[48px] text-label-md text-primary disabled:text-reviz-muted"
-              >
-                {compteur > 0
-                  ? t(fr.connexion.renvoyerDans, compteur)
-                  : fr.connexion.renvoyer}
-              </button>
-            </div>
-          </>
-        )}
+          <TextField
+            id="email"
+            label={fr.connexion.labelEmail}
+            type="email"
+            inputMode="email"
+            autoComplete="email"
+            placeholder="prenom@exemple.com"
+            hint={fr.connexion.aideEmail}
+            error={erreur ?? undefined}
+            value={email}
+            onChange={(e) => {
+              setEmail(e.target.value)
+              setErreur(null)
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && emailValide) envoyerLien()
+            }}
+          />
+        </div>
       </div>
 
       <Button
-        icon={etape === 'choix' ? 'mail' : 'check'}
-        disabled={enCours || (etape === 'choix' ? !emailValide : code.length < 6)}
-        onClick={etape === 'choix' ? demanderCode : soumettreCode}
+        icon="mail"
+        disabled={enCours || !emailValide}
+        onClick={envoyerLien}
       >
-        {enCours
-          ? fr.commun.chargement
-          : etape === 'choix'
-            ? fr.connexion.envoyerCode
-            : fr.connexion.valider}
+        {enCours ? fr.commun.chargement : fr.connexion.envoyerLien}
       </Button>
     </main>
   )

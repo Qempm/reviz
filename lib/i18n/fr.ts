@@ -22,27 +22,35 @@ export const fr = {
     ou: 'ou',
 
     labelEmail: 'Ton email',
-    aideEmail: 'On t’envoie un code à 6 chiffres. Pas de mot de passe à retenir.',
-    envoyerCode: 'Recevoir le code',
+    aideEmail: 'On t’envoie un lien de connexion. Pas de mot de passe à retenir.',
+    envoyerLien: 'Recevoir le lien',
 
-    titreCode: 'Le code',
-    // %s est remplacé par l'adresse email.
-    sousTitreCode: 'On vient d’envoyer 6 chiffres à %s.',
+    lienEnvoye: 'Regarde tes mails',
+    // %s est remplacé par l'adresse.
+    lienEnvoyeDetail: 'On vient d’envoyer un lien de connexion à %s.',
+    lienAstuce:
+      'Le lien n’est valable qu’une fois, et pour un moment seulement. Si tu ne vois rien, regarde dans les indésirables.',
+    renvoyerLien: 'Renvoyer le lien',
+    // %s est remplacé par le nombre de secondes.
+    renvoyerDans: 'Nouveau lien dans %s s',
     changerEmail: 'Ce n’est pas mon email',
+
+    // Réservé à l'étape « code à six chiffres », prête mais non branchée :
+    // elle attend que le gabarit d'email porte {{ .Token }}.
+    titreCode: 'Le code',
+    sousTitreCode: 'On vient d’envoyer 6 chiffres à %s.',
     valider: 'Valider',
     renvoyer: 'Renvoyer le code',
-    // %s est remplacé par le nombre de secondes.
-    renvoyerDans: 'Nouveau code dans %s s',
 
     erreurs: {
       emailInvalide: 'Cette adresse ne ressemble pas à un email.',
       codeIncomplet: 'Il manque des chiffres.',
       codeInvalide: 'Ce code ne marche pas. Vérifie, ou demandes-en un nouveau.',
-      codeExpire: 'Ce code a expiré. Demandes-en un nouveau.',
+      codeExpire: 'Ce lien a expiré. Demandes-en un nouveau.',
       tropDeTentatives: 'Trop d’essais. Patiente une minute avant de réessayer.',
       googleAnnule: 'Connexion Google annulée.',
       envoiImpossible:
-        'On n’a pas pu envoyer le code. Vérifie ta connexion et réessaie.',
+        'On n’a pas pu envoyer le lien. Vérifie ta connexion et réessaie.',
       inconnue: 'Quelque chose a coincé de notre côté. Réessaie.',
     },
   },
