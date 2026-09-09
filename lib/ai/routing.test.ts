@@ -260,24 +260,38 @@ describe('table de routage', () => {
 })
 
 describe('estimation du coût', () => {
+  // Date épinglée en heures creuses. Sans elle, estimateCost retomberait sur
+  // l'heure courante et ces tests doubleraient entre 01:00–04:00 et
+  // 06:00–10:00 UTC en semaine : une suite qui échoue selon l'heure de la
+  // journée n'apprend rien.
+  const CREUSES = new Date(Date.UTC(2026, 8, 9, 12, 0, 0))
+
   it('facture le cache à part sans compter deux fois les jetons d’entrée', () => {
     const spec = MODELS.deepseekFlash
-    const cout = estimateCost(spec, {
-      promptTokens: 1_000_000,
-      completionTokens: 0,
-      cacheHitTokens: 1_000_000,
-    })
+    const cout = estimateCost(
+      spec,
+      {
+        promptTokens: 1_000_000,
+        completionTokens: 0,
+        cacheHitTokens: 1_000_000,
+      },
+      CREUSES,
+    )
     // Tous les jetons d'entrée viennent du cache : on paie le tarif cache.
     expect(cout).toBeCloseTo(spec.pricing.cacheHit, 6)
   })
 
   it('somme entrée, sortie et cache', () => {
     const spec = MODELS.deepseekFlash
-    const cout = estimateCost(spec, {
-      promptTokens: 1_000_000,
-      completionTokens: 1_000_000,
-      cacheHitTokens: 0,
-    })
+    const cout = estimateCost(
+      spec,
+      {
+        promptTokens: 1_000_000,
+        completionTokens: 1_000_000,
+        cacheHitTokens: 0,
+      },
+      CREUSES,
+    )
     expect(cout).toBeCloseTo(spec.pricing.input + spec.pricing.output, 6)
   })
 })
