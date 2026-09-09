@@ -158,6 +158,13 @@ export type Database = {
             foreignKeyName: "chapters_course_id_fkey"
             columns: ["course_id"]
             isOneToOne: false
+            referencedRelation: "course_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chapters_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
             referencedRelation: "courses"
             referencedColumns: ["id"]
           },
@@ -208,6 +215,13 @@ export type Database = {
             foreignKeyName: "corrections_course_id_fkey"
             columns: ["course_id"]
             isOneToOne: false
+            referencedRelation: "course_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "corrections_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
             referencedRelation: "courses"
             referencedColumns: ["id"]
           },
@@ -226,7 +240,8 @@ export type Database = {
           exam_date: string | null
           file_hash: string
           id: string
-          owner_id: string
+          is_demo: boolean
+          owner_id: string | null
           page_count: number | null
           shared_with_faculty: boolean
           status: Database["public"]["Enums"]["course_status"]
@@ -239,7 +254,8 @@ export type Database = {
           exam_date?: string | null
           file_hash: string
           id?: string
-          owner_id: string
+          is_demo?: boolean
+          owner_id?: string | null
           page_count?: number | null
           shared_with_faculty?: boolean
           status?: Database["public"]["Enums"]["course_status"]
@@ -252,7 +268,8 @@ export type Database = {
           exam_date?: string | null
           file_hash?: string
           id?: string
-          owner_id?: string
+          is_demo?: boolean
+          owner_id?: string | null
           page_count?: number | null
           shared_with_faculty?: boolean
           status?: Database["public"]["Enums"]["course_status"]
@@ -966,6 +983,56 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_overview: {
+        Row: {
+          created_at: string | null
+          exam_date: string | null
+          faculty_id: string | null
+          id: string | null
+          is_demo: boolean | null
+          nb_chapitres: number | null
+          nb_fiches: number | null
+          nb_questions: number | null
+          nb_tentees: number | null
+          owner_id: string | null
+          page_count: number | null
+          shared_with_faculty: boolean | null
+          status: Database["public"]["Enums"]["course_status"] | null
+          subject_id: string | null
+          subject_name: string | null
+          title: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "courses_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "courses_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subject_stats"
+            referencedColumns: ["subject_id"]
+          },
+          {
+            foreignKeyName: "courses_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subjects_faculty_id_fkey"
+            columns: ["faculty_id"]
+            isOneToOne: false
+            referencedRelation: "faculties"
             referencedColumns: ["id"]
           },
         ]

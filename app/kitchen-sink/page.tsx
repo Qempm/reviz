@@ -28,6 +28,7 @@ import {
 import type { MascotMood, QuizOptionState, SegmentState } from '@/components/ui'
 import { BottomSheet } from '@/components/ui/bottom-sheet'
 import { Confetti } from '@/components/reviz/confetti'
+import { PaquetFiches } from '@/components/reviz/paquet-fiches'
 
 /**
  * Page de validation visuelle du design system.
@@ -60,6 +61,28 @@ function Section({
     </section>
   )
 }
+
+/** Trois fiches pour regarder le retournement, rien de plus. */
+const FICHES_DEMO = [
+  {
+    id: 'f1',
+    front: 'Qu’est-ce qu’une constitution rigide ?',
+    back: 'Une constitution dont la révision suit une procédure plus lourde que celle des lois ordinaires.',
+    chapitre: 'La notion de Constitution',
+  },
+  {
+    id: 'f2',
+    front: 'Qui exerce le contrôle de constitutionnalité au Bénin ?',
+    back: 'La Cour constitutionnelle.',
+    chapitre: 'Le contrôle de constitutionnalité',
+  },
+  {
+    id: 'f3',
+    front: 'Que signifie la séparation des pouvoirs ?',
+    back: 'La répartition des fonctions législative, exécutive et judiciaire entre des organes distincts.',
+    chapitre: 'L’État de droit',
+  },
+]
 
 const SEMAINE = [
   { weekday: 1, isValidated: true, isToday: false },
@@ -474,6 +497,11 @@ export default function KitchenSink() {
               ))}
             </div>
           </BottomSheet>
+        </Section>
+
+        {/* Métier ------------------------------------------------------------ */}
+        <Section titre="PaquetFiches" reference="§ 7">
+          <PaquetFiches fiches={FICHES_DEMO} />
         </Section>
 
         {/* Navigation ------------------------------------------------------- */}

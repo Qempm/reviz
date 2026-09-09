@@ -50,3 +50,6 @@ supabase/.branches/
 # rester versionné comme gabarit.
 .env*
 !.env.example
+
+# Rapport JSON de Vitest, écrit à chaque exécution.
+.vitest/

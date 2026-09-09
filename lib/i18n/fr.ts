@@ -105,10 +105,66 @@ export const fr = {
 
   reviser: {
     titre: 'Réviser',
+    sousTitre: 'Tes cours, tes QCM et tes fiches, au même endroit.',
     aucunCours: 'Aucun cours déposé',
     aucunCoursDetail:
       'Envoie un PDF, un Word ou des photos de ton cours. Reviz s’occupe du reste.',
     ajouterCours: 'Ajouter un cours',
+
+    exemple: 'Exemple',
+    enTraitement: 'En préparation',
+    examenLe: (date: string) => `Examen le ${dateCourte(date)}`,
+    decompte: (chapitres: number, questions: number, fiches: number) =>
+      [
+        chapitres <= 1 ? `${chapitres} chapitre` : `${chapitres} chapitres`,
+        questions <= 1 ? `${questions} question` : `${questions} questions`,
+        fiches <= 1 ? `${fiches} fiche` : `${fiches} fiches`,
+      ].join(' · '),
+    seulementDemo:
+      'Ce cours est là pour te montrer le principe. Dépose le tien pour de vrai.',
+  },
+
+  cours: {
+    // Trois états de `courses.status` : en préparation, prêt, échoué.
+    traitementTitre: 'Ton cours est en préparation',
+    traitementDetail:
+      'Reviz lit ton document, le découpe en chapitres et en tire des questions.',
+    traitementAstuce:
+      'Tu peux fermer l’application : on te prévient dès que c’est prêt.',
+    echecTitre: 'On n’a pas réussi à lire ce cours',
+    echecDetail:
+      'Le document est peut-être trop flou ou protégé. Réessaie avec un autre fichier.',
+
+    progression: (faites: number, total: number) =>
+      total === 0
+        ? 'Aucune question pour l’instant'
+        : `${faites} question${faites <= 1 ? '' : 's'} sur ${total}`,
+    reviser: 'Lancer une session',
+    chapitres: 'Les chapitres',
+    voirFiches: (n: number) => (n <= 1 ? 'Voir la fiche' : `Voir les ${n} fiches`),
+    decompteChapitre: (questions: number, fiches: number) =>
+      `${questions} question${questions <= 1 ? '' : 's'} · ${fiches} fiche${fiches <= 1 ? '' : 's'}`,
+    aucunChapitre: 'Aucun chapitre',
+    aucunChapitreDetail: 'Ce cours n’a pas encore été découpé.',
+    jMoins: (j: number) =>
+      j === 0 ? 'Examen aujourd’hui' : j === 1 ? 'Examen demain' : `J−${j}`,
+    examenPasse: 'Examen passé',
+  },
+
+  fiches: {
+    titre: 'Les fiches',
+    sousTitre: 'Touche une fiche pour voir la réponse.',
+    aucune: 'Aucune fiche',
+    aucuneDetail: 'Les fiches arrivent en même temps que les questions.',
+    // Position dans le paquet, pour le lecteur d'écran.
+    position: (i: number, total: number) => `Fiche ${i} sur ${total}`,
+    recto: 'Question',
+    verso: 'Réponse',
+    retourner: 'Retourner',
+    precedente: 'Précédente',
+    suivante: 'Suivante',
+    terminee: 'Tu as vu toutes les fiches',
+    recommencer: 'Recommencer',
   },
 
   corriger: {
@@ -174,6 +230,22 @@ export const fr = {
 } as const
 
 export type Fr = typeof fr
+
+/**
+ * Date courte à la française — « 12 janv. ».
+ *
+ * `courses.exam_date` est une date nue (`YYYY-MM-DD`) : la passer à `new Date()`
+ * la lit en UTC, ce qui décale d'un jour à l'ouest de Greenwich. On découpe
+ * donc la chaîne au lieu de laisser le fuseau s'en mêler.
+ */
+export function dateCourte(iso: string): string {
+  const [a, m, j] = iso.slice(0, 10).split('-').map(Number)
+  if (!a || !m || !j) return iso
+  return new Date(a, m - 1, j).toLocaleDateString('fr-FR', {
+    day: 'numeric',
+    month: 'short',
+  })
+}
 
 /** Remplace les `%s` d'un gabarit, dans l'ordre. */
 export function t(gabarit: string, ...valeurs: (string | number)[]): string {
