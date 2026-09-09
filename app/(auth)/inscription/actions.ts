@@ -77,12 +77,27 @@ export async function creerProfil(
   // la recherche passe par le rôle de service.
   let parrain: { id: string; is_ambassador: boolean } | null = null
   if (d.codeParrain && d.codeParrain.length > 0) {
-    const admin = createAdminClient()
-    const { data } = await admin
-      .from('profiles')
-      .select('id, is_ambassador')
-      .eq('referral_code', d.codeParrain.toUpperCase())
-      .maybeSingle()
+    let data: { id: string; is_ambassador: boolean } | null = null
+
+    try {
+      const admin = createAdminClient()
+      const resultat = await admin
+        .from('profiles')
+        .select('id, is_ambassador')
+        .eq('referral_code', d.codeParrain.toUpperCase())
+        .maybeSingle()
+      data = resultat.data
+    } catch (e) {
+      // Clé de service absente : on le dit franchement au lieu de laisser
+      // l'action planter sur un message technique.
+      console.error('[inscription] recherche du parrain impossible', e)
+      return {
+        ok: false,
+        error:
+          'La vérification du code parrain est indisponible. Réessaie sans le code, tu pourras l’ajouter plus tard.',
+        champ: 'codeParrain',
+      }
+    }
 
     if (!data) {
       return { ok: false, error: 'Ce code parrain n’existe pas.', champ: 'codeParrain' }
@@ -128,17 +143,21 @@ export async function creerProfil(
   // Un échec ici ne doit pas annuler l'inscription — le profil est créé, le
   // lien de parrainage se rattrape, l'étudiant ne doit pas rester bloqué.
   if (parrain) {
-    const admin = createAdminClient()
-    const { error: erreurParrainage } = await admin.from('referrals').insert({
-      referrer_id: parrain.id,
-      referred_id: user.id,
-      // Le taux définitif est recalculé au paiement ; on enregistre celui qui
-      // s'applique aujourd'hui.
-      commission_rate: parrain.is_ambassador ? TAUX_AMBASSADEUR : TAUX_STANDARD,
-    })
+    try {
+      const admin = createAdminClient()
+      const { error: erreurParrainage } = await admin.from('referrals').insert({
+        referrer_id: parrain.id,
+        referred_id: user.id,
+        // Le taux définitif est recalculé au paiement ; on enregistre celui
+        // qui s'applique aujourd'hui.
+        commission_rate: parrain.is_ambassador ? TAUX_AMBASSADEUR : TAUX_STANDARD,
+      })
 
-    if (erreurParrainage) {
-      console.error('[inscription] parrainage non enregistré', erreurParrainage.message)
+      if (erreurParrainage) {
+        console.error('[inscription] parrainage non enregistré', erreurParrainage.message)
+      }
+    } catch (e) {
+      console.error('[inscription] parrainage non enregistré', e)
     }
   }
 
