@@ -1,0 +1,38 @@
+<!--
+  Gabarit « Magic Link » de Supabase, en français.
+  À coller dans Authentication → Email Templates → Magic Link.
+
+  Le sujet à mettre juste au-dessus : Ton code Reviz
+
+  Deux chemins dans le même message, volontairement :
+    - {{ .Token }}           le code à six chiffres, à recopier dans l'app ;
+    - {{ .ConfirmationURL }} le lien, pour qui préfère cliquer.
+  L'application accepte les deux.
+-->
+<div style="font-family: 'Nunito Sans', -apple-system, Segoe UI, sans-serif; background:#fcf9f8; padding:24px; color:#1c1b1b;">
+  <div style="max-width:440px; margin:0 auto; background:#ffffff; border-radius:20px; padding:24px;">
+
+    <p style="font-size:22px; font-weight:800; margin:0 0 8px;">Ton code Reviz</p>
+
+    <p style="font-size:15px; line-height:22px; color:#4f4632; margin:0 0 20px;">
+      Recopie ces six chiffres dans l'application pour te connecter.
+    </p>
+
+    <p style="font-size:36px; font-weight:800; letter-spacing:8px; text-align:center;
+              background:#ffc300; color:#6d5200; border-radius:12px;
+              padding:16px; margin:0 0 20px;">
+      {{ .Token }}
+    </p>
+
+    <p style="font-size:13px; line-height:18px; color:#4f4632; margin:0 0 20px;">
+      Il expire dans une heure et ne sert qu'une fois. Si tu n'as rien demandé,
+      ignore ce message : personne ne peut se connecter sans ce code.
+    </p>
+
+    <p style="font-size:13px; line-height:18px; color:#4f4632; margin:0; text-align:center;">
+      Tu préfères cliquer ?
+      <a href="{{ .ConfirmationURL }}" style="color:#785a00; font-weight:700;">Ouvrir Reviz</a>
+    </p>
+
+  </div>
+</div>

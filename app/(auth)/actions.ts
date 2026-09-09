@@ -77,9 +77,18 @@ export async function envoyerCodeEmail(
   }
 
   const supabase = await createClient()
+  const base = await origine()
+
   const { error } = await supabase.auth.signInWithOtp({
     email: parsed.data.email,
-    options: { shouldCreateUser: true },
+    options: {
+      shouldCreateUser: true,
+      // Le gabarit d'email peut contenir un code à recopier, un lien, ou les
+      // deux. En déclarant la destination du lien, les deux chemins
+      // fonctionnent : l'étudiant saisit les six chiffres, ou clique — et
+      // /auth/rappel échange le code contre une session dans les deux cas.
+      emailRedirectTo: new URL('/auth/rappel', base).toString(),
+    },
   })
 
   if (error) {

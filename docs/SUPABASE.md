@@ -161,18 +161,24 @@ session puis oriente vers `/inscription` si le profil n'existe pas encore.
 
 ### Email : le gabarit décide de ce que reçoit l'étudiant
 
-⚠️ **Point à vérifier avant tout test.** Par défaut, le gabarit *Magic Link* de
-Supabase ne contient que `{{ .ConfirmationURL }}` : l'étudiant reçoit un
-**lien**, pas un code. L'écran de connexion attend six chiffres — sans
-modification du gabarit, il n'y a rien à saisir.
+⚠️ **Constaté en test le 9 septembre 2026.** Le gabarit *Magic Link* livré par
+défaut ne contient que `{{ .ConfirmationURL }}`. L'étudiant reçoit un message
+en anglais, « Your sign-in link », avec un lien et **aucun code** — alors que
+l'écran de connexion attend six chiffres. Il n'a rien à saisir.
 
-Dans `Authentication → Email Templates → Magic Link`, faire apparaître le
-jeton, par exemple :
+Coller le contenu de **`docs/email-code-connexion.html`** dans
+`Authentication → Email Templates → Magic Link`, et mettre « Ton code Reviz »
+en objet. Ce gabarit est en français, aux couleurs de l'application, et porte
+les deux chemins : le code `{{ .Token }}` en gros, et le lien
+`{{ .ConfirmationURL }}` en bas pour qui préfère cliquer.
 
-```html
-<p>Ton code Reviz : <strong>{{ .Token }}</strong></p>
-<p>Il expire dans une heure.</p>
-```
+L'application accepte les deux. `signInWithOtp` déclare `emailRedirectTo` vers
+`/auth/rappel`, la même route que le retour Google : un clic sur le lien
+échange le code contre une session exactement comme la saisie manuelle.
+
+Pour que le lien aboutisse, l'URL doit figurer dans
+`Authentication → URL Configuration → Redirect URLs`, au même titre que celle
+de Google.
 
 ### Le service d'email intégré ne tient pas en production
 
