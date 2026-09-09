@@ -165,12 +165,15 @@ export default async function PageCours({
           </div>
         </div>
 
-        <Button icon="bolt" disabled>
-          {fr.cours.reviser}
-        </Button>
-        <p className="text-center text-label-sm text-reviz-muted">
-          {fr.commun.bientot}
-        </p>
+        {total > 0 ? (
+          <Link href={`/cours/${id}/session`} className="block">
+            <Button icon="bolt">{fr.cours.reviser}</Button>
+          </Link>
+        ) : (
+          <Button icon="bolt" disabled>
+            {fr.cours.reviser}
+          </Button>
+        )}
       </Card>
 
       {/* Chapitres --------------------------------------------------------- */}

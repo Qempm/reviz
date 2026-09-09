@@ -151,6 +151,51 @@ export const fr = {
     examenPasse: 'Examen passé',
   },
 
+  session: {
+    titre: 'Session',
+    quitter: 'Quitter',
+    quitterConfirmation:
+      'Tes réponses ne seront pas enregistrées si tu sors maintenant.',
+    // Position dans la session.
+    question: (i: number, total: number) => `Question ${i} sur ${total}`,
+    probable: 'Souvent posée',
+    valider: 'Valider',
+    suivante: 'Question suivante',
+    voirResultat: 'Voir mon résultat',
+    juste: 'C’est juste',
+    faux: 'Ce n’est pas ça',
+    bonneReponse: 'La bonne réponse',
+    aucuneQuestion: 'Aucune question à réviser',
+    aucuneQuestionDetail:
+      'Ce cours n’a pas encore de QCM. Reviens quand la préparation est finie.',
+
+    resultatTitre: 'Session terminée',
+    score: (bonnes: number, total: number) => `${bonnes} / ${total}`,
+    precision: (pct: number) => `${pct} % de réussite`,
+    xpGagnes: (n: number) => `+${n} XP`,
+    detailXp: {
+      correct_answer: 'Bonnes réponses',
+      quiz_completed: 'Session terminée',
+      daily_goal: 'Objectif du jour',
+      streak_bonus: 'Bonus de série',
+      course_added: 'Cours ajouté',
+      correction_done: 'Correction faite',
+      referral: 'Parrainage',
+      adjustment: 'Ajustement',
+    },
+    objectifAtteint: 'Objectif du jour atteint',
+    serie: (j: number) => (j <= 1 ? 'Série lancée' : `${j} jours de série`),
+    refaire: 'Refaire une session',
+    refaireRatees: 'Revoir mes erreurs',
+    retourCours: 'Retour au cours',
+    partager: 'Partager sur WhatsApp',
+    partageTexte: (bonnes: number, total: number, cours: string) =>
+      `J’ai fait ${bonnes}/${total} en ${cours} sur Reviz 📚`,
+    // Le score n'a pas été enregistré : on le dit, sans dramatiser.
+    echecEnregistrement:
+      'On n’a pas pu enregistrer cette session. Ton score s’affiche quand même.',
+  },
+
   fiches: {
     titre: 'Les fiches',
     sousTitre: 'Touche une fiche pour voir la réponse.',
