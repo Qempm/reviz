@@ -1,0 +1,10 @@
+{
+  "version": "1.0.0",
+  "minimumVersion": "1.0.0",
+  "latestVersion": "1.0.0",
+  "buildDate": "2026-09-10",
+  "releaseNotes": "Version initiale du MVP avec paiements, corrections IA, et classements.",
+  "updateUrl": "https://play.google.com/store/apps/details?id=com.reviz.app",
+  "critical": false,
+  "maintenance": false
+}
