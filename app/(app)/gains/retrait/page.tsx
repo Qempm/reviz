@@ -131,13 +131,14 @@ export default function DemandeRetrait() {
           )}
 
           {/* CTA */}
-          <Button
-            type="submit"
-            disabled={!montantOk || !telOk || loading}
-            className="mt-space-12"
-          >
-            {loading ? 'Traitement...' : 'Demander le retrait'}
-          </Button>
+          <div className="mt-space-12">
+            <Button
+              type="submit"
+              disabled={!montantOk || !telOk || loading}
+            >
+              {loading ? 'Traitement...' : 'Demander le retrait'}
+            </Button>
+          </div>
         </form>
       </Card>
 

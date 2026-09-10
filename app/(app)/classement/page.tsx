@@ -33,7 +33,7 @@ export default async function Classement() {
 
   const topGlobal = (topGlobalRaw ?? []).map((p) => ({
     id: p.id,
-    name: p.first_name,
+    name: p.first_name ?? '—',
     xp: p.xp_total ?? 0,
     avatarUrl: p.avatar_key ? `/avatars/${p.avatar_key}.png` : undefined,
   }))
@@ -64,7 +64,7 @@ export default async function Classement() {
     Array<{ name: string; score: number; userId: string; avatar?: string }>
   >()
   for (const row of bySubject ?? []) {
-    if (!row.subject_name) continue
+    if (!row.subject_name || !row.user_id) continue
     if (!subjectsMap.has(row.subject_name)) subjectsMap.set(row.subject_name, [])
     subjectsMap.get(row.subject_name)!.push({
       name: (row.profiles as any)?.first_name ?? '—',

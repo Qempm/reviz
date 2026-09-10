@@ -354,6 +354,14 @@ export const fr = {
     terminer: 'Terminer mon inscription',
   },
 
+  telephone: {
+    label: 'Numero WhatsApp (facultatif)',
+    aide: 'Pour recevoir tes rappels de revision. Tu peux l\'ajouter plus tard.',
+    pays: 'Pays',
+    erreurLongueur: 'Ce numero ne ressemble pas a un numero %s.',
+    dejaUtilise: 'Ce numero est deja lie a un autre compte.',
+  },
+
 } as const
 
 export type Fr = typeof fr
