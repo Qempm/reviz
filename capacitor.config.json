@@ -3,10 +3,10 @@
   "appName": "Reviz",
   "webDir": "out",
   "server": {
-    "url": "https://reviz.vercel.app",
+    "url": "https://reviz-eight.vercel.app",
     "cleartext": false,
     "allowNavigation": [
-      "reviz.vercel.app",
+      "reviz-eight.vercel.app",
       "*.supabase.co",
       "api.deepseek.com",
       "dashscope-intl.aliyuncs.com",

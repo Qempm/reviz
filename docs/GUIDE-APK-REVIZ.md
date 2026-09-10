@@ -51,7 +51,7 @@ Cela cree:
   "appName": "Reviz",
   "webDir": "out",
   "server": {
-    "url": "https://reviz.vercel.app",
+    "url": "https://reviz-eight.vercel.app",
     "cleartext": false
   },
   "android": {
@@ -103,7 +103,7 @@ keytool -genkey -v -keystore reviz-release-key.keystore \
 
 ### Web direct (recommande pour MVP)
 
-1. Upload l'APK sur serveur: `https://reviz.vercel.app/reviz-latest.apk`
+1. Upload l'APK sur serveur: `https://reviz-eight.vercel.app/reviz-latest.apk`
 2. Partage le lien WhatsApp / QR code
 3. Utilisateurs telecharge et installe manuellement
 

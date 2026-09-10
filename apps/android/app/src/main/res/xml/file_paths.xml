@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Chemins exposés par le FileProvider.
+
+  Uniquement `photos/` dans le cache : l'appareil photo a besoin d'écrire
+  quelque part, et rien d'autre du téléphone n'a à être partagé.
+-->
+<paths>
+    <cache-path name="photos" path="photos/" />
+</paths>

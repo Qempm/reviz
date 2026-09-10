@@ -1,7 +1,7 @@
 # Capacitor & APK Build Guide
 
 Reviz est distribué comme:
-1. **PWA web** hébergée sur Vercel (`reviz.vercel.app`)
+1. **PWA web** hébergée sur Vercel (`reviz-eight.vercel.app`)
 2. **APK Android** emboitée Capacitor (coquille WebView)
 
 ## Quick Start
@@ -40,7 +40,7 @@ bash scripts/build-apk.sh release
 ### Web (Next.js)
 
 ```
-reviz.vercel.app/
+reviz-eight.vercel.app/
 ├── / (auth login)
 ├── /inscription (signup)
 ├── /(app)/ (main app with BottomNav)
@@ -78,7 +78,7 @@ apps/android/
 capacitor.config.json (Capacitor settings)
 ├── appId: "com.reviz.app"
 ├── webDir: "out" (Next.js output)
-├── server.url: "https://reviz.vercel.app" (web app URL)
+├── server.url: "https://reviz-eight.vercel.app" (web app URL)
 └── plugins.SplashScreen (launch screen)
 ```
 
@@ -174,7 +174,7 @@ adb shell input keyevent 3 # Press Home
 ```bash
 # Vercel auto-deploys on push to main
 git push origin main
-# Check: https://reviz.vercel.app
+# Check: https://reviz-eight.vercel.app
 ```
 
 ### APK distribution
@@ -187,7 +187,7 @@ git push origin main
    git push
    ```
 
-2. Share download link: `https://reviz.vercel.app/reviz-1.0.0.apk`
+2. Share download link: `https://reviz-eight.vercel.app/reviz-1.0.0.apk`
 
 3. Users can download and install manually
 

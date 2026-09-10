@@ -8,7 +8,10 @@ import { Button, Card, Icon } from '@/components/ui'
  * Affiche infos version, compatibilite, et lien de telechargement.
  */
 export default function TelechargerApp() {
-  const apkSize = '12.5 MB' // Estime
+  // Taille réelle de public/reviz-1.0.0.apk. La coquille ne contient aucune
+  // interface native — pas de Compose —, d'où les 2 Mo et non 12 : l'APK doit
+  // pouvoir se partager par WhatsApp sur un forfait limité.
+  const apkSize = '2,5 Mo'
   const minAndroid = '7.0' // API 24
 
   return (
@@ -87,7 +90,7 @@ export default function TelechargerApp() {
 
       {/* CTA Telechargement */}
       <a
-        href="https://reviz.vercel.app/reviz-1.0.0.apk"
+        href="/reviz-1.0.0.apk"
         target="_blank"
         rel="noopener noreferrer"
         className="w-full"
@@ -154,7 +157,7 @@ export default function TelechargerApp() {
 
       {/* Footer */}
       <div className="text-center text-label-sm text-reviz-muted">
-        <p>Version web disponible a <span className="font-600">reviz.vercel.app</span></p>
+        <p>Version web disponible a <span className="font-600">reviz-eight.vercel.app</span></p>
         <p className="mt-space-4">© 2026 Reviz. Tous droits reserves.</p>
       </div>
     </div>

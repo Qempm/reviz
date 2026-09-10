@@ -2,9 +2,10 @@
 
 import { useEffect, useState, useTransition } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { Button, Card, Icon, MascotState, TextField } from '@/components/ui'
+import { useRouter } from 'next/navigation'
+import { Button, Card, Icon, MascotState, OtpInput, TextField } from '@/components/ui'
 import { fr, t } from '@/lib/i18n/fr'
-import { connexionGoogle, envoyerCodeEmail } from '../actions'
+import { connexionGoogle, envoyerCodeEmail, verifierCodeEmail } from '../actions'
 
 /**
  * B1 — Connexion par Google ou par lien reçu par email.
@@ -12,11 +13,15 @@ import { connexionGoogle, envoyerCodeEmail } from '../actions'
  * Google d'abord : sur Android le compte est déjà là, c'est un seul geste.
  * L'email reste la porte pour qui n'a pas de compte Google.
  *
- * L'email envoie un lien, pas un code à recopier. La saisie du code à six
- * chiffres est écrite et testée — `OtpInput`, `lib/auth/otp.ts` et l'action
- * `verifierCodeEmail` — mais elle attend que le gabarit d'email porte
- * `{{ .Token }}`. Tant que ce n'est pas fait, montrer un champ vide devant un
- * mail qui ne contient aucun code serait une impasse.
+ * L'email envoie un lien **et** — si le gabarit Supabase porte `{{ .Token }}`
+ * — un code à six chiffres. Le lien reste le chemin par défaut, le code est
+ * derrière un interrupteur : montrer d'emblée six cases devant un mail qui
+ * n'en contient pas serait une impasse.
+ *
+ * Le code n'est pas un raffinement : dans la coquille Android, un lien reçu
+ * par mail s'ouvre dans le navigateur et la session s'y installe, pas dans
+ * l'application. Les six chiffres se saisissent sur place, et c'est le seul
+ * chemin qui aboutisse depuis l'APK.
  *
  * Séparé de page.tsx parce que useSearchParams force le rendu côté client :
  * sans frontière Suspense au-dessus, le prérendu de la route échoue.
@@ -31,9 +36,12 @@ export function FormulaireConnexion() {
 
   const [etape, setEtape] = useState<'choix' | 'envoye'>('choix')
   const [email, setEmail] = useState('')
+  const [code, setCode] = useState('')
+  const [saisieCode, setSaisieCode] = useState(false)
   const [erreur, setErreur] = useState<string | null>(params.get('erreur'))
   const [compteur, setCompteur] = useState(0)
   const [enCours, demarrer] = useTransition()
+  const router = useRouter()
 
   useEffect(() => {
     if (compteur <= 0) return
@@ -56,6 +64,24 @@ export function FormulaireConnexion() {
     })
   }
 
+  function validerCode(valeur: string) {
+    setErreur(null)
+    demarrer(async () => {
+      const r = await verifierCodeEmail({ email, code: valeur })
+      if (!r.ok) {
+        setErreur(r.error)
+        setCode('')
+        return
+      }
+
+      // Un compte sans profil doit finir son inscription : le layout des
+      // écrans connectés y renverrait de toute façon, autant y aller
+      // directement.
+      const destination = r.data.profilExistant ? (suite ?? '/') : '/inscription'
+      router.replace(destination)
+    })
+  }
+
   if (etape === 'envoye') {
     return (
       <main className="mx-auto flex min-h-screen w-full max-w-app flex-col justify-between px-screen-margin-mobile pb-space-32 pt-space-48">
@@ -74,6 +100,42 @@ export function FormulaireConnexion() {
               </p>
             </div>
           </Card>
+
+          {saisieCode ? (
+            <div className="flex w-full flex-col gap-space-12">
+              <OtpInput
+                value={code}
+                onChange={(v) => {
+                  setCode(v)
+                  setErreur(null)
+                }}
+                onComplete={validerCode}
+                error={erreur !== null}
+                disabled={enCours}
+                name="code"
+              />
+              {erreur ? (
+                <p className="text-center text-label-sm text-reviz-danger">
+                  {erreur}
+                </p>
+              ) : null}
+              <Button
+                icon="login"
+                disabled={enCours || code.length < 6}
+                onClick={() => validerCode(code)}
+              >
+                {enCours ? fr.commun.chargement : fr.connexion.valider}
+              </Button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setSaisieCode(true)}
+              className="min-h-[48px] text-label-md text-primary underline"
+            >
+              {fr.connexion.jaiUnCode}
+            </button>
+          )}
         </div>
 
         <div className="flex flex-col gap-space-12">
@@ -92,6 +154,8 @@ export function FormulaireConnexion() {
             type="button"
             onClick={() => {
               setEtape('choix')
+              setSaisieCode(false)
+              setCode('')
               setErreur(null)
             }}
             className="min-h-[48px] text-label-md text-reviz-muted"

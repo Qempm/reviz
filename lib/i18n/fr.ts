@@ -35,8 +35,12 @@ export const fr = {
     renvoyerDans: 'Nouveau lien dans %s s',
     changerEmail: 'Ce n’est pas mon email',
 
-    // Réservé à l'étape « code à six chiffres », prête mais non branchée :
-    // elle attend que le gabarit d'email porte {{ .Token }}.
+    // Chemin « code à six chiffres ». Proposé en second, derrière un
+    // interrupteur : il ne marche que si le gabarit d'email Supabase porte
+    // {{ .Token }}. C'est le seul chemin qui fonctionne dans la coquille
+    // Android, un lien reçu par mail s'ouvrant dans le navigateur et non
+    // dans l'application.
+    jaiUnCode: 'J’ai reçu un code à 6 chiffres',
     titreCode: 'Le code',
     sousTitreCode: 'On vient d’envoyer 6 chiffres à %s.',
     valider: 'Valider',

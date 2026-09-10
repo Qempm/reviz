@@ -18,6 +18,7 @@ import {
   Icon,
   LeaderboardRow,
   MascotState,
+  OtpInput,
   Podium,
   ProgressBar,
   QuizOption,
@@ -129,6 +130,7 @@ export default function KitchenSink() {
   const [ongletActif, setOngletActif] = useState('probables')
   const [feuilleOuverte, setFeuilleOuverte] = useState(false)
   const [celebre, setCelebre] = useState(false)
+  const [code, setCode] = useState('')
   const [fichiers, setFichiers] = useState<string[]>([])
 
   const etatOption = (i: number): QuizOptionState => {
@@ -530,6 +532,19 @@ export default function KitchenSink() {
               rafraîchit dix fois à cadence décroissante, puis s’arrête.
             </p>
             <CoursEnTraitement />
+          </Card>
+        </Section>
+
+        <Section titre="OtpInput" reference="§ 7">
+          <Card>
+            <p className="text-label-sm text-reviz-muted">
+              Un seul champ réel, invisible, superposé aux six cases : des
+              champs séparés se battent contre le collage et contre le
+              remplissage automatique des claviers Android, qui livrent les
+              six chiffres d’un coup. C’est le seul chemin de connexion qui
+              aboutisse depuis l’APK.
+            </p>
+            <OtpInput value={code} onChange={setCode} />
           </Card>
         </Section>
 
