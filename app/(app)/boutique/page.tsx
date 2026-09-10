@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { fr } from '@/lib/i18n/fr'
 import { etatAcces, type Subscription } from '@/lib/payments/subscriptions'
 import { BoutonDecouverte } from '@/components/reviz/bouton-decouverte'
+import { BoutonPaiement } from '@/components/reviz/bouton-paiement'
 import { cn } from '@/lib/utils'
 
 /**
@@ -146,14 +147,7 @@ export default async function Boutique() {
               {gratuit ? (
                 <BoutonDecouverte dejaUtilise={decouverteUtilisee} />
               ) : (
-                <div className="flex flex-col gap-space-4">
-                  <Button icon="shopping_cart" disabled>
-                    {fr.boutique.choisir}
-                  </Button>
-                  <p className="text-center text-label-sm text-reviz-muted">
-                    {fr.boutique.paiementBientot}
-                  </p>
-                </div>
+                <BoutonPaiement packCode={p.code} />
               )}
             </Card>
           )
