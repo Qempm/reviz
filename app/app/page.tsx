@@ -11,7 +11,7 @@ export default function TelechargerApp() {
   // Taille réelle de public/reviz-1.0.0.apk. La coquille ne contient aucune
   // interface native — pas de Compose —, d'où les 2 Mo et non 12 : l'APK doit
   // pouvoir se partager par WhatsApp sur un forfait limité.
-  const apkSize = '2,5 Mo'
+  const apkSize = '2,6 Mo'
   const minAndroid = '7.0' // API 24
 
   return (

@@ -38,6 +38,24 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
+            <!--
+              Retour de la connexion Google. L'onglet personnalisé finit sur
+              `reviz://auth?code=...` : Android rend la main à cette activité,
+              qui rejoue l'échange dans la WebView — la seule à porter le
+              cookie de vérification PKCE.
+
+              Un schéma propre à l'application plutôt qu'un lien https vérifié
+              (App Links) : celui-ci demanderait de publier assetlinks.json
+              signé de l'empreinte de release, donc de refaire le fichier à
+              chaque changement de clé.
+            -->
+            <intent-filter android:autoVerify="false">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="reviz" android:host="auth" />
+            </intent-filter>
         </activity>
 
         <provider

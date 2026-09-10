@@ -41,4 +41,7 @@ dependencies {
     // APK destiné à être partagé par WhatsApp.
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.ktx)
+    // Onglets personnalisés : la connexion Google doit se faire sans quitter
+    // l'application, et Google refuse OAuth dans une WebView embarquée.
+    implementation(libs.androidx.browser)
 }

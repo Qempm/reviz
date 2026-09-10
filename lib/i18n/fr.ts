@@ -41,6 +41,12 @@ export const fr = {
     // Android, un lien reçu par mail s'ouvrant dans le navigateur et non
     // dans l'application.
     jaiUnCode: 'J’ai reçu un code à 6 chiffres',
+    // Dans l'APK, le lien du mail s'ouvrirait dans le navigateur : la
+    // session s'installerait là, pas dans l'application. On demande donc
+    // les six chiffres, sans jamais parler du lien.
+    codeAstuce:
+      'Recopie ici les 6 chiffres du mail. Si tu ne vois rien, regarde dans les indésirables.',
+    recevoirCode: 'Recevoir mon code',
     titreCode: 'Le code',
     sousTitreCode: 'On vient d’envoyer 6 chiffres à %s.',
     valider: 'Valider',

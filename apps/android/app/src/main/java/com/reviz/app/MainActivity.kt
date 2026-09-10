@@ -16,6 +16,7 @@ import android.webkit.WebViewClient
 import androidx.activity.ComponentActivity
 import androidx.activity.addCallback
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.browser.customtabs.CustomTabsIntent
 import androidx.core.content.FileProvider
 import java.io.File
 
@@ -29,6 +30,22 @@ import java.io.File
  *
  * `domStorageEnabled` n'est pas un détail : Supabase garde la session dans
  * `localStorage`. Sans lui, l'étudiant serait déconnecté à chaque ouverture.
+ *
+ * ## La connexion ne sort pas de l'application
+ *
+ * Google refuse OAuth dans une WebView embarquée (`disallowed_useragent`) :
+ * ce n'est pas contournable, et il ne faut pas essayer. La réponse prévue
+ * pour cela est l'onglet personnalisé — le navigateur s'ouvre **dans** la
+ * tâche de l'application, aux couleurs de Reviz, sans bascule vers Chrome.
+ *
+ * Reste que l'onglet ne partage pas les cookies de la WebView, et donc pas le
+ * vérificateur PKCE posé au départ. Le retour se fait donc en deux temps :
+ *
+ *   1. l'onglet finit sur `reviz://auth?code=...`, servi par /auth/rappel ;
+ *   2. Android rend la main ici, et c'est la **WebView** qui rejoue
+ *      `/auth/rappel?code=...` — elle seule porte le vérificateur.
+ *
+ * L'étudiant ne quitte jamais Reviz.
  */
 class MainActivity : ComponentActivity() {
 
@@ -105,9 +122,56 @@ class MainActivity : ComponentActivity() {
     if (savedInstanceState != null) vue.restoreState(savedInstanceState)
     else vue.loadUrl(ACCUEIL)
 
+    // Cas du lancement direct par le lien de retour, quand l'application
+    // avait été fermée entre-temps.
+    traiterRetourAuth(intent)
+
     onBackPressedDispatcher.addCallback(this) {
       if (vue.canGoBack()) vue.goBack() else finish()
     }
+  }
+
+  /**
+   * Retour de l'onglet personnalisé.
+   *
+   * `launchMode="singleTask"` fait arriver le lien ici plutôt que dans une
+   * seconde instance : l'onglet se referme, la WebView reprend la main.
+   */
+  override fun onNewIntent(intent: Intent) {
+    super.onNewIntent(intent)
+    setIntent(intent)
+    traiterRetourAuth(intent)
+  }
+
+  private fun traiterRetourAuth(intent: Intent?) {
+    val donnee = intent?.data ?: return
+    if (donnee.scheme != "reviz" || donnee.host != "auth") return
+
+    val erreur = donnee.getQueryParameter("erreur")
+    if (erreur != null) {
+      val url = Uri.parse("https://$HOTE/connexion").buildUpon()
+        .appendQueryParameter("erreur", erreur)
+        .build()
+      vue.loadUrl(url.toString())
+      return
+    }
+
+    val code = donnee.getQueryParameter("code")
+    if (code == null) {
+      vue.loadUrl("https://$HOTE/connexion")
+      return
+    }
+
+    // L'échange se fait ici, et pas dans l'onglet : le cookie de
+    // vérification PKCE n'existe que dans la WebView.
+    val url = Uri.parse("https://$HOTE/auth/rappel").buildUpon()
+      .appendQueryParameter("code", code)
+      .apply {
+        donnee.getQueryParameter("suite")?.let { appendQueryParameter("suite", it) }
+      }
+      .build()
+
+    vue.loadUrl(url.toString())
   }
 
   override fun onSaveInstanceState(outState: Bundle) {
@@ -123,11 +187,17 @@ class MainActivity : ComponentActivity() {
     ): Boolean {
       val url = request.url
 
-      // Tout ce qui n'est pas notre domaine sort de l'application : WhatsApp,
-      // Mobile Money, un mail au support. Les garder dans la coquille
-      // donnerait une fenêtre sans barre d'adresse et sans issue.
       if (url.scheme == "http" || url.scheme == "https") {
         if (url.host == HOTE) return false
+
+        // Connexion : onglet personnalisé, qui s'ouvre dans l'application.
+        // La WebView est refusée par Google, et le navigateur externe ferait
+        // sortir l'étudiant de Reviz — précisément ce qu'on veut éviter.
+        if (estAuthentification(url)) return ouvrirOnglet(url)
+
+        // Tout le reste sort pour de bon : WhatsApp, Mobile Money, un mail au
+        // support. Le garder dans la coquille donnerait une fenêtre sans
+        // barre d'adresse et sans issue.
         return ouvrirDehors(url)
       }
 
@@ -208,6 +278,34 @@ class MainActivity : ComponentActivity() {
       }
 
     return if (intent.resolveActivity(packageManager) != null) intent else null
+  }
+
+  /**
+   * Cette URL fait-elle partie du parcours de connexion ?
+   *
+   * Liste explicite : n'importe quel domaine ouvert en onglet plutôt qu'en
+   * navigateur donnerait une fenêtre dont l'étudiant ne saurait pas sortir.
+   */
+  private fun estAuthentification(url: Uri): Boolean {
+    val hote = url.host ?: return false
+    return hote == "accounts.google.com" ||
+      hote.endsWith(".supabase.co") ||
+      hote == "accounts.youtube.com"
+  }
+
+  private fun ouvrirOnglet(url: Uri): Boolean {
+    return try {
+      CustomTabsIntent.Builder()
+        .setShowTitle(false)
+        .setUrlBarHidingEnabled(true)
+        .build()
+        .launchUrl(this, url)
+      true
+    } catch (_: ActivityNotFoundException) {
+      // Aucun navigateur compatible : le navigateur système reste la seule
+      // issue, mieux que rien du tout.
+      ouvrirDehors(url)
+    }
   }
 
   private fun ouvrirDehors(url: Uri): Boolean {

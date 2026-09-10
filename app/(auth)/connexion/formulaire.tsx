@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import { useRouter } from 'next/navigation'
 import { Button, Card, Icon, MascotState, OtpInput, TextField } from '@/components/ui'
 import { fr, t } from '@/lib/i18n/fr'
+import { useCoquille } from '@/lib/coquille'
 import { connexionGoogle, envoyerCodeEmail, verifierCodeEmail } from '../actions'
 
 /**
@@ -42,6 +43,7 @@ export function FormulaireConnexion() {
   const [compteur, setCompteur] = useState(0)
   const [enCours, demarrer] = useTransition()
   const router = useRouter()
+  const coquille = useCoquille()
 
   useEffect(() => {
     if (compteur <= 0) return
@@ -96,12 +98,12 @@ export function FormulaireConnexion() {
             <div className="flex items-start gap-space-12">
               <Icon name="lightbulb" size={22} className="text-primary" />
               <p className="text-label-sm text-reviz-muted">
-                {fr.connexion.lienAstuce}
+                {coquille ? fr.connexion.codeAstuce : fr.connexion.lienAstuce}
               </p>
             </div>
           </Card>
 
-          {saisieCode ? (
+          {saisieCode || coquille ? (
             <div className="flex w-full flex-col gap-space-12">
               <OtpInput
                 value={code}
@@ -147,7 +149,9 @@ export function FormulaireConnexion() {
           >
             {compteur > 0
               ? t(fr.connexion.renvoyerDans, compteur)
-              : fr.connexion.renvoyerLien}
+              : coquille
+                ? fr.connexion.renvoyer
+                : fr.connexion.renvoyerLien}
           </Button>
 
           <button
@@ -217,7 +221,11 @@ export function FormulaireConnexion() {
         disabled={enCours || !emailValide}
         onClick={envoyerLien}
       >
-        {enCours ? fr.commun.chargement : fr.connexion.envoyerLien}
+        {enCours
+          ? fr.commun.chargement
+          : coquille
+            ? fr.connexion.recevoirCode
+            : fr.connexion.envoyerLien}
       </Button>
     </main>
   )

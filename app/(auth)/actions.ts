@@ -63,6 +63,19 @@ async function origine(): Promise<string> {
   return `${protocole}://${hote}`
 }
 
+/**
+ * La requête vient-elle de la coquille Android ?
+ *
+ * `MainActivity` ajoute « Reviz/<version> » à l'agent utilisateur. C'est ce
+ * qui distingue une connexion depuis l'APK — où le retour doit repasser par
+ * `reviz://auth` — d'une connexion depuis un navigateur, où /auth/rappel
+ * échange le code directement.
+ */
+export async function estCoquille(): Promise<boolean> {
+  const h = await headers()
+  return (h.get('user-agent') ?? '').includes('Reviz/')
+}
+
 /** Envoie un code à 6 chiffres par email. */
 export async function envoyerCodeEmail(
   entree: z.input<typeof emailSchema>,
@@ -132,6 +145,10 @@ export async function verifierCodeEmail(
  *
  * Redirige vers Google, qui renverra vers /auth/rappel avec un code à
  * échanger contre une session.
+ *
+ * Depuis la coquille Android, ce même parcours passe par un onglet
+ * personnalisé — Google refuse OAuth dans une WebView embarquée — et le
+ * retour repasse par `reviz://auth`. Voir apps/android MainActivity.
  */
 export async function connexionGoogle(suite?: string): Promise<void> {
   const supabase = await createClient()
@@ -139,6 +156,12 @@ export async function connexionGoogle(suite?: string): Promise<void> {
 
   const rappel = new URL('/auth/rappel', base)
   if (suite) rappel.searchParams.set('suite', suite)
+
+  // Depuis l'APK, l'onglet personnalisé qui porte l'écran Google ne partage
+  // pas les cookies de la WebView : le vérificateur PKCE posé ici lui
+  // manquerait. /auth/rappel renvoie donc la main à l'application, qui
+  // rejoue l'échange dans la WebView.
+  if (await estCoquille()) rappel.searchParams.set('coquille', '1')
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
