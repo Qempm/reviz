@@ -354,15 +354,6 @@ export const fr = {
     terminer: 'Terminer mon inscription',
   },
 
-  // Le numéro reste demandé à l'inscription, mais facultatif : il ne sert
-  // qu'aux notifications WhatsApp (CLAUDE.md, règle métier 3).
-  telephone: {
-    label: 'Numéro WhatsApp (facultatif)',
-    aide: 'Pour recevoir tes rappels de révision. Tu peux l’ajouter plus tard.',
-    pays: 'Pays',
-    erreurLongueur: 'Ce numéro ne ressemble pas à un numéro %s.',
-    dejaUtilise: 'Ce numéro est déjà lié à un autre compte.',
-  },
 } as const
 
 export type Fr = typeof fr

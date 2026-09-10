@@ -15,6 +15,8 @@
 
 export { Icon } from './icon'
 export { TextField } from './text-field'
+export { Input } from './input'
+export { Select } from './select'
 export { OtpInput } from './otp-input'
 export { Skeleton } from './skeleton'
 export { Chip } from './chip'
@@ -38,6 +40,8 @@ export { MascotState } from './mascot-state'
 
 export type { ButtonProps, ButtonVariant } from './button'
 export type { TextFieldProps } from './text-field'
+export type { InputProps } from './input'
+export type { SelectProps, SelectOption } from './select'
 export type { OtpInputProps } from './otp-input'
 export type { SkeletonProps } from './skeleton'
 export type { ChipProps, ChipTone } from './chip'

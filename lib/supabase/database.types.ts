@@ -1148,6 +1148,7 @@ export type Database = {
       }
       recompute_xp_total: { Args: { target: string }; Returns: number }
       refresh_streak: { Args: { target: string }; Returns: undefined }
+      get_user_rank: { Args: { target_user_id: string }; Returns: number }
       streak_week: {
         Args: { anchor?: string }
         Returns: {
