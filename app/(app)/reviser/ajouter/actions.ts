@@ -8,6 +8,8 @@ import {
   peutAjouterMatiere,
   type Subscription,
 } from '@/lib/payments/subscriptions'
+import { BAREME } from '@/lib/xp/attribution'
+import { attribuerXp } from '@/lib/xp/attribuer'
 
 /**
  * Dépôt d'un cours (écran D1).
@@ -200,15 +202,32 @@ export async function confirmerDepot(courseId: string): Promise<{ ok: boolean }>
   } = await supabase.auth.getUser()
   if (!user) return { ok: false }
 
-  const { error } = await supabase
+  // `eq('status', 'uploaded')` n'est pas décoratif : sans lui, un client qui
+  // rappelle l'action — reprise après coupure, double clic — recréditerait
+  // les XP du dépôt à chaque fois. Le trigger `courses_protect_status`
+  // laisserait passer, la transition étant alors un non-changement.
+  const { data: modifie, error } = await supabase
     .from('courses')
     .update({ status: 'processing' })
     .eq('id', parse.data)
     .eq('owner_id', user.id)
+    .eq('status', 'uploaded')
+    .select('id')
 
   if (error) {
     console.error('Passage en traitement impossible', error.message)
     return { ok: false }
+  }
+
+  if ((modifie ?? []).length > 0) {
+    // Récompense du dépôt. `reference_id` porte le cours, ce qui rend le
+    // gain traçable et — le jour où un cours supprimé devra être défait —
+    // annulable par une ligne `adjustment`.
+    await attribuerXp({
+      userId: user.id,
+      gains: [{ reason: 'course_added', amount: BAREME.course_added }],
+      referenceId: parse.data,
+    })
   }
 
   revalidatePath('/reviser')

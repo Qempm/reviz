@@ -85,6 +85,17 @@ const FICHES_DEMO = [
   },
 ]
 
+/** Semaine sans aucun jour validé, pour l'état « série rompue ». */
+const SEMAINE_ROMPUE = [
+  { weekday: 1, isValidated: false, isToday: false },
+  { weekday: 2, isValidated: false, isToday: false },
+  { weekday: 3, isValidated: false, isToday: false },
+  { weekday: 4, isValidated: false, isToday: true },
+  { weekday: 5, isValidated: false, isToday: false },
+  { weekday: 6, isValidated: false, isToday: false },
+  { weekday: 7, isValidated: false, isToday: false },
+]
+
 const SEMAINE = [
   { weekday: 1, isValidated: true, isToday: false },
   { weekday: 2, isValidated: true, isToday: false },
@@ -260,12 +271,18 @@ export default function KitchenSink() {
 
         {/* Streak ----------------------------------------------------------- */}
         <Section titre="StreakCard" reference="§ 7">
+          {/* Série en cours, objectif du jour pas encore atteint. */}
           <StreakCard
             streak={4}
             xpToday={120}
+            objectif={{ repondues: 6, total: 10 }}
             days={SEMAINE}
-            message="Plus qu’un jour pour débloquer le badge Flamme d’Abidjan."
+            message="Encore 4 questions et ta série tient un jour de plus."
           />
+
+          {/* Série rompue : la flamme s'éteint, sans passer par un gris
+              froid que la palette n'a pas. */}
+          <StreakCard streak={0} rompue days={SEMAINE_ROMPUE} />
         </Section>
 
         {/* Podium ----------------------------------------------------------- */}

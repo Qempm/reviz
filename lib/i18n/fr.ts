@@ -58,7 +58,12 @@ export const fr = {
   tableauDeBord: {
     salutation: (prenom: string) => `Bonjour ${prenom}`.trim(),
     sousTitre: 'Prêt à réviser aujourd’hui ?',
-    streakVide: 'Réponds à 10 questions aujourd’hui pour lancer ta série.',
+    serieRompue:
+      'Ta série s’est arrêtée. Une session aujourd’hui suffit à en relancer une.',
+    serieEnJeu: (reste: number) =>
+      reste <= 1
+        ? 'Encore une question et ta série tient un jour de plus.'
+        : `Encore ${reste} questions et ta série tient un jour de plus.`,
     mesMatieres: 'Mes matières',
     pointFaible: 'À revoir',
     questionsFaites: (n: number) =>

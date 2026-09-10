@@ -2,8 +2,8 @@
 
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
-import { createAdminClient, ConfigurationManquante } from '@/lib/supabase/admin'
-import { gainsDeSession, totalGains, type GainXp } from '@/lib/xp/attribution'
+import { gainsDeSession, type GainXp } from '@/lib/xp/attribution'
+import { attribuerXp } from '@/lib/xp/attribuer'
 
 /**
  * Fin de session : enregistrement des réponses et attribution des XP.
@@ -129,29 +129,24 @@ export async function enregistrerSession(
       ),
   )
 
-  const xp = totalGains(aEcrire)
+  // Les réponses sont déjà enregistrées : si les XP échouent, la session
+  // n'échoue pas pour autant. `attribuerXp` renvoie zéro dans ce cas, et
+  // l'écran n'annonce donc pas des points qui n'existent pas.
+  const xp = await attribuerXp({
+    userId: user.id,
+    gains: aEcrire,
+    referenceId: courseId,
+  })
 
-  if (aEcrire.length > 0) {
-    try {
-      const admin = createAdminClient()
-      const { error } = await admin.from('xp_events').insert(
-        aEcrire.map((g) => ({
-          user_id: user.id,
-          reason: g.reason,
-          amount: g.amount,
-          reference_id: g.referenceId ?? courseId,
-        })),
-      )
-      // Les réponses sont enregistrées, seuls les XP manquent : on le signale
-      // dans le journal serveur sans faire échouer la session de l'étudiant.
-      if (error) console.error('XP non attribués', error.message)
-    } catch (e) {
-      if (e instanceof ConfigurationManquante) console.error(e.message)
-      else throw e
-    }
+  return {
+    ok: true,
+    bonnes,
+    total,
+    gains: xp === 0 ? [] : aEcrire,
+    xp,
+    objectifAtteint,
+    serie,
   }
-
-  return { ok: true, bonnes, total, gains: aEcrire, xp, objectifAtteint, serie }
 }
 
 /** Motifs déjà crédités aujourd'hui, pour ne pas les compter deux fois. */

@@ -10,6 +10,7 @@ import {
 } from '@/components/ui'
 import { createClient } from '@/lib/supabase/server'
 import { fr } from '@/lib/i18n/fr'
+import { etatSerie, resteAvantObjectif } from '@/lib/xp/serie'
 
 /**
  * Écran 3 — Tableau de bord.
@@ -26,14 +27,17 @@ export default async function TableauDeBord() {
   } = await supabase.auth.getUser()
   if (!user) redirect('/connexion')
 
-  const [{ data: profil }, { data: semaine }, { data: matieres }] =
+  const [{ data: profil }, { data: semaine }, { data: objectif }, { data: matieres }] =
     await Promise.all([
       supabase
         .from('profiles')
-        .select('first_name, current_streak, faculty_id')
+        .select('first_name, current_streak, last_validated_on, faculty_id')
         .eq('id', user.id)
         .maybeSingle(),
       supabase.rpc('streak_week'),
+      // L'objectif est une fonction SQL pour être ajustable sans migration :
+      // on le lit, on ne le recopie pas.
+      supabase.rpc('daily_goal'),
       supabase
         .from('subject_stats')
         .select('subject_id, subject_name, questions_answered, average_score, is_weak')
@@ -49,8 +53,22 @@ export default async function TableauDeBord() {
     isToday: j.is_today,
   }))
 
-  const xpDuJour =
-    (semaine ?? []).find((j) => j.is_today)?.xp_earned ?? 0
+  const aujourdhui = (semaine ?? []).find((j) => j.is_today)
+  const xpDuJour = aujourdhui?.xp_earned ?? 0
+  const repondues = aujourdhui?.questions_answered ?? 0
+  const but = objectif ?? 10
+
+  const serie = etatSerie({
+    current: profil.current_streak,
+    lastValidatedOn: profil.last_validated_on,
+  })
+
+  // Un seul message, choisi par ce qui est en jeu maintenant.
+  const message = serie.rompue
+    ? fr.tableauDeBord.serieRompue
+    : serie.enJeu
+      ? fr.tableauDeBord.serieEnJeu(resteAvantObjectif(repondues, but))
+      : undefined
 
   return (
     <div className="flex flex-col gap-space-20 pb-space-32">
@@ -67,14 +85,12 @@ export default async function TableauDeBord() {
           de revenir demain. */}
       {jours.length > 0 ? (
         <StreakCard
-          streak={profil.current_streak}
+          streak={serie.jours}
+          rompue={serie.rompue}
           xpToday={xpDuJour}
+          objectif={{ repondues, total: but }}
           days={jours}
-          message={
-            profil.current_streak === 0
-              ? fr.tableauDeBord.streakVide
-              : undefined
-          }
+          message={message}
         />
       ) : null}
 

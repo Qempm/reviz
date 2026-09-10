@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { BottomNav, Icon } from '@/components/ui'
 import { createClient } from '@/lib/supabase/server'
+import { etatSerie } from '@/lib/xp/serie'
 
 /**
  * Coquille des écrans connectés : header collant, contenu, navigation basse.
@@ -30,6 +31,13 @@ export default async function LayoutApp({
 
   if (!profil) redirect('/inscription')
 
+  // `current_streak` garde la valeur du dernier jour validé, même vieille
+  // d'une semaine : c'est à l'affichage de trancher (voir lib/xp/serie.ts).
+  const serie = etatSerie({
+    current: profil.current_streak,
+    lastValidatedOn: profil.last_validated_on,
+  })
+
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-app flex-col bg-surface">
       <header className="pt-safe fixed inset-x-0 top-0 z-50 mx-auto w-full max-w-app bg-surface/85 shadow-header backdrop-blur-xl">
@@ -41,11 +49,13 @@ export default async function LayoutApp({
               <Icon
                 name="local_fire_department"
                 size={18}
-                filled
-                className="text-reviz-orange"
+                filled={!serie.rompue}
+                className={
+                  serie.rompue ? 'text-reviz-muted' : 'text-reviz-orange'
+                }
               />
               <span className="text-label-sm text-reviz-ink">
-                {profil.current_streak}j
+                {serie.jours}j
               </span>
             </span>
 
