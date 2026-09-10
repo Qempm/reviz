@@ -1,0 +1,28 @@
+{
+  "appId": "com.reviz.app",
+  "appName": "Reviz",
+  "webDir": "out",
+  "server": {
+    "url": "https://reviz.vercel.app",
+    "cleartext": false,
+    "allowNavigation": [
+      "reviz.vercel.app",
+      "*.supabase.co",
+      "api.deepseek.com",
+      "dashscope-intl.aliyuncs.com",
+      "api.z.ai"
+    ]
+  },
+  "android": {
+    "webContentsDebuggingEnabled": false,
+    "useLegacyBridge": false,
+    "appendUserAgent": "Reviz/1.0.0"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 3000,
+      "backgroundColor": "#fcf9f8",
+      "showSpinner": false
+    }
+  }
+}
