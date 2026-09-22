@@ -1,9 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { Button, Card, Icon } from '@/components/ui'
-import { fr } from '@/lib/i18n/fr'
 
 /**
  * Écran 4a — Paiement en cours.
@@ -14,7 +13,6 @@ import { fr } from '@/lib/i18n/fr'
  */
 export default function PaiementEnCours() {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const [statut, setStatut] = useState<'polling' | 'success' | 'failed'>('polling')
   const [erreur, setErreur] = useState<string>('')
 

@@ -4,7 +4,6 @@ import { useState, useRef, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button, Icon } from '@/components/ui'
 import { deposerCorrection } from '@/app/(app)/corriger/actions'
-import { fr } from '@/lib/i18n/fr'
 
 /**
  * Formulaire de dépôt de copie pour correction.

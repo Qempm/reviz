@@ -24,7 +24,7 @@ const InitPaymentSchema = z.object({
   phone: z.string().min(8).max(15).optional(),
 })
 
-type InitPaymentInput = z.infer<typeof InitPaymentSchema>
+type _InitPaymentInput = z.infer<typeof InitPaymentSchema>
 
 export async function POST(request: NextRequest) {
   try {

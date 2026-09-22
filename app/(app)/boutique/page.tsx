@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { Button, Card, Icon } from '@/components/ui'
+import { Card, Icon } from '@/components/ui'
 import { createClient } from '@/lib/supabase/server'
 import { fr } from '@/lib/i18n/fr'
 import { etatAcces, type Subscription } from '@/lib/payments/subscriptions'

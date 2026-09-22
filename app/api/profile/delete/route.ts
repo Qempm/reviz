@@ -8,7 +8,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
  * Supprime le compte de l'utilisateur courant et toutes ses donnees.
  * Action irreversible : supprime profil, cours, corrections, paiements, etc.
  */
-export async function POST(req: NextRequest) {
+export async function POST(_req: NextRequest) {
   try {
     const supabase = await createClient()
     const {

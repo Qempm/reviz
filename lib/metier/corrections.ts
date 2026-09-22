@@ -1,7 +1,11 @@
 import 'server-only'
 import type { ClientReviz } from '@/lib/supabase/jeton'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { peutCorriger } from '@/lib/payments/subscriptions'
+import {
+  etatAcces,
+  peutCorriger,
+  type PackCode,
+} from '@/lib/payments/subscriptions'
 
 export type ResultatDepot =
   | { ok: true; correctionId: string }
@@ -30,31 +34,30 @@ export async function deposerCorrection(
   copie: File,
   sujet?: File,
 ): Promise<ResultatDepot> {
-  // 2. Vérifie l'accès
+  // 2. Vérifie l'accès.
+  //
+  // Par `etatAcces()`, qui **somme** les corrections restantes de tous les
+  // packs en cours. La version précédente construisait un état à la main —
+  // `daysLeft: 999`, `packCodes: [… as any]` — à partir d'un seul abonnement
+  // (`.limit(1)`) : un étudiant avec deux packs actifs ne voyait que les
+  // corrections de l'un. Le bon mapping était calculé juste au-dessus, puis
+  // jeté sans être utilisé. C'était le défaut § 4.10 du rapport, et c'est le
+  // linter qui l'a rattrapé, en signalant la variable inutilisée.
+  const now = new Date()
+
   const { data: lignes } = await supabase
     .from('subscriptions')
-    .select('pack_code, starts_at, ends_at, corrections_left')
+    .select('pack_code, starts_at, ends_at, corrections_left, packs(subjects_limit)')
+    .eq('user_id', userId)
     .order('ends_at', { ascending: false })
 
-  const subscriptions = (lignes ?? []).map((l) => ({
-    packCode: l.pack_code as 'decouverte' | 'controle' | 'partiel' | 'semestre' | 'rattrapage',
+  const abonnements = (lignes ?? []).map((l) => ({
+    packCode: l.pack_code as PackCode,
     startsAt: new Date(l.starts_at),
     endsAt: new Date(l.ends_at),
     correctionsLeft: l.corrections_left,
-    subjectsLimit: null, // pas utilisé ici
+    subjectsLimit: l.packs?.subjects_limit ?? null,
   }))
-
-  // Récupère l'état d'accès
-  const now = new Date()
-  const { data: activeSubs } = await supabase
-    .from('subscriptions')
-    .select('*')
-    .eq('user_id', userId)
-    .lte('starts_at', now.toISOString())
-    .gt('ends_at', now.toISOString())
-    .limit(1)
-
-  if (!activeSubs || activeSubs.length === 0) return { ok: false, error: 'pack' }
 
   // Compte les corrections du jour
   const { count: correctionsDuJour } = await supabase
@@ -64,14 +67,7 @@ export async function deposerCorrection(
     .gte('created_at', new Date(now.toDateString()).toISOString())
 
   const droit = peutCorriger({
-    acces: {
-      state: 'active',
-      endsAt: new Date(activeSubs[0].ends_at),
-      daysLeft: 999,
-      correctionsLeft: activeSubs[0].corrections_left,
-      subjectsLimit: null,
-      packCodes: [activeSubs[0].pack_code as any],
-    },
+    acces: etatAcces(abonnements, now),
     correctionsAujourdhui: correctionsDuJour ?? 0,
   })
 

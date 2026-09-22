@@ -99,7 +99,9 @@ export default function DemandeRetrait() {
             <label className="text-label-md text-reviz-ink">Operateur Mobile Money</label>
             <Select
               value={operateur}
-              onChange={(e) => setOperateur(e.target.value as any)}
+              onChange={(e) =>
+                setOperateur(e.target.value as 'mtn' | 'moov' | 'wave')
+              }
               disabled={loading}
               options={[
                 { value: 'mtn', label: 'MTN Mobile Money' },

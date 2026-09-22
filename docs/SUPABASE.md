@@ -110,7 +110,10 @@ la garder lisible rend les journaux d'exécution exploitables.
 - **Il ne sauvegarde pas avant d'appliquer.** Sur le plan gratuit, prends une
   sauvegarde manuelle avant une migration destructrice.
 - **Il ne régénère pas `database.types.ts`.** À lancer à la main après un
-  changement de schéma, avec `npm run db:types`.
+  changement de schéma, avec `npm run db:types`. Le workflow
+  `.github/workflows/ci.yml` échoue désormais si le fichier engagé diffère de
+  ce que la base rend : la dérive se voit, même si elle ne se corrige pas
+  toute seule.
 
 ---
 

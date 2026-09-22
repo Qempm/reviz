@@ -8,6 +8,20 @@ import { createClient } from '@/lib/supabase/server'
  * - Global : top 10 par XP total
  * - Par matiere : classement local (parmi la meme faculte)
  */
+/**
+ * Le profil rendu par une jointure PostgREST.
+ *
+ * Le type généré l'annonce tantôt en objet, tantôt en tableau selon la forme
+ * de la relation. Plutôt qu'un `as any` à chaque accès, une seule fonction
+ * qui normalise et qui se cassera si la forme change.
+ */
+type ProfilJoint = { first_name?: string | null; avatar_key?: string | null }
+
+function profilJoint(valeur: unknown): ProfilJoint {
+  if (Array.isArray(valeur)) return (valeur[0] as ProfilJoint) ?? {}
+  return (valeur as ProfilJoint) ?? {}
+}
+
 export default async function Classement() {
   const supabase = await createClient()
 
@@ -67,10 +81,10 @@ export default async function Classement() {
     if (!row.subject_name || !row.user_id) continue
     if (!subjectsMap.has(row.subject_name)) subjectsMap.set(row.subject_name, [])
     subjectsMap.get(row.subject_name)!.push({
-      name: (row.profiles as any)?.first_name ?? '—',
+      name: profilJoint(row.profiles).first_name ?? '—',
       score: Math.round(row.average_score ?? 0),
       userId: row.user_id,
-      avatar: (row.profiles as any)?.avatar_key,
+      avatar: profilJoint(row.profiles).avatar_key ?? undefined,
     })
   }
 

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
-import { createAdminClient, ConfigurationManquante } from '@/lib/supabase/admin'
+import { createAdminClient } from '@/lib/supabase/admin'
 import {
   activerDecouverte as activerDecouverteMetier,
   type ResultatActivation,

@@ -2,7 +2,6 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Button, Card, Icon, ProgressBar } from '@/components/ui'
 import { createClient } from '@/lib/supabase/server'
-import { fr } from '@/lib/i18n/fr'
 
 /**
  * Écran de suivi de correction.
@@ -143,13 +142,13 @@ export default async function SuiviCorrection({
                         </span>
                         <span className="text-label-sm text-reviz-muted">
                           {typeof value === 'object' && value !== null && 'score' in value
-                            ? `${(value as any).score}/10`
+                            ? `${(value as { score?: unknown }).score}/10`
                             : String(value)}
                         </span>
                       </div>
                       {typeof value === 'object' && value !== null && 'comment' in value && (
                         <span className="text-label-sm text-reviz-muted">
-                          {String((value as any).comment)}
+                          {String((value as { comment?: unknown }).comment)}
                         </span>
                       )}
                     </div>

@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Button, Card, Icon } from '@/components/ui'
+import { Icon } from '@/components/ui'
 
 /**
  * Ecran - Selection d'avatar.

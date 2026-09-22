@@ -9,7 +9,7 @@
  * Reference: https://fedapay.com/doc/
  */
 
-import { z } from 'zod'
+import { createHmac, timingSafeEqual } from 'node:crypto'
 
 /**
  * Résultat de l'initialisation d'une transaction.
@@ -61,6 +61,17 @@ export interface PaymentProvider {
     status: 'pending' | 'success' | 'failed' | 'cancelled'
     amount: number
   }>
+
+  /**
+   * Vérifier la signature d'un webhook.
+   *
+   * Déclarée ici pour que ce soit le contrat et non un détail d'une
+   * implémentation : `FedaPayProvider` portait cette méthode sans que
+   * l'interface la connaisse, donc personne ne pouvait l'appeler à travers
+   * `createPaymentProvider()`, et elle était de fait morte — un second
+   * fournisseur aurait pu l'oublier sans que rien ne le signale.
+   */
+  verifyWebhookSignature(payload: string, signature: string): boolean
 }
 
 /**
@@ -168,16 +179,16 @@ class FedaPayProvider implements PaymentProvider {
   }
 
   /**
-   * Verify webhook signature using HMAC-SHA256.
-   * FedaPay sends the signature in X-Fedapay-Signature header.
+   * Vérifie la signature d'un webhook FedaPay (en-tête
+   * `X-Fedapay-Signature`), avec le secret que porte cette instance.
+   *
+   * Délègue à `validateWebhookSignature` : il n'y a qu'une comparaison HMAC
+   * dans le dépôt, et c'est celle qui est testée. Deux implémentations
+   * concurrentes de la même vérification, c'était l'état précédent — et la
+   * seule des deux qui était appelée n'était pas celle-ci.
    */
   verifyWebhookSignature(payload: string, signature: string): boolean {
-    const crypto = require('crypto')
-    const computed = crypto
-      .createHmac('sha256', this.webhookSecret)
-      .update(payload)
-      .digest('hex')
-    return computed === signature
+    return validateWebhookSignature(payload, signature, this.webhookSecret)
   }
 }
 
@@ -199,18 +210,37 @@ export function createPaymentProvider(
 export { FedaPayProvider }
 
 /**
- * Validate a webhook signature.
- * Use this in your webhook route before processing the payload.
+ * Vérifie la signature d'un webhook : HMAC-SHA256 de la charge utile brute.
+ *
+ * **La comparaison est à temps constant.** Un `===` sur deux chaînes s'arrête
+ * au premier caractère différent : le temps de réponse renseigne alors sur le
+ * nombre de caractères devinés, et une signature se reconstitue octet par
+ * octet. `timingSafeEqual` compare la totalité, toujours.
+ *
+ * Trois refus avant même de comparer, parce que `timingSafeEqual` exige des
+ * tampons de même longueur et lèverait sinon :
+ *
+ *   * une signature vide — cas d'un en-tête absent ;
+ *   * une signature qui n'est pas de l'hexadécimal ;
+ *   * une signature de la mauvaise longueur.
+ *
+ * Aucun des trois ne peut venir d'un fournisseur légitime, et leur longueur
+ * n'est pas un secret : la refuser tôt ne divulgue rien.
  */
 export function validateWebhookSignature(
   payload: string,
   signature: string,
   secret: string,
 ): boolean {
-  const crypto = require('crypto')
-  const computed = crypto
-    .createHmac('sha256', secret)
-    .update(payload)
-    .digest('hex')
-  return computed === signature
+  if (!secret || !signature) return false
+
+  const attendu = createHmac('sha256', secret).update(payload).digest('hex')
+
+  if (signature.length !== attendu.length) return false
+  if (!/^[0-9a-fA-F]+$/.test(signature)) return false
+
+  return timingSafeEqual(
+    Buffer.from(attendu, 'hex'),
+    Buffer.from(signature.toLowerCase(), 'hex'),
+  )
 }

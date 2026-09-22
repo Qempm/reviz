@@ -1147,6 +1147,21 @@ export type Database = {
       }
       current_faculty_id: { Args: never; Returns: string }
       daily_goal: { Args: never; Returns: number }
+      enregistrer_paiement: {
+        Args: {
+          p_brut?: Json
+          p_commission_fcfa?: number
+          p_corrections?: number
+          p_debut?: string
+          p_fin?: string
+          p_parrain?: string
+          p_provider: string
+          p_provider_ref: string
+          p_statut: Database["public"]["Enums"]["payment_status"]
+          p_taux?: number
+        }
+        Returns: Json
+      }
       generate_referral_code: { Args: never; Returns: string }
       get_user_rank: { Args: never; Returns: number }
       job_peut_demarrer: {

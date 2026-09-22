@@ -198,6 +198,30 @@ session. La vérification passe par `verifierRetrait()`, qui porte ces deux
 cas séparément, et le solde est relu côté serveur — un montant proposé par le
 client ne décide de rien.
 
+### `POST /api/payments/webhook`
+
+Appelée par le fournisseur, jamais par un client. Signature HMAC-SHA256 sur la
+charge utile brute, en-tête `X-Fedapay-Signature`, **comparée à temps
+constant**.
+
+Elle répond **200 sur tout ce qui n'a pas d'effet** — statut `pending`,
+transaction inconnue, événement déjà traité : un autre code ferait réessayer le
+fournisseur indéfiniment. Elle répond 401 sur une signature invalide, 400 sur
+une charge utile inattendue, 500 sur une panne de base.
+
+La décision est prise par `deciderPaiement()` (`lib/metier/paiement.ts`), sans
+base, et l'écriture par la fonction SQL `enregistrer_paiement()`, qui reprend
+la ligne de paiement `for update` : statut, abonnement, commission et
+`first_payment_at` tiennent ou échouent ensemble, et une relivraison n'écrit
+rien. Deux index uniques partiels —
+`subscriptions_un_par_paiement_idx` et
+`wallet_ledger_une_commission_par_paiement_idx` — rendent le doublon
+impossible même en cas de bogue applicatif.
+
+Vérifié contre la base hébergée : la même charge utile jouée deux fois rend
+`traite` puis `deja-traite`, laisse un abonnement, une commission, et pose
+`expires_at` à douze mois.
+
 ### Les routes antérieures
 
 `/api/payments/init`, `/api/payments/status`, `/api/payments/webhook`,
@@ -225,7 +249,13 @@ n'a aucune raison d'accepter un jeton d'étudiant.
   sont pas, aucun écran Flutter ne peut les appeler.
 - Le dépôt de correction par URL signée, pour lever le plafond de 4,5 Mo.
 - `/api/payments/init` et la Server Action `initiatePayment` font la même
-  chose : n'en garder qu'une.
+  chose : n'en garder qu'une. La route est celle que l'application Flutter
+  appellera, une fois convertie sur `authentifier()`.
+- Le cron de `/api/jobs/run` est planifié **une fois par jour** dans
+  `vercel.json` (limite de l'offre Hobby), alors que le code annonce « toutes
+  les minutes » : avec `BATCH_SIZE = 5`, cinq jobs par jour au plus. C'est la
+  raison pour laquelle le webhook notifie n8n directement au lieu d'enfiler un
+  job `notify`.
 - La suppression de compte échoue pour tout étudiant ayant gagné un seul
   point d'XP — `xp_events` refuse le DELETE, y compris en cascade et y
   compris au rôle de service. Une stratégie reste à trancher : anonymiser, ou

@@ -96,7 +96,6 @@ export const correctCopyHandler = async (job: Job, ctx: JobContext): Promise<voi
 
   try {
     // 1. Récupère les images
-    const { createClient } = await import('@/lib/supabase/server')
     const { createAdminClient } = await import('@/lib/supabase/admin')
 
     const admin = createAdminClient()
@@ -206,7 +205,7 @@ Sois juste, objectif, et constructif.`
 
     try {
       correction_data = JSON.parse(content)
-    } catch (e) {
+    } catch {
       // Essaie d'extraire JSON du texte
       const jsonMatch = content.match(/\{[\s\S]*\}/)
       if (!jsonMatch) {

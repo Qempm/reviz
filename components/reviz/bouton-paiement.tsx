@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui'
 import { initiatePayment } from '@/app/(app)/boutique/actions'
 import { fr } from '@/lib/i18n/fr'
@@ -19,7 +18,6 @@ export function BoutonPaiement({
 }) {
   const [erreur, setErreur] = useState<string | null>(null)
   const [enCours, demarrer] = useTransition()
-  const router = useRouter()
 
   return (
     <div className="flex flex-col gap-space-4">
