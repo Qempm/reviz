@@ -106,6 +106,9 @@ export function FormulaireConnexion() {
           {saisieCode || coquille ? (
             <div className="flex w-full flex-col gap-space-12">
               <OtpInput
+                // Huit cases : c'est la longueur que Supabase émet
+                // réellement pour ce projet. Six refusaient le vrai code.
+                length={8}
                 value={code}
                 onChange={(v) => {
                   setCode(v)

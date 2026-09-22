@@ -14,6 +14,7 @@ describe('extraction du code collé', () => {
   })
 
   it('ignore les autres nombres autour du code', () => {
+    // La plus longue suite l'emporte : « 18 h » ne se colle pas au code.
     expect(extraireCode('Code 654321 valable jusqu’à 18h')).toBe('654321')
   })
 
@@ -23,7 +24,24 @@ describe('extraction du code collé', () => {
   })
 
   it('tronque au-delà de la longueur demandée', () => {
-    expect(extraireCode('12345678901234')).toBe('123456')
+    // Huit par défaut : c'est la longueur que Supabase émet pour ce projet.
+    expect(extraireCode('12345678901234')).toBe('12345678')
+    expect(extraireCode('12345678901234', 6)).toBe('123456')
+  })
+
+  it('rend un code de huit chiffres, la longueur réelle du projet', () => {
+    // Vérifié sur la base le 22/09/2026 : `generateLink` renvoie un
+    // `email_otp` de huit chiffres, pour `magiclink` comme pour `signup`.
+    // Exiger six refusait donc systématiquement le vrai code.
+    expect(extraireCode('Ton code Reviz : 30910681')).toBe('30910681')
+    expect(extraireCode('Reviz 2026 : code 30910681')).toBe('30910681')
+  })
+
+  it('ignore un nombre qui précède le code', () => {
+    // Le cas que l'ancienne regex ratait : `/d{6}/` cherchait six lettres
+    // « d », donc tout passait par le repli qui recolle les chiffres — et
+    // « 2026 » venait se coller devant le code.
+    expect(extraireCode('Reviz 2026 : ton code 654321')).toBe('654321')
   })
 
   it('rend une chaîne vide quand il n’y a rien à prendre', () => {

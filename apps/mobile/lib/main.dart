@@ -21,15 +21,15 @@ Future<void> main() async {
   runApp(const ProviderScope(child: AppReviz()));
 }
 
-class AppReviz extends StatelessWidget {
+class AppReviz extends ConsumerWidget {
   const AppReviz({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp.router(
       title: 'Reviz',
       theme: themeReviz,
-      routerConfig: routeur,
+      routerConfig: ref.watch(routeurProvider),
       debugShowCheckedModeBanner: false,
       builder: (context, enfant) {
         if (Config.estConfiguree) return enfant!;

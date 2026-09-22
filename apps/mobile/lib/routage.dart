@@ -1,39 +1,38 @@
-import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import 'ecrans/galerie.dart';
+import 'dart:async';
 
-/// Routage de l'application.
-///
-/// Les chemins reprennent **exactement** ceux du web (`docs/API.md` § 5) :
-/// un lien partagé par WhatsApp doit pouvoir ouvrir l'application aussi bien
-/// que le site, et l'équivalence de nommage rend la cartographie du rapport
-/// lisible des deux côtés.
-///
-/// Seule la galerie existe pour l'instant : les écrans arrivent à la phase 4,
-/// après validation du rendu à 375 px.
-final routeur = GoRouter(
-  initialLocation: Chemins.galerie,
-  routes: [
-    GoRoute(
-      path: Chemins.galerie,
-      builder: (_, _) => const Galerie(),
-    ),
-  ],
-  errorBuilder: (_, etat) => Scaffold(
-    body: Center(child: Text('Écran introuvable : ${etat.uri}')),
-  ),
-);
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show AuthState;
+import 'package:go_router/go_router.dart';
+import 'composants/bouton.dart';
+import 'composants/coquille.dart';
+import 'composants/etat_vide.dart';
+import 'donnees/supabase.dart';
+import 'ecrans/accueil.dart';
+import 'ecrans/connexion.dart';
+import 'ecrans/cours.dart';
+import 'ecrans/galerie.dart';
+import 'ecrans/inscription.dart';
+import 'ecrans/reviser.dart';
+import 'ecrans/session.dart';
+import 'etat/fournisseurs.dart';
+import 'i18n/fr.dart';
+import 'theme/jetons.dart';
 
 /// Les chemins, nommés une seule fois.
+///
+/// Ils reprennent **exactement** ceux du web (docs/API.md § 5) : un lien
+/// partagé par WhatsApp doit pouvoir ouvrir l'application aussi bien que le
+/// site, et l'équivalence rend la cartographie du rapport lisible des deux
+/// côtés.
 abstract final class Chemins {
-  static const galerie = '/galerie';
-
-  // À venir en phase 4, dans cet ordre de valeur.
   static const connexion = '/connexion';
   static const inscription = '/inscription';
   static const accueil = '/';
   static const reviser = '/reviser';
-  static const ajouterCours = '/reviser/ajouter';
+  static const galerie = '/galerie';
+
+  // À venir : les écrans de la seconde moitié de la phase 4.
   static const boutique = '/boutique';
   static const corriger = '/corriger';
   static const gains = '/gains';
@@ -45,3 +44,146 @@ abstract final class Chemins {
   static String fiches(String id) => '/cours/$id/fiches';
   static String chapitre(String id) => '/chapitre/$id';
 }
+
+/// Chemins accessibles sans session.
+const _publics = {Chemins.connexion, Chemins.galerie};
+
+/// Le routeur, construit avec accès aux fournisseurs.
+///
+/// La garde d'accès est ici et non dans chaque écran : elle a besoin de deux
+/// choses — une session, **et** un profil. Un compte sans profil doit finir
+/// son inscription avant de voir quoi que ce soit, exactement comme côté web.
+GoRouter creerRouteur(Ref ref) {
+  return GoRouter(
+    initialLocation: Chemins.accueil,
+    refreshListenable: _EcouteAuth(ref),
+    redirect: (context, etat) {
+      final chemin = etat.matchedLocation;
+      if (_publics.contains(chemin)) {
+        // Déjà connecté : la page de connexion n'a plus de sens.
+        return connecte && chemin == Chemins.connexion ? Chemins.accueil : null;
+      }
+
+      if (!connecte) return Chemins.connexion;
+
+      // Le profil est lu de façon asynchrone : tant qu'il n'est pas connu, on
+      // laisse passer et l'écran affiche son attente. Une redirection prise
+      // sur une valeur inconnue ferait clignoter l'inscription.
+      final profil = ref.read(profilProvider);
+      final manque = profil.hasValue && profil.value == null;
+
+      if (manque && chemin != Chemins.inscription) return Chemins.inscription;
+      if (!manque && chemin == Chemins.inscription) return Chemins.accueil;
+
+      return null;
+    },
+    routes: [
+      GoRoute(path: Chemins.connexion, builder: (_, _) => const EcranConnexion()),
+      GoRoute(
+        path: Chemins.inscription,
+        builder: (_, _) => const EcranInscription(),
+      ),
+      GoRoute(path: Chemins.accueil, builder: (_, _) => const EcranAccueil()),
+      GoRoute(path: Chemins.reviser, builder: (_, _) => const EcranReviser()),
+      GoRoute(path: Chemins.galerie, builder: (_, _) => const Galerie()),
+      GoRoute(
+        path: '/cours/:id',
+        builder: (_, etat) =>
+            EcranCours(coursId: etat.pathParameters['id'] ?? ''),
+        routes: [
+          GoRoute(
+            path: 'session',
+            builder: (_, etat) =>
+                EcranSession(coursId: etat.pathParameters['id'] ?? ''),
+          ),
+        ],
+      ),
+
+      // Les trois onglets restants existent pour que la barre de navigation
+      // ne mène pas dans le vide. Ils disent ce qu'il en est, plutôt que de
+      // prétendre.
+      for (final (chemin, titre) in const [
+        (Chemins.corriger, 'Corriger'),
+        (Chemins.gains, 'Mes gains'),
+        (Chemins.profil, 'Mon profil'),
+      ])
+        GoRoute(
+          path: chemin,
+          builder: (_, _) => _APreparer(chemin: chemin, titre: titre),
+        ),
+    ],
+    errorBuilder: (context, etat) => Scaffold(
+      backgroundColor: Couleurs.cream,
+      body: SafeArea(
+        child: EtatVide(
+          icone: Icons.explore_off,
+          titre: 'Écran introuvable',
+          description: '${etat.uri}',
+          action: Bouton(
+            libelle: Fr.commun.retour,
+            icone: Icons.arrow_back,
+            onTap: () => context.go(Chemins.accueil),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+/// Onglet dont l'écran n'est pas encore écrit.
+class _APreparer extends ConsumerWidget {
+  const _APreparer({required this.chemin, required this.titre});
+
+  final String chemin;
+  final String titre;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final profil = ref.watch(profilProvider);
+
+    return Coquille(
+      ongletActif: chemin,
+      xpTotal: switch (profil) {
+        AsyncData(:final value) when value != null => value.xpTotal,
+        _ => null,
+      },
+      enfant: Padding(
+        padding: const EdgeInsets.all(Espaces.ecran),
+        child: EtatVide(
+          icone: Icons.construction,
+          titre: titre,
+          description: Fr.commun.bientot,
+        ),
+      ),
+    );
+  }
+}
+
+/// Fait réévaluer la redirection quand l'authentification change.
+///
+/// `GoRouter` ne connaît pas Riverpod : ce pont minimal évite d'avoir à
+/// dupliquer la logique de redirection dans chaque écran.
+class _EcouteAuth extends ChangeNotifier {
+  _EcouteAuth(Ref ref) {
+    _abonnement = supabase.auth.onAuthStateChange.listen((_) {
+      // Le profil dépend de la session : il doit être relu avant que la
+      // redirection ne le consulte.
+      ref.invalidate(profilProvider);
+      notifyListeners();
+    });
+
+    // Un profil qui vient d'être créé change aussi la destination.
+    ref.listen(profilProvider, (_, _) => notifyListeners());
+  }
+
+  late final StreamSubscription<AuthState> _abonnement;
+
+  @override
+  void dispose() {
+    _abonnement.cancel();
+    super.dispose();
+  }
+}
+
+/// Le routeur, exposé aux widgets.
+final routeurProvider = Provider<GoRouter>((ref) => creerRouteur(ref));

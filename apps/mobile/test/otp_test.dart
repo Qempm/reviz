@@ -49,6 +49,28 @@ void main() {
       expect(extraireCode('123'), '123');
     });
 
+    test('rend un code de huit chiffres, la longueur réelle du projet', () {
+      // Vérifié sur la base : Supabase émet huit chiffres ici. Une règle
+      // calée sur six tronquerait et ferait refuser un code valide.
+      expect(
+        extraireCode('Ton code Reviz : 30910681', longueur: longueurCodeMax),
+        '30910681',
+      );
+      expect(
+        extraireCode('Reviz 2026 : code 30910681', longueur: longueurCodeMax),
+        '30910681',
+      );
+    });
+
+    test('ne recolle pas une heure au code', () {
+      // La plus longue suite l'emporte : « 18 h » ne doit pas venir se coller
+      // derrière le code, ce que faisait le repli du TypeScript.
+      expect(
+        extraireCode('Code 654321 valable jusqu’à 18h', longueur: longueurCodeMax),
+        '654321',
+      );
+    });
+
     test('respecte une longueur différente', () {
       expect(extraireCode('Code : 1234', longueur: 4), '1234');
     });

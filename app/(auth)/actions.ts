@@ -29,7 +29,12 @@ const emailSchema = z.object({
 
 const verificationSchema = z.object({
   email: z.string().trim().toLowerCase().email().max(320),
-  code: z.string().regex(/^\d{6}$/),
+  // 6 à 10 chiffres, et non exactement 6 : **ce projet Supabase émet des
+  // codes de huit chiffres**, vérifié le 22 septembre 2026 sur les types
+  // `magiclink` et `signup`. Exiger six refusait donc systématiquement le
+  // vrai code — c'est ce qui rendait la connexion par code inutilisable et
+  // avait fait basculer sur le lien magique.
+  code: z.string().regex(/^\d{6,10}$/),
 })
 
 /**
