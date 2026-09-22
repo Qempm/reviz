@@ -22,6 +22,9 @@ class Profil {
     required this.universiteNom,
     required this.faculteNom,
     required this.codeParrain,
+    this.avatar,
+    this.statutVerification = 'none',
+    this.anneeEtude,
   });
 
   final String id;
@@ -33,6 +36,18 @@ class Profil {
   final String? universiteNom;
   final String? faculteNom;
   final String? codeParrain;
+  final String? avatar;
+
+  /// `none` | `pending` | `verified` | `rejected`, tel quel.
+  ///
+  /// Gardé en texte brut plutôt qu'en énumération : c'est le serveur qui en
+  /// décide, et un statut inconnu doit s'afficher comme « non vérifié » sans
+  /// faire échouer la lecture du profil.
+  final String statutVerification;
+  final int? anneeEtude;
+
+  bool get verifie => statutVerification == 'verified';
+  bool get verificationEnCours => statutVerification == 'pending';
 
   static Profil depuis(Map<String, dynamic> l) => Profil(
     id: l['id'] as String,
@@ -44,6 +59,9 @@ class Profil {
     universiteNom: (l['universities'] as Map?)?['name'] as String?,
     faculteNom: (l['faculties'] as Map?)?['name'] as String?,
     codeParrain: l['referral_code'] as String?,
+    avatar: l['avatar_key'] as String?,
+    statutVerification: l['verification_status'] as String? ?? 'none',
+    anneeEtude: (l['study_year'] as num?)?.toInt(),
   );
 }
 
@@ -318,4 +336,153 @@ class ResultatSession {
     objectifAtteint: l['objectifAtteint'] as bool? ?? false,
     serie: (l['serie'] as num?)?.toInt() ?? 0,
   );
+}
+
+/// Une fiche de révision.
+class Fiche {
+  const Fiche({
+    required this.id,
+    required this.recto,
+    required this.verso,
+    required this.chapitre,
+  });
+
+  final String id;
+  final String recto;
+  final String verso;
+  final String? chapitre;
+
+  static Fiche? depuis(Map<String, dynamic> l) {
+    final id = l['id'] as String?;
+    final recto = l['front'] as String?;
+    final verso = l['back'] as String?;
+    if (id == null || recto == null || verso == null) return null;
+    return Fiche(
+      id: id,
+      recto: recto,
+      verso: verso,
+      chapitre: (l['chapters'] as Map?)?['title'] as String?,
+    );
+  }
+}
+
+/// Un pack de la boutique.
+class PackBoutique {
+  const PackBoutique({
+    required this.code,
+    required this.libelle,
+    required this.description,
+    required this.prixFcfa,
+    required this.dureeJours,
+    required this.correctionsIncluses,
+    required this.plafondMatieres,
+  });
+
+  final String code;
+  final String libelle;
+  final String? description;
+  final int prixFcfa;
+  final int dureeJours;
+  final int correctionsIncluses;
+
+  /// `null` vaut illimité.
+  final int? plafondMatieres;
+
+  bool get gratuit => prixFcfa == 0;
+
+  static PackBoutique? depuis(Map<String, dynamic> l) {
+    final code = l['code'] as String?;
+    final libelle = l['label'] as String?;
+    if (code == null || libelle == null) return null;
+    return PackBoutique(
+      code: code,
+      libelle: libelle,
+      description: l['description'] as String?,
+      prixFcfa: (l['price_fcfa'] as num?)?.toInt() ?? 0,
+      dureeJours: (l['duration_days'] as num?)?.toInt() ?? 0,
+      correctionsIncluses: (l['corrections_included'] as num?)?.toInt() ?? 0,
+      plafondMatieres: (l['subjects_limit'] as num?)?.toInt(),
+    );
+  }
+}
+
+/// Une ligne d'abonnement, telle que la base la rend.
+class LigneAbonnement {
+  const LigneAbonnement({
+    required this.code,
+    required this.debut,
+    required this.fin,
+    required this.correctionsRestantes,
+    required this.plafondMatieres,
+  });
+
+  final String code;
+  final DateTime debut;
+  final DateTime fin;
+  final int correctionsRestantes;
+  final int? plafondMatieres;
+
+  static LigneAbonnement? depuis(Map<String, dynamic> l) {
+    final code = l['pack_code'] as String?;
+    final debut = l['starts_at'] as String?;
+    final fin = l['ends_at'] as String?;
+    if (code == null || debut == null || fin == null) return null;
+    return LigneAbonnement(
+      code: code,
+      debut: DateTime.parse(debut),
+      fin: DateTime.parse(fin),
+      correctionsRestantes: (l['corrections_left'] as num?)?.toInt() ?? 0,
+      plafondMatieres:
+          ((l['packs'] as Map?)?['subjects_limit'] as num?)?.toInt(),
+    );
+  }
+}
+
+/// Une ligne du classement de la faculté.
+///
+/// Aucun identifiant : « c'est toi » se lit sur [estMoi]. C'est la fonction
+/// SQL qui en décide, pas le client.
+class LigneClassement {
+  const LigneClassement({
+    required this.rang,
+    required this.prenom,
+    required this.avatar,
+    required this.xp,
+    required this.estMoi,
+  });
+
+  final int rang;
+  final String? prenom;
+  final String? avatar;
+  final int xp;
+  final bool estMoi;
+
+  static LigneClassement? depuis(Map<String, dynamic> l) {
+    final rang = (l['rang'] as num?)?.toInt();
+    if (rang == null) return null;
+    return LigneClassement(
+      rang: rang,
+      prenom: l['prenom'] as String?,
+      avatar: l['avatar_key'] as String?,
+      xp: (l['xp_total'] as num?)?.toInt() ?? 0,
+      estMoi: l['est_moi'] as bool? ?? false,
+    );
+  }
+}
+
+/// Ce que l'écran des gains affiche.
+class DonneesGains {
+  const DonneesGains({
+    required this.soldeFcfa,
+    required this.codeParrain,
+    required this.filleuls,
+    required this.filleulsPayants,
+  });
+
+  final int soldeFcfa;
+  final String? codeParrain;
+  final int filleuls;
+
+  /// Un filleul ne compte que s'il a payé au moins une fois (règle 2).
+  final int filleulsPayants;
 }

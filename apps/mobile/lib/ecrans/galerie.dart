@@ -3,8 +3,10 @@ import '../composants/bouton.dart';
 import '../composants/carte.dart';
 import '../composants/etat_vide.dart';
 import '../composants/option_qcm.dart';
+import '../composants/podium.dart';
 import '../composants/progression.dart';
 import '../composants/puce.dart';
+import '../donnees/modeles.dart';
 import '../i18n/fr.dart';
 import '../metier/serie.dart';
 import '../theme/jetons.dart';
@@ -271,6 +273,20 @@ class _GalerieState extends State<Galerie> {
                 ),
 
                 _Section(
+                  titre: 'Podium et classement',
+                  enfant: Column(
+                    children: [
+                      Podium(lignes: _podiumDemo),
+                      const SizedBox(height: Espaces.x16),
+                      for (final l in _suiteDemo) ...[
+                        RangeeClassement(ligne: l),
+                        const SizedBox(height: Espaces.x8),
+                      ],
+                    ],
+                  ),
+                ),
+
+                _Section(
                   titre: 'État vide',
                   enfant: Carte(
                     enfants: [
@@ -445,3 +461,24 @@ class _Pastille extends StatelessWidget {
     );
   }
 }
+
+/// Trois premiers du podium, et la suite du tableau.
+///
+/// `estMoi` sur le n° 2 : c'est la teinte de sa propre ligne qu'on vient
+/// vérifier ici, celle qui évite de lire vingt prénoms pour se trouver.
+const _podiumDemo = [
+  LigneClassement(rang: 1, prenom: 'Awa', avatar: null, xp: 4820, estMoi: false),
+  LigneClassement(rang: 2, prenom: 'Koffi', avatar: null, xp: 4310, estMoi: true),
+  LigneClassement(
+    rang: 3,
+    prenom: 'Mahouénan',
+    avatar: null,
+    xp: 3990,
+    estMoi: false,
+  ),
+];
+
+const _suiteDemo = [
+  LigneClassement(rang: 4, prenom: 'Ines', avatar: null, xp: 3120, estMoi: false),
+  LigneClassement(rang: 5, prenom: 'Sènankpon', avatar: null, xp: 2870, estMoi: false),
+];

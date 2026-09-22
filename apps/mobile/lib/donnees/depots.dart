@@ -5,6 +5,7 @@
 // exige un privilège passe par une route Next.js. Les quatre vues sont en
 // `security_invoker`, donc consommables telles quelles.
 
+import '../metier/acces.dart';
 import 'api.dart';
 import 'modeles.dart';
 import 'supabase.dart';
@@ -39,7 +40,8 @@ class DepotProfil {
         .from('profiles')
         .select(
           'id, first_name, xp_total, current_streak, last_validated_on, '
-          'faculty_id, referral_code, universities(name), faculties(name)',
+          'faculty_id, referral_code, avatar_key, verification_status, '
+          'study_year, universities(name), faculties(name)',
         )
         .eq('id', id)
         .maybeSingle();
@@ -246,6 +248,188 @@ class DepotCours {
         ],
       },
       depuis: ResultatSession.depuis,
+    );
+  }
+}
+
+// ---------------------------------------------------------------- Fiches
+
+class DepotFiches {
+  const DepotFiches();
+
+  /// Les fiches d'un cours, chapitre par chapitre.
+  ///
+  /// Le paquet entier arrive d'un coup : quelques dizaines de fiches pèsent
+  /// moins qu'un aller-retour par fiche, et l'étudiant qui révise dans un
+  /// amphi sans réseau peut finir son paquet.
+  Future<List<Fiche>> duCours(String coursId) async {
+    final lignes = await supabase
+        .from('flashcards')
+        .select('id, front, back, chapters!inner(title, index, course_id)')
+        .eq('chapters.course_id', coursId)
+        .order('id');
+
+    return _garder(lignes, Fiche.depuis);
+  }
+}
+
+// -------------------------------------------------------------- Boutique
+
+class DonneesBoutique {
+  const DonneesBoutique({required this.packs, required this.abonnements});
+
+  final List<PackBoutique> packs;
+  final List<LigneAbonnement> abonnements;
+
+  /// L'état d'accès, calculé par la logique portée et testée.
+  EtatAcces get acces => etatAcces([
+    for (final a in abonnements)
+      Abonnement(
+        code: CodePack.depuisSql(a.code) ?? CodePack.decouverte,
+        debut: a.debut,
+        fin: a.fin,
+        correctionsRestantes: a.correctionsRestantes,
+        plafondMatieres: a.plafondMatieres,
+      ),
+  ]);
+
+  /// Découverte est une fois pour toutes : le bouton doit le dire avant le
+  /// clic, pas après le refus du serveur.
+  bool get decouverteUtilisee =>
+      abonnements.any((a) => a.code == CodePack.decouverte.sql);
+}
+
+class DepotBoutique {
+  const DepotBoutique();
+
+  Future<DonneesBoutique> charger() async {
+    final resultats = await Future.wait<dynamic>([
+      Future<dynamic>.value(
+        supabase
+            .from('packs')
+            .select(
+              'code, label, description, price_fcfa, duration_days, '
+              'corrections_included, subjects_limit',
+            )
+            .order('price_fcfa'),
+      ),
+      Future<dynamic>.value(
+        supabase
+            .from('subscriptions')
+            .select(
+              'pack_code, starts_at, ends_at, corrections_left, '
+              'packs(subjects_limit)',
+            ),
+      ),
+    ]);
+
+    return DonneesBoutique(
+      packs: _garder(resultats[0] as List? ?? const [], PackBoutique.depuis),
+      abonnements: _garder(
+        resultats[1] as List? ?? const [],
+        LigneAbonnement.depuis,
+      ),
+    );
+  }
+
+  /// Le seul pack à 0 F : pas de fournisseur de paiement, donc activable
+  /// tout de suite. Les packs payants attendent FedaPay.
+  Future<Reponse<bool>> activerDecouverte(ApiReviz api) {
+    return api.poster<bool>(
+      '/api/packs/decouverte',
+      depuis: (data) => data['active'] as bool? ?? true,
+    );
+  }
+}
+
+// ----------------------------------------------------------------- Gains
+
+class DepotGains {
+  const DepotGains();
+
+  Future<DonneesGains> charger() async {
+    final profil = await const DepotProfil().mien();
+
+    final resultats = await Future.wait<dynamic>([
+      Future<dynamic>.value(supabase.rpc('wallet_balance')),
+      Future<dynamic>.value(
+        supabase.from('referrals').select('referred_id, first_payment_at'),
+      ),
+    ]);
+
+    final parrainages = (resultats[1] as List? ?? const [])
+        .whereType<Map>()
+        .toList();
+
+    return DonneesGains(
+      soldeFcfa: (resultats[0] as num?)?.toInt() ?? 0,
+      codeParrain: profil?.codeParrain,
+      filleuls: parrainages.length,
+      filleulsPayants: parrainages
+          .where((p) => p['first_payment_at'] != null)
+          .length,
+    );
+  }
+
+  /// Demande de retrait — par la route : `withdrawals` n'a aucune politique
+  /// d'insertion, et le solde est revérifié côté serveur.
+  Future<Reponse<String>> demanderRetrait({
+    required ApiReviz api,
+    required int montantFcfa,
+    required String operateur,
+    required String telephone,
+  }) {
+    return api.poster<String>(
+      '/api/wallet/withdrawal',
+      corps: {
+        'amount_fcfa': montantFcfa,
+        'operator': operateur,
+        'phone': telephone,
+      },
+      // Cette route était antérieure à la phase 1 : elle ne lisait pas
+      // l'en-tête `Authorization`, rendait `{ ok, withdrawal_id }` au lieu de
+      // l'enveloppe commune, et renvoyait `insufficient_balance` en anglais
+      // à l'étudiant. Les trois ont été corrigés avec cet écran ; le message
+      // d'erreur arrive donc prêt à afficher.
+      depuis: (data) => (data['id'] as String?) ?? '',
+    );
+  }
+}
+
+// ------------------------------------------------------------ Classement
+
+class DonneesClassement {
+  const DonneesClassement({required this.lignes, required this.monRang});
+
+  final List<LigneClassement> lignes;
+
+  /// `null` si l'étudiant n'a pas encore marqué de point.
+  final int? monRang;
+}
+
+class DepotClassement {
+  const DepotClassement();
+
+  /// Le classement de sa faculté.
+  ///
+  /// Par une fonction `SECURITY DEFINER` étroite, et non en lisant
+  /// `profiles` : la politique n'autorise que sa propre ligne, et les profils
+  /// portent le téléphone et l'empreinte de carte étudiante. La fonction ne
+  /// rend aucun identifiant — « c'est toi » se lit sur `est_moi`.
+  Future<DonneesClassement> charger({int limite = 20}) async {
+    final resultats = await Future.wait<dynamic>([
+      Future<dynamic>.value(
+        supabase.rpc('classement_faculte', params: {'limite': limite}),
+      ),
+      Future<dynamic>.value(supabase.rpc('mon_rang_faculte')),
+    ]);
+
+    return DonneesClassement(
+      lignes: _garder(
+        resultats[0] as List? ?? const [],
+        LigneClassement.depuis,
+      ),
+      monRang: (resultats[1] as num?)?.toInt(),
     );
   }
 }

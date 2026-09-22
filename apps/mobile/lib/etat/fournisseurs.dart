@@ -16,6 +16,10 @@ final apiProvider = Provider<ApiReviz>((_) => ApiReviz());
 final depotProfilProvider = Provider((_) => const DepotProfil());
 final depotAccueilProvider = Provider((_) => const DepotAccueil());
 final depotCoursProvider = Provider((_) => const DepotCours());
+final depotFichesProvider = Provider((_) => const DepotFiches());
+final depotBoutiqueProvider = Provider((_) => const DepotBoutique());
+final depotGainsProvider = Provider((_) => const DepotGains());
+final depotClassementProvider = Provider((_) => const DepotClassement());
 
 /// Flux d'authentification de Supabase, tel quel.
 ///
@@ -63,6 +67,28 @@ final questionsProvider = FutureProvider.family<List<QuestionQcm>, String>((
   coursId,
 ) {
   return ref.read(depotCoursProvider).questionsDeSession(coursId);
+});
+
+final fichesProvider = FutureProvider.family<List<Fiche>, String>((
+  ref,
+  coursId,
+) {
+  return ref.read(depotFichesProvider).duCours(coursId);
+});
+
+final boutiqueProvider = FutureProvider<DonneesBoutique>((ref) async {
+  ref.watch(authProvider);
+  return ref.read(depotBoutiqueProvider).charger();
+});
+
+final gainsProvider = FutureProvider<DonneesGains>((ref) async {
+  ref.watch(authProvider);
+  return ref.read(depotGainsProvider).charger();
+});
+
+final classementProvider = FutureProvider<DonneesClassement>((ref) async {
+  ref.watch(authProvider);
+  return ref.read(depotClassementProvider).charger();
 });
 
 /// Les universités, pour l'inscription. Lues une fois.

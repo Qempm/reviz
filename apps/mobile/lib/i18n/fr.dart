@@ -16,7 +16,198 @@ abstract final class Fr {
   static const reviser = _Reviser();
   static const cours = _Cours();
   static const session = _Session();
+  static const fiches = _Fiches();
+  static const boutique = _Boutique();
+  static const gains = _Gains();
+  static const classement = _Classement();
+  static const profil = _Profil();
   static const erreurs = _Erreurs();
+}
+
+class _Fiches {
+  const _Fiches();
+
+  final String titre = 'Les fiches';
+  final String sousTitre = 'Touche une fiche pour voir la réponse.';
+  final String aucune = 'Aucune fiche';
+  final String aucuneDetail =
+      'Les fiches arrivent en même temps que les questions.';
+
+  String position(int i, int total) => 'Fiche $i sur $total';
+  final String recto = 'Question';
+  final String verso = 'Réponse';
+  final String precedente = 'Précédente';
+  final String suivante = 'Suivante';
+  final String terminee = 'Tu as vu toutes les fiches';
+  final String recommencer = 'Recommencer';
+  final String voirFiches = 'Voir les fiches';
+}
+
+class _Boutique {
+  const _Boutique();
+
+  final String titre = 'Les packs';
+  final String sousTitre =
+      'Tu paies une fois, pour une durée précise. Rien ne se renouvelle.';
+  final String recommande = 'Conseillé';
+  final String gratuit = 'Gratuit';
+
+  String duree(int j) => j <= 1 ? '$j jour d’accès' : '$j jours d’accès';
+
+  String corrections(int n) => n == 0
+      ? 'Aucune correction incluse'
+      : n <= 1
+      ? '$n correction de copie'
+      : '$n corrections de copie';
+
+  String matieres(int? n) => n == null
+      ? 'Toutes tes matières'
+      : n <= 1
+      ? '$n matière'
+      : '$n matières';
+
+  final String choisir = 'Choisir ce pack';
+  final String activerDecouverte = 'Activer gratuitement';
+  final String decouverteUtilisee = 'Découverte déjà utilisée';
+  final String paiementBientot = 'Paiement Mobile Money bientôt disponible';
+  final String activationImpossible =
+      'L’activation n’a pas abouti. Réessaie dans un instant.';
+
+  String accesActif(int j) => j <= 1
+      ? 'Ton accès finit aujourd’hui'
+      : 'Accès actif encore $j jours';
+
+  String correctionsRestantes(int n) => n == 0
+      ? 'Plus de correction disponible'
+      : n <= 1
+      ? '$n correction restante'
+      : '$n corrections restantes';
+
+  final String accesExpire = 'Ton pack est arrivé à terme';
+  final String accesExpireDetail =
+      'Tes cours et ton historique restent consultables. Réactive pour '
+      'générer de nouveau.';
+  final String sansReconduction =
+      'Aucun prélèvement automatique. À la fin de la période, l’accès '
+      's’arrête, tout simplement.';
+}
+
+class _Gains {
+  const _Gains();
+
+  final String titre = 'Mes gains';
+  final String solde = 'Solde disponible';
+  final String retraitPossible = 'Tu peux demander un retrait.';
+
+  String resteAvantRetrait(int n) =>
+      'Encore $n F avant de pouvoir retirer.';
+
+  final String tonCode = 'Ton code parrain';
+  final String aideCode =
+      'Partage-le : tu touches 25 % de chaque paiement de tes filleuls '
+      'pendant 12 mois.';
+  final String copier = 'Copier';
+  final String copie = 'Code copié';
+  final String partager = 'Partager sur WhatsApp';
+
+  String messagePartage(String code) =>
+      'Rejoins-moi sur Reviz pour réviser : utilise mon code $code.';
+
+  final String aucunFilleul = 'Aucun filleul pour l’instant';
+  final String aucunFilleulDetail =
+      'Un filleul compte dès qu’il est vérifié et qu’il a payé une première '
+      'fois.';
+
+  String filleulsPayants(int n) =>
+      n <= 1 ? '$n filleul actif' : '$n filleuls actifs';
+
+  String filleulsTotal(int n) =>
+      n <= 1 ? '$n filleul inscrit' : '$n filleuls inscrits';
+
+  final String demanderRetrait = 'Demander un retrait';
+  final String voirClassement = 'Voir le classement';
+
+  // --- Demande de retrait
+  //
+  // Les messages sont en français et disent quoi faire : l'écran web affiche
+  // aujourd'hui `insufficient_balance` tel quel à l'étudiant (rapport
+  // § 4.14).
+
+  final String titreRetrait = 'Retirer mes gains';
+  final String montant = 'Montant à retirer';
+
+  String aideMontant(int seuil) =>
+      'Minimum $seuil F. Le versement arrive sur ton Mobile Money.';
+
+  final String operateur = 'Opérateur';
+  final String choisirOperateur = 'Choisis ton opérateur';
+  final String telephone = 'Numéro Mobile Money';
+  final String aideTelephone = 'Le numéro qui recevra l’argent.';
+  final String envoyerDemande = 'Envoyer la demande';
+  final String demandeEnvoyee =
+      'Demande envoyée. Le versement arrive sous 48 h ouvrées.';
+  final String demandeImpossible =
+      'La demande n’a pas abouti. Réessaie dans un instant.';
+  final String montantInvalide = 'Indique un montant en chiffres.';
+  final String telephoneInvalide = 'Ce numéro ne ressemble pas à un numéro.';
+
+  String soldeInsuffisant(int solde) => 'Ton solde est de $solde F.';
+
+  String sousLeSeuil(int seuil) => 'Le retrait minimum est de $seuil F.';
+}
+
+class _Classement {
+  const _Classement();
+
+  final String titre = 'Le classement';
+  final String sousTitre = 'Ta faculté, par expérience gagnée.';
+  final String toi = 'Toi';
+
+  String monRang(int r) => 'Tu es $rᵉ de ta faculté';
+  final String nonClasse = 'Réponds à une question pour entrer au classement';
+  final String aucun = 'Personne n’est encore classé';
+  final String aucunDetail =
+      'Sois le premier de ta faculté à marquer des points.';
+
+  String xp(int n) => '$n XP';
+}
+
+class _Profil {
+  const _Profil();
+
+  final String titre = 'Mon profil';
+  final String verifie = 'Compte vérifié';
+  final String verifieDetail = 'Ta carte étudiante a été validée.';
+  final String nonVerifie = 'Compte non vérifié';
+  final String nonVerifieDetail =
+      'Ajoute ta carte étudiante pour débloquer le parrainage et les cours '
+      'partagés.';
+  final String voirLesPacks = 'Les packs et mon accès';
+  final String deconnexion = 'Me déconnecter';
+  final String animationsReduites = 'Réduire les animations';
+  final String animationsReduitesAide =
+      'Moins de mouvement, un peu moins de batterie.';
+
+  final String verificationEnCours = 'Vérification en cours';
+  final String verificationEnCoursDetail =
+      'On regarde ta carte étudiante. Ça prend quelques heures.';
+  final String ajouterCarte = 'Ajouter ma carte étudiante';
+
+  String annee(int n) => n <= 1 ? '${n}re année' : '${n}e année';
+
+  final String mesChiffres = 'Mes chiffres';
+
+  String xp(int n) => '$n XP gagnés';
+
+  String serie(int n) =>
+      n <= 1 ? 'Meilleure série : $n jour' : 'Meilleure série : $n jours';
+
+  final String reglages = 'Réglages';
+  final String changerAvatar = 'Changer mon avatar';
+  final String aide = 'Aide et contact';
+  final String confirmerDeconnexion = 'Te déconnecter de Reviz ?';
+  final String confirmerDeconnexionDetail =
+      'Tes cours et ta progression restent en place.';
 }
 
 class _Commun {

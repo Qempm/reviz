@@ -9,10 +9,15 @@ import 'composants/coquille.dart';
 import 'composants/etat_vide.dart';
 import 'donnees/supabase.dart';
 import 'ecrans/accueil.dart';
+import 'ecrans/boutique.dart';
+import 'ecrans/classement.dart';
 import 'ecrans/connexion.dart';
 import 'ecrans/cours.dart';
+import 'ecrans/fiches.dart';
+import 'ecrans/gains.dart';
 import 'ecrans/galerie.dart';
 import 'ecrans/inscription.dart';
+import 'ecrans/profil.dart';
 import 'ecrans/reviser.dart';
 import 'ecrans/session.dart';
 import 'etat/fournisseurs.dart';
@@ -31,13 +36,14 @@ abstract final class Chemins {
   static const accueil = '/';
   static const reviser = '/reviser';
   static const galerie = '/galerie';
-
-  // À venir : les écrans de la seconde moitié de la phase 4.
   static const boutique = '/boutique';
-  static const corriger = '/corriger';
   static const gains = '/gains';
   static const classement = '/classement';
   static const profil = '/profil';
+
+  /// Le seul onglet encore sans écran : le dépôt de copie attend le seau de
+  /// stockage `corrections`, qui n'existe pas (phase 0.4 du rapport).
+  static const corriger = '/corriger';
 
   static String cours(String id) => '/cours/$id';
   static String session(String id) => '/cours/$id/session';
@@ -96,21 +102,30 @@ GoRouter creerRouteur(Ref ref) {
             builder: (_, etat) =>
                 EcranSession(coursId: etat.pathParameters['id'] ?? ''),
           ),
+          GoRoute(
+            path: 'fiches',
+            builder: (_, etat) =>
+                EcranFiches(coursId: etat.pathParameters['id'] ?? ''),
+          ),
         ],
       ),
 
-      // Les trois onglets restants existent pour que la barre de navigation
-      // ne mène pas dans le vide. Ils disent ce qu'il en est, plutôt que de
-      // prétendre.
-      for (final (chemin, titre) in const [
-        (Chemins.corriger, 'Corriger'),
-        (Chemins.gains, 'Mes gains'),
-        (Chemins.profil, 'Mon profil'),
-      ])
-        GoRoute(
-          path: chemin,
-          builder: (_, _) => _APreparer(chemin: chemin, titre: titre),
-        ),
+      GoRoute(path: Chemins.boutique, builder: (_, _) => const EcranBoutique()),
+      GoRoute(path: Chemins.gains, builder: (_, _) => const EcranGains()),
+      GoRoute(
+        path: Chemins.classement,
+        builder: (_, _) => const EcranClassement(),
+      ),
+      GoRoute(path: Chemins.profil, builder: (_, _) => const EcranProfil()),
+
+      // « Corriger » garde un onglet qui dit ce qu'il en est, plutôt que de
+      // mener dans le vide ou de prétendre fonctionner : le seau de stockage
+      // que la route attend n'a jamais été créé.
+      GoRoute(
+        path: Chemins.corriger,
+        builder: (_, _) =>
+            const _APreparer(chemin: Chemins.corriger, titre: 'Corriger'),
+      ),
     ],
     errorBuilder: (context, etat) => Scaffold(
       backgroundColor: Couleurs.cream,

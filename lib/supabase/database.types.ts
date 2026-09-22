@@ -1135,6 +1135,16 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      classement_faculte: {
+        Args: { limite?: number }
+        Returns: {
+          avatar_key: string
+          est_moi: boolean
+          prenom: string
+          rang: number
+          xp_total: number
+        }[]
+      }
       current_faculty_id: { Args: never; Returns: string }
       daily_goal: { Args: never; Returns: number }
       generate_referral_code: { Args: never; Returns: string }
@@ -1147,6 +1157,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      mon_rang_faculte: { Args: never; Returns: number }
       recompute_xp_total: { Args: { target: string }; Returns: number }
       refresh_streak: { Args: { target: string }; Returns: undefined }
       streak_week: {

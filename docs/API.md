@@ -25,7 +25,14 @@ elle-même, elle passe par une route. Sinon, elle passe en direct.
 `subscriptions`, `wallet_ledger`, `withdrawals`, `referrals`, `xp_events`,
 `daily_activity`, et les quatre vues `subject_stats`, `chapter_stats`,
 `course_overview`, `active_subscriptions`. Plus les RPC `streak_week(date)`,
-`daily_goal()`, `wallet_balance()` et `get_user_rank()`.
+`daily_goal()`, `wallet_balance()`, `classement_faculte(limite)` et
+`mon_rang_faculte()`.
+
+> `get_user_rank(uuid)` **n'existe pas** : sa migration ne s'appliquait pas, et
+> elle prenait un identifiant en paramètre — le motif qui avait déjà coûté
+> quatre passes de correction. Le classement passe par `classement_faculte()`,
+> qui ne prend ni ne rend aucun identifiant : « c'est toi » se lit sur la
+> colonne `est_moi`.
 
 **Ce qui n'est pas lisible du tout** — `jobs` et `ai_usage` : RLS activée,
 aucune politique.
@@ -179,19 +186,43 @@ JPEG, PNG ou WebP. Réponse : `{ "correctionId": "uuid" }`.
 > de cours a résolu le problème par une URL signée ; la correction devra
 > suivre le même chemin.
 
+### `POST /api/wallet/withdrawal`
+
+`{ amount_fcfa, operator, phone }` — `operator` vaut `mtn`, `moov` ou `wave`,
+`phone` est au format E.164. Réponse : `{ "id": "uuid" }`.
+
+Trois statuts distincts, parce que « sous le seuil » et « solde insuffisant »
+ne demandent pas la même chose à l'étudiant : **400** pour une entrée ou un
+montant sous les 3 000 F, **402** quand le solde ne suffit pas, **401** sans
+session. La vérification passe par `verifierRetrait()`, qui porte ces deux
+cas séparément, et le solde est relu côté serveur — un montant proposé par le
+client ne décide de rien.
+
 ### Les routes antérieures
 
 `/api/payments/init`, `/api/payments/status`, `/api/payments/webhook`,
-`/api/profile/avatar`, `/api/profile/delete`, `/api/wallet/withdrawal` et
-`/api/jobs/run` existaient déjà. Elles acceptent désormais un jeton comme les
-autres, mais leurs messages d'erreur sont en anglais et leur enveloppe n'est
-pas uniforme : à harmoniser quand on y touchera.
+`/api/profile/avatar`, `/api/profile/delete` et `/api/jobs/run` existaient
+déjà, et **n'ont pas été converties** : elles construisent leur client
+Supabase à partir des cookies uniquement, donc tout appel depuis
+l'application Flutter reçoit 401. Leurs messages d'erreur sont en anglais et
+leur enveloppe n'est pas uniforme.
+
+`/api/wallet/withdrawal` était dans ce lot ; elle a été convertie avec l'écran
+des gains, qui en avait besoin — sans quoi le bouton « Demander un retrait »
+n'aurait été qu'un décor de plus. C'est la règle à suivre pour les autres :
+on les convertit quand un écran les appelle, pas avant.
+
+`/api/jobs/run` est un cas à part : elle s'authentifie par `CRON_SECRET` et
+n'a aucune raison d'accepter un jeton d'étudiant.
 
 ---
 
 ## 5. Ce qui reste à faire de ce côté
 
-- Harmoniser les sept routes antérieures sur l'enveloppe et le français.
+- Convertir les cinq routes antérieures restantes (`payments/init`,
+  `payments/status`, `payments/webhook`, `profile/avatar`, `profile/delete`)
+  sur `authentifier()`, l'enveloppe commune et le français. Tant qu'elles ne le
+  sont pas, aucun écran Flutter ne peut les appeler.
 - Le dépôt de correction par URL signée, pour lever le plafond de 4,5 Mo.
 - `/api/payments/init` et la Server Action `initiatePayment` font la même
   chose : n'en garder qu'une.

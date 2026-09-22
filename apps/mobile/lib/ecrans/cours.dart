@@ -212,6 +212,16 @@ class _Contenu extends ConsumerWidget {
                   ? null
                   : () => context.go(Chemins.session(cours.id)),
             ),
+
+            // Les fiches en second : le QCM est le cœur du produit, et un
+            // écran ne porte qu'un seul CTA principal.
+            if (cours.nbFiches > 0)
+              Bouton(
+                libelle: Fr.fiches.voirFiches,
+                icone: Icons.style,
+                variante: VarianteBouton.secondaire,
+                onTap: () => context.go(Chemins.fiches(cours.id)),
+              ),
           ],
         ),
         const SizedBox(height: Espaces.x24),

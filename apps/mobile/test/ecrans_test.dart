@@ -6,8 +6,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:reviz/composants/option_qcm.dart';
 import 'package:reviz/donnees/depots.dart';
 import 'package:reviz/donnees/modeles.dart';
+import 'package:reviz/composants/bouton.dart';
 import 'package:reviz/ecrans/accueil.dart';
+import 'package:reviz/ecrans/boutique.dart';
+import 'package:reviz/ecrans/classement.dart';
 import 'package:reviz/ecrans/cours.dart';
+import 'package:reviz/ecrans/fiches.dart';
+import 'package:reviz/ecrans/gains.dart';
+import 'package:reviz/ecrans/profil.dart';
 import 'package:reviz/ecrans/reviser.dart';
 import 'package:reviz/ecrans/session.dart';
 import 'package:reviz/etat/fournisseurs.dart';
@@ -151,6 +157,91 @@ const _questions = [
     reponse: 'La Conférence des Forces Vives de la Nation',
     explication: null,
     probabilite: 'medium',
+  ),
+];
+
+
+// ----------------------------- Fixtures de la seconde moitié des écrans
+
+const _fiches = [
+  Fiche(
+    id: 'f1',
+    recto: 'Qu’est-ce qu’une Constitution rigide ?',
+    verso:
+        'Une Constitution dont la révision suit une procédure plus lourde '
+        'que celle des lois ordinaires.',
+    chapitre: 'La notion de Constitution',
+  ),
+  Fiche(
+    id: 'f2',
+    recto: 'Qui contrôle la constitutionnalité au Bénin ?',
+    verso: 'La Cour constitutionnelle.',
+    chapitre: 'Le contrôle de constitutionnalité',
+  ),
+];
+
+const _packs = [
+  PackBoutique(
+    code: 'decouverte',
+    libelle: 'Découverte',
+    description: 'Pour voir ce que Reviz sait faire.',
+    prixFcfa: 0,
+    dureeJours: 3,
+    correctionsIncluses: 1,
+    plafondMatieres: 1,
+  ),
+  PackBoutique(
+    code: 'controle',
+    libelle: 'Contrôle',
+    description: 'La semaine avant le devoir.',
+    prixFcfa: 500,
+    dureeJours: 7,
+    correctionsIncluses: 3,
+    plafondMatieres: 2,
+  ),
+];
+
+/// Deux packs actifs en même temps.
+///
+/// C'est exactement le cas que l'écran web ratait : il lisait `.limit(1)` et
+/// n'affichait donc que les corrections du premier abonnement trouvé
+/// (rapport § 4.10). Ici on attend la **somme**, 3 + 2.
+List<LigneAbonnement> get _deuxPacksActifs {
+  final maintenant = DateTime.now().toUtc();
+  return [
+    LigneAbonnement(
+      code: 'controle',
+      debut: maintenant.subtract(const Duration(days: 1)),
+      fin: maintenant.add(const Duration(days: 6)),
+      correctionsRestantes: 3,
+      plafondMatieres: 2,
+    ),
+    LigneAbonnement(
+      code: 'decouverte',
+      debut: maintenant.subtract(const Duration(days: 2)),
+      fin: maintenant.add(const Duration(days: 1)),
+      correctionsRestantes: 2,
+      plafondMatieres: 1,
+    ),
+  ];
+}
+
+const _classement = [
+  LigneClassement(rang: 1, prenom: 'Awa', avatar: null, xp: 4820, estMoi: false),
+  LigneClassement(rang: 2, prenom: 'Koffi', avatar: null, xp: 4310, estMoi: true),
+  LigneClassement(
+    rang: 3,
+    prenom: 'Mahouénan',
+    avatar: null,
+    xp: 3990,
+    estMoi: false,
+  ),
+  LigneClassement(
+    rang: 4,
+    prenom: 'Sènankpon',
+    avatar: null,
+    xp: 3120,
+    estMoi: false,
   ),
 ];
 
@@ -450,6 +541,428 @@ void main() {
       );
 
       expect(find.text('Aucune question à réviser'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('fiches', () {
+    testWidgets('retourne la fiche et avance dans le paquet', (tester) async {
+      await _poser(
+        tester,
+        const EcranFiches(coursId: 'c1'),
+        remplacements: [fichesProvider('c1').overrideWith((_) async => _fiches)],
+      );
+
+      expect(find.text('Fiche 1 sur 2'), findsOneWidget);
+      expect(
+        find.text('Qu’est-ce qu’une Constitution rigide ?'),
+        findsOneWidget,
+      );
+      // La réponse n'est pas visible avant le retournement : sans cela,
+      // l'effort de rappel disparaît et la fiche ne sert plus à rien.
+      expect(find.textContaining('procédure plus lourde'), findsNothing);
+
+      await tester.tap(find.text('Qu’est-ce qu’une Constitution rigide ?'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('procédure plus lourde'), findsOneWidget);
+
+      await _taper(tester, find.text('Suivante'));
+
+      expect(find.text('Fiche 2 sur 2'), findsOneWidget);
+      // La fiche suivante arrive côté question, pas côté réponse.
+      expect(find.text('La Cour constitutionnelle.'), findsNothing);
+      // Dernière fiche : plus de « Suivante », mais de quoi recommencer.
+      expect(find.text('Suivante'), findsNothing);
+      expect(find.text('Recommencer'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('dit qu’il n’y a aucune fiche', (tester) async {
+      await _poser(
+        tester,
+        const EcranFiches(coursId: 'c1'),
+        remplacements: [
+          fichesProvider('c1').overrideWith((_) async => <Fiche>[]),
+        ],
+      );
+
+      expect(find.text('Aucune fiche'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('ne déborde pas à 320 px', (tester) async {
+      await _poser(
+        tester,
+        const EcranFiches(coursId: 'c1'),
+        taille: const Size(320, 640),
+        remplacements: [fichesProvider('c1').overrideWith((_) async => _fiches)],
+      );
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('boutique', () {
+    testWidgets('somme les corrections de tous les packs actifs', (
+      tester,
+    ) async {
+      await _poser(
+        tester,
+        const EcranBoutique(),
+        remplacements: [
+          boutiqueProvider.overrideWith(
+            (_) async =>
+                DonneesBoutique(packs: _packs, abonnements: _deuxPacksActifs),
+          ),
+        ],
+      );
+
+      // 3 + 2, et non 3 : le défaut § 4.10 ne doit pas traverser le portage.
+      expect(find.text('5 corrections restantes'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('dit que Découverte est déjà utilisée', (tester) async {
+      await _poser(
+        tester,
+        const EcranBoutique(),
+        remplacements: [
+          boutiqueProvider.overrideWith(
+            (_) async =>
+                DonneesBoutique(packs: _packs, abonnements: _deuxPacksActifs),
+          ),
+        ],
+      );
+
+      // Avant le clic, et non après le refus du serveur.
+      expect(find.text('Découverte déjà utilisée'), findsOneWidget);
+      expect(find.text('Activer gratuitement'), findsNothing);
+    });
+
+    testWidgets('propose Découverte quand rien n’a été acheté', (tester) async {
+      await _poser(
+        tester,
+        const EcranBoutique(),
+        remplacements: [
+          boutiqueProvider.overrideWith(
+            (_) async => const DonneesBoutique(packs: _packs, abonnements: []),
+          ),
+        ],
+      );
+
+      expect(find.text('Activer gratuitement'), findsOneWidget);
+      expect(find.text('Gratuit'), findsOneWidget);
+      expect(find.text('500 F'), findsOneWidget);
+      // Aucun pack acheté n'est pas un pack expiré.
+      expect(find.text('Ton pack est arrivé à terme'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('annonce la fin d’accès sans promettre de reconduction', (
+      tester,
+    ) async {
+      final vieux = DateTime.now().toUtc().subtract(const Duration(days: 30));
+
+      await _poser(
+        tester,
+        const EcranBoutique(),
+        remplacements: [
+          boutiqueProvider.overrideWith(
+            (_) async => DonneesBoutique(
+              packs: _packs,
+              abonnements: [
+                LigneAbonnement(
+                  code: 'controle',
+                  debut: vieux,
+                  fin: vieux.add(const Duration(days: 7)),
+                  correctionsRestantes: 0,
+                  plafondMatieres: 2,
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+
+      expect(find.text('Ton pack est arrivé à terme'), findsOneWidget);
+
+      // Le rappel est en pied de liste, donc sous le pli : une `ListView`
+      // construit paresseusement, et `find` ne voit pas ce qui n'est pas
+      // encore dans l'arbre.
+      final rappel = find.text(
+        'Aucun prélèvement automatique. À la fin de la période, l’accès '
+        's’arrête, tout simplement.',
+      );
+      await tester.scrollUntilVisible(
+        rappel,
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(rappel, findsOneWidget);
+    });
+  });
+
+  group('gains', () {
+    testWidgets('dit ce qui reste avant le seuil, et n’ouvre pas le retrait', (
+      tester,
+    ) async {
+      await _poser(
+        tester,
+        const EcranGains(),
+        remplacements: [
+          gainsProvider.overrideWith(
+            (_) async => const DonneesGains(
+              soldeFcfa: 1800,
+              codeParrain: 'ABC123',
+              filleuls: 2,
+              filleulsPayants: 1,
+            ),
+          ),
+          profilProvider.overrideWith((_) async => _profil),
+        ],
+      );
+
+      expect(find.text('1800 F'), findsOneWidget);
+      expect(
+        find.text('Encore 1200 F avant de pouvoir retirer.'),
+        findsOneWidget,
+      );
+
+      // Le bouton existe mais reste inerte : le seuil de 3 000 F est une
+      // règle métier, pas une erreur à découvrir après le clic.
+      final bouton = tester.widget<Bouton>(
+        find.widgetWithText(Bouton, 'Demander un retrait'),
+      );
+      expect(bouton.onTap, isNull);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('ouvre la feuille de retrait au-dessus du seuil', (
+      tester,
+    ) async {
+      await _poser(
+        tester,
+        const EcranGains(),
+        remplacements: [
+          gainsProvider.overrideWith(
+            (_) async => const DonneesGains(
+              soldeFcfa: 5200,
+              codeParrain: 'ABC123',
+              filleuls: 3,
+              filleulsPayants: 2,
+            ),
+          ),
+          profilProvider.overrideWith((_) async => _profil),
+        ],
+      );
+
+      expect(find.text('Tu peux demander un retrait.'), findsOneWidget);
+      expect(find.text('2 filleuls actifs'), findsOneWidget);
+
+      await _taper(tester, find.text('Demander un retrait'));
+
+      expect(find.text('Retirer mes gains'), findsOneWidget);
+      // Le solde entier est proposé : c'est le retrait le plus probable.
+      expect(find.text('5200'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('refuse un numéro qui n’en est pas un', (tester) async {
+      await _poser(
+        tester,
+        const EcranGains(),
+        remplacements: [
+          gainsProvider.overrideWith(
+            (_) async => const DonneesGains(
+              soldeFcfa: 5200,
+              codeParrain: 'ABC123',
+              filleuls: 0,
+              filleulsPayants: 0,
+            ),
+          ),
+          profilProvider.overrideWith((_) async => _profil),
+        ],
+      );
+
+      await _taper(tester, find.text('Demander un retrait'));
+      await _taper(tester, find.text('Envoyer la demande'));
+
+      // Aucun appel réseau n'est parti : la vérification locale parle
+      // d'abord, et en français.
+      expect(
+        find.text('Ce numéro ne ressemble pas à un numéro.'),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('ne déborde pas à 320 px', (tester) async {
+      await _poser(
+        tester,
+        const EcranGains(),
+        taille: const Size(320, 640),
+        remplacements: [
+          gainsProvider.overrideWith(
+            (_) async => const DonneesGains(
+              soldeFcfa: 5200,
+              codeParrain: 'ABC123',
+              filleuls: 3,
+              filleulsPayants: 2,
+            ),
+          ),
+          profilProvider.overrideWith((_) async => _profil),
+        ],
+      );
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('classement', () {
+    testWidgets('dresse le podium et marque sa propre ligne', (tester) async {
+      await _poser(
+        tester,
+        const EcranClassement(),
+        remplacements: [
+          classementProvider.overrideWith(
+            (_) async =>
+                const DonneesClassement(lignes: _classement, monRang: 2),
+          ),
+        ],
+      );
+
+      expect(find.text('Awa'), findsOneWidget);
+      // Sa propre ligne dit « Toi » et non son prénom.
+      expect(find.text('Toi'), findsOneWidget);
+      expect(find.text('Koffi'), findsNothing);
+      expect(find.text('Tu es 2ᵉ de ta faculté'), findsOneWidget);
+      // Le 4ᵉ est dans la liste, pas sur le podium.
+      expect(find.text('Sènankpon'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('invite à jouer quand on n’est pas classé', (tester) async {
+      await _poser(
+        tester,
+        const EcranClassement(),
+        remplacements: [
+          classementProvider.overrideWith(
+            (_) async =>
+                const DonneesClassement(lignes: _classement, monRang: null),
+          ),
+        ],
+      );
+
+      expect(
+        find.text('Réponds à une question pour entrer au classement'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('dit que la faculté est vide plutôt que rien', (tester) async {
+      await _poser(
+        tester,
+        const EcranClassement(),
+        remplacements: [
+          classementProvider.overrideWith(
+            (_) async => const DonneesClassement(lignes: [], monRang: null),
+          ),
+        ],
+      );
+
+      expect(find.text('Personne n’est encore classé'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('tient un podium incomplet, et 320 px', (tester) async {
+      await _poser(
+        tester,
+        const EcranClassement(),
+        taille: const Size(320, 640),
+        remplacements: [
+          classementProvider.overrideWith(
+            // Une faculté qui démarre : un seul étudiant classé. Les deux
+            // marches manquantes ne doivent pas casser la rangée.
+            (_) async =>
+                DonneesClassement(lignes: [_classement.first], monRang: 1),
+          ),
+        ],
+      );
+
+      expect(find.text('Awa'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('profil', () {
+    testWidgets('montre l’identité et les chiffres, et rien de décoratif', (
+      tester,
+    ) async {
+      await _poser(
+        tester,
+        const EcranProfil(),
+        remplacements: [profilProvider.overrideWith((_) async => _profil)],
+      );
+
+      expect(find.text('Awa'), findsOneWidget);
+      expect(find.text('FADESP'), findsOneWidget);
+      expect(find.text('1280 XP gagnés'), findsOneWidget);
+
+      // Les entrées mortes de l'écran web ne sont pas reprises : pas de
+      // « Vider le cache » sans effet, pas d'interrupteur WhatsApp figé, et
+      // aucun lien vers une route inexistante (rapport § 4.15).
+      expect(find.textContaining('Vider le cache'), findsNothing);
+      expect(find.textContaining('WhatsApp'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('ne prétend pas qu’un compte non vérifié l’est', (
+      tester,
+    ) async {
+      await _poser(
+        tester,
+        const EcranProfil(),
+        remplacements: [profilProvider.overrideWith((_) async => _profil)],
+      );
+
+      // La carte étudiante est la seule barrière « un compte par personne »
+      // depuis que le téléphone est facultatif : l'écran doit le dire.
+      expect(find.text('Compte non vérifié'), findsOneWidget);
+      expect(find.text('Compte vérifié'), findsNothing);
+    });
+
+    testWidgets('reconnaît une vérification acquise', (tester) async {
+      final verifie = Profil(
+        id: 'u1',
+        prenom: 'Awa',
+        xpTotal: 1280,
+        serieCourante: 4,
+        dernierJourValide: _hier,
+        faculteId: 'f1',
+        universiteNom: 'UAC',
+        faculteNom: 'FADESP',
+        codeParrain: 'ABC123',
+        statutVerification: 'verified',
+        anneeEtude: 2,
+      );
+
+      await _poser(
+        tester,
+        const EcranProfil(),
+        remplacements: [profilProvider.overrideWith((_) async => verifie)],
+      );
+
+      expect(find.text('Compte vérifié'), findsOneWidget);
+      expect(find.text('UAC · 2e année'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('ne déborde pas à 320 px', (tester) async {
+      await _poser(
+        tester,
+        const EcranProfil(),
+        taille: const Size(320, 640),
+        remplacements: [profilProvider.overrideWith((_) async => _profil)],
+      );
       expect(tester.takeException(), isNull);
     });
   });
