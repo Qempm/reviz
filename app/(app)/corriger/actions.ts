@@ -85,7 +85,9 @@ export async function deposerCorrection(
     const copiePath = `${user.id}/${correctionId}/copie-${Date.now()}`
     const buffer = await copie.arrayBuffer()
     const { error: uploadError } = await admin.storage
-      .from('corrections')
+      // `copies` et non `corrections` : ce dernier n'existe pas. Les buckets
+      // créés par 20260909180000 sont cours, copies, cartes et avatars.
+      .from('copies')
       .upload(copiePath, buffer, {
         contentType: copie.type,
       })
@@ -101,7 +103,7 @@ export async function deposerCorrection(
       const sujetPath = `${user.id}/${correctionId}/sujet-${Date.now()}`
       const sujetBuffer = await sujet.arrayBuffer()
       const { error: sujetUploadError } = await admin.storage
-        .from('corrections')
+        .from('copies')
         .upload(sujetPath, sujetBuffer, {
           contentType: sujet.type,
         })

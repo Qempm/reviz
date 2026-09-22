@@ -39,9 +39,9 @@ export default async function Classement() {
   }))
 
   // Position de l'utilisateur courant
-  const { data: userRank } = await supabase.rpc('get_user_rank', {
-    target_user_id: user.id,
-  })
+  // Sans paramètre : une fonction SECURITY DEFINER qui prend un identifiant
+  // de cible divulgue la ligne de n'importe qui (20260922100100).
+  const { data: userRank } = await supabase.rpc('get_user_rank')
 
   const positionGlobal = typeof userRank === 'number' ? userRank : -1
 

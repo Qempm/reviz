@@ -1138,6 +1138,7 @@ export type Database = {
       current_faculty_id: { Args: never; Returns: string }
       daily_goal: { Args: never; Returns: number }
       generate_referral_code: { Args: never; Returns: string }
+      get_user_rank: { Args: never; Returns: number }
       job_peut_demarrer: {
         Args: {
           at_time?: string
@@ -1148,7 +1149,6 @@ export type Database = {
       }
       recompute_xp_total: { Args: { target: string }; Returns: number }
       refresh_streak: { Args: { target: string }; Returns: undefined }
-      get_user_rank: { Args: { target_user_id: string }; Returns: number }
       streak_week: {
         Args: { anchor?: string }
         Returns: {

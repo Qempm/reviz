@@ -14,6 +14,14 @@ import { PermanentJobError, type Job, type JobContext } from './types'
  * `verify_card`, qui dépendent des écrans correspondants.
  */
 
+/**
+ * Durée de validité des URL signées de copie.
+ *
+ * Assez longue pour couvrir un appel de vision lent et un réessai, assez
+ * courte pour qu'une URL qui fuirait dans un journal ne vaille plus rien.
+ */
+const DUREE_URL_SIGNEE_S = 600
+
 const notifySchema = z.object({
   /** Numéro au format international, sans espaces. */
   phone: z.string().regex(/^\+?[0-9]{8,15}$/),
@@ -95,24 +103,31 @@ export const correctCopyHandler = async (job: Job, ctx: JobContext): Promise<voi
     const images: Array<{ url: string; mediaType: 'image/jpeg' | 'image/png' }> = []
 
     for (const path of storage_paths) {
-      try {
-        const { data } = admin.storage
-          .from('corrections')
-          .getPublicUrl(path)
+      // URL signée, et non `getPublicUrl` : le bucket `copies` est privé, et
+      // `getPublicUrl` ne fait que fabriquer une chaîne — il ne échoue jamais,
+      // ce qui rendait le garde-fou « aucune image » incapable de se
+      // déclencher alors que le fournisseur recevait des URL en 404.
+      const { data, error } = await admin.storage
+        .from('copies')
+        .createSignedUrl(path, DUREE_URL_SIGNEE_S)
 
-        if (data?.publicUrl) {
-          images.push({
-            url: data.publicUrl,
-            mediaType: path.includes('jpg') || path.includes('jpeg') ? 'image/jpeg' : 'image/png',
-          })
-        }
-      } catch (e) {
-        ctx.log(`Cannot get public URL for ${path}`, { error: String(e) })
+      if (error || !data?.signedUrl) {
+        ctx.log('URL de copie introuvable', { path, erreur: error?.message })
+        continue
       }
+
+      images.push({
+        url: data.signedUrl,
+        mediaType:
+          path.includes('jpg') || path.includes('jpeg') ? 'image/jpeg' : 'image/png',
+      })
     }
 
     if (images.length === 0) {
-      throw new Error('No images retrieved from storage')
+      throw new PermanentJobError(
+        'Aucune image de copie lisible : le dépôt a échoué ou les fichiers ' +
+          'ont été retirés du stockage.',
+      )
     }
 
     // 2. Prépare le prompt pour l'IA
