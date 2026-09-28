@@ -222,11 +222,62 @@ Vérifié contre la base hébergée : la même charge utile jouée deux fois ren
 `traite` puis `deja-traite`, laisse un abonnement, une commission, et pose
 `expires_at` à douze mois.
 
+### Les quatre routes de la correction
+
+`POST /api/corrections/preparer` — `{ copie: {mime, taille}, sujet?, courseId? }`.
+Vérifie les droits par `etatAcces()` + `peutCorriger()`, réserve la ligne
+`corrections` **avant** l'envoi — pour que le plafond de cinq par jour tranche
+en 200 ms et non après quarante secondes d'envoi — et signe une URL par
+fichier, **sous l'identité de l'appelant** : la politique « Je dépose mes
+copies » s'applique alors au moment de la signature. Réponse :
+`{ correctionId, envois: [{champ, chemin, url}] }`. **402** avec un `motif`
+parmi `aucun_pack`, `pack_expire`, `credit_epuise`, `plafond_journalier` —
+quatre refus, quatre phrases.
+
+`POST /api/corrections/confirmer` — `{ correctionId }`. Vérifie que les
+fichiers sont bien arrivés, enfile le job `correct_copy`, **puis lance le
+traitement dans la même invocation** par `after()` : le cron ne tourne
+qu'une fois par jour sur l'offre Hobby, et une copie photographiée à 21:00
+avant un contrôle ne peut pas attendre 22:00 du lendemain. Le téléphone
+n'appelle jamais `/api/jobs/run` et n'apprend jamais `CRON_SECRET`.
+
+`POST /api/corrections/annuler` — `{ correctionId }`. Retire une réservation
+dont l'envoi a échoué. Pas décorative : sans elle, une coupure en cours
+d'envoi consomme une des cinq corrections du jour.
+
+`GET /api/corrections/:id` — l'état d'une correction, et **relance** un
+traitement dont le report est écoulé. C'est pourquoi l'écran interroge cette
+route et non PostgREST, que la RLS autoriserait : l'attente de l'étudiant
+devient le moteur des reprises.
+
+Le fichier ne traverse jamais ces routes : une photo de copie pèse 3 à 8 Mo,
+et la charge utile d'une fonction serverless est plafonnée à 4,5 Mo. L'ancienne
+`POST /api/corrections` en multipart est supprimée.
+
+### `POST /api/profile/delete`
+
+Sans corps. Réponse : `{ anonymise, dejaFait, fichiersRetires }`.
+
+**Anonymise au lieu de supprimer**, parce que la base refuse la suppression :
+`payments`, `wallet_ledger` et `withdrawals` référencent `profiles` en
+`on delete restrict`, et le trigger `xp_events_no_delete` lève sur tout DELETE
+y compris pour le rôle de service. La version précédente appelait
+`admin.auth.admin.deleteUser()` et rendait un 500 opaque à tout étudiant ayant
+gagné un point ou effleuré un pack.
+
+La route retire d'abord les fichiers par l'API de stockage — supprimer une
+ligne de `storage.objects` en SQL ôterait la référence mais laisserait le
+binaire — puis appelle `anonymiser_compte(uuid)`. Le contenu personnel part
+(cours, chapitres, questions, fiches, réponses, corrections, parrainages,
+identité du profil) ; les lignes financières restent, sans nom dessus. Le
+compte devient inutilisable : adresse sur `.invalid`, identités détachées,
+sessions révoquées, `banned_until` à l'infini. Idempotente.
+
 ### Les routes antérieures
 
 `/api/payments/init`, `/api/payments/status`, `/api/payments/webhook`,
-`/api/profile/avatar`, `/api/profile/delete` et `/api/jobs/run` existaient
-déjà, et **n'ont pas été converties** : elles construisent leur client
+`/api/profile/avatar` et `/api/jobs/run` existaient déjà, et **n'ont pas été
+converties** : elles construisent leur client
 Supabase à partir des cookies uniquement, donc tout appel depuis
 l'application Flutter reçoit 401. Leurs messages d'erreur sont en anglais et
 leur enveloppe n'est pas uniforme.
@@ -243,8 +294,8 @@ n'a aucune raison d'accepter un jeton d'étudiant.
 
 ## 5. Ce qui reste à faire de ce côté
 
-- Convertir les cinq routes antérieures restantes (`payments/init`,
-  `payments/status`, `payments/webhook`, `profile/avatar`, `profile/delete`)
+- Convertir les quatre routes antérieures restantes (`payments/init`,
+  `payments/status`, `payments/webhook`, `profile/avatar`)
   sur `authentifier()`, l'enveloppe commune et le français. Tant qu'elles ne le
   sont pas, aucun écran Flutter ne peut les appeler.
 - Le dépôt de correction par URL signée, pour lever le plafond de 4,5 Mo.
@@ -256,7 +307,5 @@ n'a aucune raison d'accepter un jeton d'étudiant.
   les minutes » : avec `BATCH_SIZE = 5`, cinq jobs par jour au plus. C'est la
   raison pour laquelle le webhook notifie n8n directement au lieu d'enfiler un
   job `notify`.
-- La suppression de compte échoue pour tout étudiant ayant gagné un seul
-  point d'XP — `xp_events` refuse le DELETE, y compris en cascade et y
-  compris au rôle de service. Une stratégie reste à trancher : anonymiser, ou
-  refuser explicitement avec un motif lisible.
+- ~~La suppression de compte échoue pour tout étudiant ayant gagné un point
+  d'XP.~~ Tranché : on anonymise (voir `POST /api/profile/delete`).

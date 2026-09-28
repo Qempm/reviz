@@ -22,6 +22,7 @@ abstract final class Fr {
   static const classement = _Classement();
   static const profil = _Profil();
   static const correction = _Correction();
+  static const suppression = _Suppression();
   static const erreurs = _Erreurs();
 }
 
@@ -291,6 +292,57 @@ class _Correction {
       'minutes.';
   final String voirLaCorrection = 'Voir la correction';
   final String enAttente = 'En cours de correction';
+}
+
+class _Suppression {
+  const _Suppression();
+
+  final String titre = 'Supprimer mon compte';
+  final String entree = 'Supprimer mon compte';
+
+  final String avertissement =
+      'C’est définitif. On ne pourra pas revenir en arrière.';
+
+  final String cePartTitre = 'Ce qui est effacé';
+  final List<String> cePart = const [
+    'Ton prénom, ton numéro et ta photo de carte étudiante',
+    'Ton université, ta filière et ton année',
+    'Tes cours déposés, avec leurs questions et leurs fiches',
+    'Tes réponses et ta progression',
+    'Tes copies corrigées',
+    'Ton code de parrainage et tes filleuls',
+  ];
+
+  final String celaResteTitre = 'Ce qui reste, sans ton nom';
+  final List<String> celaReste = const [
+    'Tes paiements et les lignes de ton portefeuille',
+    'Tes demandes de retrait',
+  ];
+
+  final String pourquoiReste =
+      'La comptabilité est un registre qu’on n’efface pas. Ces lignes '
+      'gardent leurs montants, plus aucune ne porte ton identité.';
+
+  final String soldeEnJeu = 'Tu as encore un solde';
+
+  String soldeEnJeuDetail(int solde) =>
+      'Il te reste $solde F dans ton portefeuille. Demande ton retrait '
+      'avant de partir : après, on ne saura plus à qui verser.';
+
+  final String demanderRetrait = 'Voir mes gains';
+
+  final String confirmation = 'Pour confirmer, écris ton prénom';
+  String aideConfirmation(String prenom) => 'Écris exactement « $prenom ».';
+  final String prenomIncorrect = 'Ce n’est pas ton prénom.';
+  final String prenomAbsent =
+      'Ton compte n’a pas de prénom. Écris SUPPRIMER pour confirmer.';
+  final String motSansPrenom = 'SUPPRIMER';
+
+  final String supprimer = 'Supprimer définitivement';
+  final String enCours = 'Suppression en cours…';
+  final String echec =
+      'La suppression n’a pas abouti. Réessaie dans un instant.';
+  final String faite = 'Ton compte a été supprimé.';
 }
 
 class _Commun {

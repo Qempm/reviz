@@ -308,8 +308,21 @@ class _Contenu extends ConsumerWidget {
         Bouton(
           libelle: Fr.profil.deconnexion,
           icone: Icons.logout,
-          variante: VarianteBouton.danger,
+          variante: VarianteBouton.secondaire,
           onTap: () => _deconnecter(context, ref),
+        ),
+        const SizedBox(height: Espaces.x12),
+
+        // En dernier, et en rouge : c'est la seule action irréversible de
+        // l'application. L'écran qui suit dit ce qui part et ce qui reste.
+        TextButton.icon(
+          onPressed: () => context.go(Chemins.suppression),
+          icon: const Icon(Icons.delete_outline, size: 20),
+          label: Text(Fr.suppression.entree),
+          style: TextButton.styleFrom(
+            foregroundColor: Couleurs.danger,
+            minimumSize: const Size(0, Mesures.zoneTactile),
+          ),
         ),
         const SizedBox(height: Espaces.x32),
       ],

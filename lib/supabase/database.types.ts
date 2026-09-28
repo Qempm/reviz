@@ -1113,6 +1113,7 @@ export type Database = {
       }
     }
     Functions: {
+      anonymiser_compte: { Args: { p_user: string }; Returns: Json }
       can_read_course: { Args: { target: string }; Returns: boolean }
       claim_job: {
         Args: { p_id: string; stale_after?: string }

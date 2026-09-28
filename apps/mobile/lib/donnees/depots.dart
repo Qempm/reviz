@@ -64,6 +64,20 @@ class DepotProfil {
     return _garder(lignes, Faculte.depuis);
   }
 
+  /// Supprime le compte — par anonymisation.
+  ///
+  /// La base refuse la suppression : trois clés étrangères en
+  /// `on delete restrict` et le trigger `xp_events_no_delete` arrêtent la
+  /// cascade, même pour le rôle de service. La route vide donc l'identité et
+  /// retire le contenu personnel, en laissant les lignes financières sans nom
+  /// dessus (voir `docs/API.md`).
+  Future<Reponse<bool>> supprimer(ApiReviz api) {
+    return api.poster<bool>(
+      '/api/profile/delete',
+      depuis: (data) => data['anonymise'] as bool? ?? true,
+    );
+  }
+
   /// Création du profil — par la route, pas en direct.
   ///
   /// Le code parrain désigne un profil dont la RLS ne laisse rien lire : la

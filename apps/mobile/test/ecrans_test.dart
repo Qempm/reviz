@@ -18,6 +18,7 @@ import 'package:reviz/ecrans/fiches.dart';
 import 'package:reviz/ecrans/gains.dart';
 import 'package:reviz/ecrans/profil.dart';
 import 'package:reviz/ecrans/reviser.dart';
+import 'package:reviz/ecrans/suppression.dart';
 import 'package:reviz/ecrans/session.dart';
 import 'package:reviz/etat/fournisseurs.dart';
 import 'package:reviz/theme/theme.dart';
@@ -1303,6 +1304,170 @@ void main() {
         ],
       );
       expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('suppression de compte', () {
+    DonneesGains gainsAvec(int solde) => DonneesGains(
+      soldeFcfa: solde,
+      codeParrain: 'ABC123',
+      filleuls: 0,
+      filleulsPayants: 0,
+    );
+
+    testWidgets('dit ce qui part **et** ce qui reste', (tester) async {
+      await _poser(
+        tester,
+        const EcranSuppression(),
+        remplacements: [
+          profilProvider.overrideWith((_) async => _profil),
+          gainsProvider.overrideWith((_) async => gainsAvec(0)),
+        ],
+      );
+
+      expect(find.text('Ce qui est effacé'), findsOneWidget);
+      expect(find.text('Tes cours déposés, avec leurs questions et leurs fiches'), findsOneWidget);
+
+      // La seconde moitié compte autant : cacher que la comptabilité reste
+      // serait mentir sur ce que fait le bouton.
+      expect(find.text('Ce qui reste, sans ton nom'), findsOneWidget);
+      expect(
+        find.text('Tes paiements et les lignes de ton portefeuille'),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('prévient quand un solde reste à retirer', (tester) async {
+      await _poser(
+        tester,
+        const EcranSuppression(),
+        remplacements: [
+          profilProvider.overrideWith((_) async => _profil),
+          gainsProvider.overrideWith((_) async => gainsAvec(4200)),
+        ],
+      );
+
+      // Après l'anonymisation, plus personne ne sait à qui verser.
+      expect(find.text('Tu as encore un solde'), findsOneWidget);
+      expect(find.textContaining('4200 F'), findsOneWidget);
+      expect(find.text('Voir mes gains'), findsOneWidget);
+    });
+
+    testWidgets('ne prévient pas sous le seuil de retrait', (tester) async {
+      // 1 200 F ne sont pas retirables : annoncer « demande ton retrait »
+      // enverrait l'étudiant vers un bouton inerte.
+      await _poser(
+        tester,
+        const EcranSuppression(),
+        remplacements: [
+          profilProvider.overrideWith((_) async => _profil),
+          gainsProvider.overrideWith((_) async => gainsAvec(1200)),
+        ],
+      );
+
+      expect(find.text('Tu as encore un solde'), findsNothing);
+    });
+
+    testWidgets('exige le prénom, et refuse autre chose', (tester) async {
+      await _poser(
+        tester,
+        const EcranSuppression(),
+        remplacements: [
+          profilProvider.overrideWith((_) async => _profil),
+          gainsProvider.overrideWith((_) async => gainsAvec(0)),
+        ],
+      );
+
+      // Le champ est sous le pli : on l'amène à l'écran avant d'y écrire.
+      await tester.scrollUntilVisible(
+        find.text('Pour confirmer, écris ton prénom'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.text('Écris exactement « Awa ».'), findsOneWidget);
+
+      await tester.enterText(find.byType(TextField), 'oui');
+      await _taper(tester, find.text('Supprimer définitivement'));
+
+      // Aucun appel réseau n'est parti : la vérification locale parle
+      // d'abord.
+      expect(find.text('Ce n’est pas ton prénom.'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('propose un mot de secours sans prénom', (tester) async {
+      // Le prénom est facultatif à l'inscription : un compte sans prénom ne
+      // doit pas se retrouver avec un champ impossible à remplir.
+      final sansPrenom = Profil(
+        id: 'u1',
+        prenom: null,
+        xpTotal: 0,
+        serieCourante: 0,
+        dernierJourValide: null,
+        faculteId: 'f1',
+        universiteNom: null,
+        faculteNom: null,
+        codeParrain: null,
+      );
+
+      await _poser(
+        tester,
+        const EcranSuppression(),
+        remplacements: [
+          profilProvider.overrideWith((_) async => sansPrenom),
+          gainsProvider.overrideWith((_) async => gainsAvec(0)),
+        ],
+      );
+
+      final aide = find.text(
+        'Ton compte n’a pas de prénom. Écris SUPPRIMER pour confirmer.',
+      );
+      await tester.scrollUntilVisible(
+        aide,
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(aide, findsOneWidget);
+    });
+
+    testWidgets('ne déborde pas à 320 px', (tester) async {
+      await _poser(
+        tester,
+        const EcranSuppression(),
+        taille: const Size(320, 640),
+        remplacements: [
+          profilProvider.overrideWith((_) async => _profil),
+          gainsProvider.overrideWith((_) async => gainsAvec(4200)),
+        ],
+      );
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('profil, entrée de suppression', () {
+    testWidgets('mène à la suppression, en dernier et en rouge', (
+      tester,
+    ) async {
+      await _poser(
+        tester,
+        const EcranProfil(),
+        remplacements: [profilProvider.overrideWith((_) async => _profil)],
+      );
+
+      final entree = find.text('Supprimer mon compte');
+      await tester.scrollUntilVisible(
+        entree,
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(entree, findsOneWidget);
+
+      // La déconnexion n'est plus l'action rouge : la suppression l'est.
+      final deconnexion = tester.widget<Bouton>(
+        find.widgetWithText(Bouton, 'Me déconnecter'),
+      );
+      expect(deconnexion.variante, VarianteBouton.secondaire);
     });
   });
 }

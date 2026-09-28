@@ -20,6 +20,7 @@ import 'ecrans/galerie.dart';
 import 'ecrans/inscription.dart';
 import 'ecrans/profil.dart';
 import 'ecrans/reviser.dart';
+import 'ecrans/suppression.dart';
 import 'ecrans/session.dart';
 import 'etat/fournisseurs.dart';
 import 'i18n/fr.dart';
@@ -41,6 +42,7 @@ abstract final class Chemins {
   static const gains = '/gains';
   static const classement = '/classement';
   static const profil = '/profil';
+  static const suppression = '/profil/supprimer-compte';
 
   static const corriger = '/corriger';
 
@@ -116,7 +118,16 @@ GoRouter creerRouteur(Ref ref) {
         path: Chemins.classement,
         builder: (_, _) => const EcranClassement(),
       ),
-      GoRoute(path: Chemins.profil, builder: (_, _) => const EcranProfil()),
+      GoRoute(
+        path: Chemins.profil,
+        builder: (_, _) => const EcranProfil(),
+        routes: [
+          GoRoute(
+            path: 'supprimer-compte',
+            builder: (_, _) => const EcranSuppression(),
+          ),
+        ],
+      ),
 
       GoRoute(path: Chemins.corriger, builder: (_, _) => const EcranCorriger()),
       GoRoute(
