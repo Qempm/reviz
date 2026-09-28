@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../composants/bandeau.dart';
 import '../composants/bouton.dart';
 import '../composants/carte.dart';
 import '../composants/etat_vide.dart';
@@ -282,6 +283,19 @@ class _GalerieState extends State<Galerie> {
                         RangeeClassement(ligne: l),
                         const SizedBox(height: Espaces.x8),
                       ],
+                    ],
+                  ),
+                ),
+
+                _Section(
+                  titre: 'Bandeaux transversaux',
+                  enfant: Column(
+                    children: [
+                      // Un bandeau, jamais une page : les QCM déjà chargés
+                      // restent jouables hors ligne.
+                      const BandeauHorsLigne(),
+                      const SizedBox(height: Espaces.x8),
+                      BandeauVersion(onTelecharger: () {}),
                     ],
                   ),
                 ),

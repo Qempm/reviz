@@ -18,7 +18,11 @@ import 'package:reviz/ecrans/fiches.dart';
 import 'package:reviz/ecrans/gains.dart';
 import 'package:reviz/ecrans/profil.dart';
 import 'package:reviz/ecrans/reviser.dart';
+import 'package:reviz/composants/bandeau.dart';
+import 'package:reviz/donnees/version.dart';
+import 'package:reviz/ecrans/mise_a_jour.dart';
 import 'package:reviz/ecrans/suppression.dart';
+import 'package:reviz/metier/version.dart';
 import 'package:reviz/ecrans/session.dart';
 import 'package:reviz/etat/fournisseurs.dart';
 import 'package:reviz/theme/theme.dart';
@@ -1468,6 +1472,136 @@ void main() {
         find.widgetWithText(Bouton, 'Me déconnecter'),
       );
       expect(deconnexion.variante, VarianteBouton.secondaire);
+    });
+  });
+
+  group('mise à jour exigée', () {
+    const seuils = VersionDistante(
+      minimum: '2.0.0',
+      derniere: '2.3.0',
+      notes: 'Correction de copie, et un classement qui voit sa faculté.',
+      lien: 'https://reviz-eight.vercel.app/app',
+    );
+
+    testWidgets('dit quoi faire, et quelle version est installée', (
+      tester,
+    ) async {
+      await _poser(
+        tester,
+        const EcranMiseAJour(
+          etat: EtatMiseAJour(
+            exigence: ExigenceVersion.exigee,
+            locale: '1.4.2',
+            distante: seuils,
+          ),
+        ),
+      );
+
+      expect(find.text('Il faut mettre Reviz à jour'), findsOneWidget);
+      expect(find.text('Télécharger'), findsOneWidget);
+      // La version installée sert au support : « quelle version as-tu ? » a
+      // une réponse à l'écran.
+      expect(find.text('Version installée : 1.4.2'), findsOneWidget);
+      expect(
+        find.textContaining('Correction de copie'),
+        findsOneWidget,
+        reason: 'les notes de version expliquent pourquoi mettre à jour',
+      );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('ne propose pas de télécharger pendant un entretien', (
+      tester,
+    ) async {
+      // Un étudiant déjà à jour ne doit pas être envoyé télécharger une
+      // version qu'il a : la maintenance n'est pas un problème de version.
+      await _poser(
+        tester,
+        const EcranMiseAJour(
+          etat: EtatMiseAJour(
+            exigence: ExigenceVersion.maintenance,
+            locale: '2.3.0',
+            distante: VersionDistante(
+              minimum: '2.0.0',
+              derniere: '2.3.0',
+              maintenance: true,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Reviz est en entretien'), findsOneWidget);
+      expect(find.textContaining('rien de ce que tu as fait'), findsOneWidget);
+      expect(find.text('Télécharger'), findsNothing);
+      // Il reste un moyen de sortir sans redémarrer.
+      expect(find.text('Réessayer'), findsOneWidget);
+    });
+
+    testWidgets('ne déborde pas à 320 px', (tester) async {
+      await _poser(
+        tester,
+        const EcranMiseAJour(
+          etat: EtatMiseAJour(
+            exigence: ExigenceVersion.exigee,
+            locale: '1.0.0',
+            distante: seuils,
+          ),
+        ),
+        taille: const Size(320, 640),
+      );
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('bandeaux transversaux', () {
+    testWidgets('le hors-ligne dit que les QCM chargés restent jouables', (
+      tester,
+    ) async {
+      await _poser(
+        tester,
+        const Scaffold(body: BandeauHorsLigne()),
+      );
+
+      expect(find.text('Pas de connexion'), findsOneWidget);
+      // Un bandeau et non une page : couper l'écran serait pire que le
+      // manque de réseau.
+      expect(
+        find.textContaining('restent jouables'),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('la version conseillée propose, sans bloquer', (tester) async {
+      var demande = 0;
+
+      await _poser(
+        tester,
+        Scaffold(
+          body: BandeauVersion(onTelecharger: () => demande++),
+        ),
+      );
+
+      expect(find.text('Une nouvelle version est là'), findsOneWidget);
+      await tester.tap(find.text('Télécharger'));
+      await tester.pumpAndSettle();
+      expect(demande, 1);
+    });
+
+    testWidgets('les deux tiennent à 320 px', (tester) async {
+      await _poser(
+        tester,
+        Scaffold(
+          body: Column(
+            children: [
+              const BandeauHorsLigne(),
+              BandeauVersion(onTelecharger: () {}),
+            ],
+          ),
+        ),
+        taille: const Size(320, 640),
+      );
+      expect(tester.takeException(), isNull);
     });
   });
 }

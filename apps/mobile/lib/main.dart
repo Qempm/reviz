@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'composants/bandeau.dart';
 import 'donnees/config.dart';
 import 'donnees/supabase.dart';
+import 'ecrans/mise_a_jour.dart';
+import 'etat/fournisseurs.dart';
 import 'i18n/fr.dart';
+import 'metier/version.dart';
 import 'routage.dart';
 import 'theme/jetons.dart';
 import 'theme/typographie.dart';
@@ -31,11 +36,68 @@ class AppReviz extends ConsumerWidget {
       theme: themeReviz,
       routerConfig: ref.watch(routeurProvider),
       debugShowCheckedModeBanner: false,
-      builder: (context, enfant) {
-        if (Config.estConfiguree) return enfant!;
-        return _Avertissement(enfant: enfant!);
-      },
+      // Les états transversaux se montent **ici**, au-dessus du routeur,
+      // plutôt qu'écran par écran : c'est le seul endroit qui les voit tous.
+      // Côté web, les quatre composants prévus pour ce rôle existaient et
+      // n'étaient montés nulle part.
+      builder: (context, enfant) => _Transversal(enfant: enfant!),
     );
+  }
+}
+
+/// Ce qui se superpose à tous les écrans : configuration absente, version
+/// périmée, réseau coupé.
+class _Transversal extends ConsumerWidget {
+  const _Transversal({required this.enfant});
+
+  final Widget enfant;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (!Config.estConfiguree) return _Avertissement(enfant: enfant);
+
+    final miseAJour = ref.watch(miseAJourProvider);
+
+    // Version trop ancienne, ou entretien annoncé : on remplace tout. C'est le
+    // seul cas où l'on ferme la porte — une mise à jour simplement conseillée
+    // passe par un bandeau.
+    if (miseAJour case AsyncData(:final value) when value.bloquant) {
+      return EcranMiseAJour(etat: value);
+    }
+
+    final horsLigne = ref.watch(reseauProvider).value == false;
+
+    final conseillee = switch (miseAJour) {
+      AsyncData(:final value) =>
+        value.exigence == ExigenceVersion.conseillee ? value : null,
+      _ => null,
+    };
+
+    return Stack(
+      children: [
+        enfant,
+        if (horsLigne)
+          const Positioned(left: 0, right: 0, top: 0, child: BandeauHorsLigne())
+        else if (conseillee != null)
+          Positioned(
+            left: 0,
+            right: 0,
+            top: 0,
+            child: BandeauVersion(
+              onTelecharger: () => _ouvrir(context, conseillee.distante?.lien),
+            ),
+          ),
+      ],
+    );
+  }
+
+  /// Un lien absent ou illisible ne doit pas lever : le bandeau est une
+  /// commodité, pas un passage obligé.
+  static Future<void> _ouvrir(BuildContext context, String? lien) async {
+    if (lien == null || lien.isEmpty) return;
+    try {
+      await launchUrl(Uri.parse(lien), mode: LaunchMode.externalApplication);
+    } catch (_) {}
   }
 }
 

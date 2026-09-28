@@ -3,7 +3,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../donnees/api.dart';
 import '../donnees/depots.dart';
 import '../donnees/modeles.dart';
+import '../donnees/reseau.dart';
 import '../donnees/supabase.dart';
+import '../donnees/version.dart';
 import '../metier/acces.dart';
 
 /// Fournisseurs Riverpod de l'application.
@@ -22,6 +24,8 @@ final depotBoutiqueProvider = Provider((_) => const DepotBoutique());
 final depotGainsProvider = Provider((_) => const DepotGains());
 final depotClassementProvider = Provider((_) => const DepotClassement());
 final depotCorrectionsProvider = Provider((_) => const DepotCorrections());
+final depotReseauProvider = Provider((_) => const DepotReseau());
+final depotVersionProvider = Provider((_) => DepotVersion());
 
 /// Flux d'authentification de Supabase, tel quel.
 ///
@@ -121,6 +125,23 @@ final correctionProvider = FutureProvider.family<Correction, String>((
 final accesCorrectionProvider = FutureProvider<EtatAcces>((ref) async {
   final boutique = await ref.watch(boutiqueProvider.future);
   return boutique.acces;
+});
+
+/// L'état de la version installée.
+///
+/// Lu une fois à l'ouverture, et relisible à la demande depuis l'écran
+/// bloquant — c'est le seul moyen d'en sortir quand un entretien se termine,
+/// sans redémarrer l'application.
+final miseAJourProvider = FutureProvider<EtatMiseAJour>((ref) {
+  return ref.read(depotVersionProvider).etat();
+});
+
+/// Y a-t-il du réseau ? Vrai par défaut : un bandeau « hors ligne » affiché à
+/// tort serait pire que pas de bandeau du tout.
+final reseauProvider = StreamProvider<bool>((ref) async* {
+  final depot = ref.read(depotReseauProvider);
+  yield await depot.maintenant();
+  yield* depot.flux();
 });
 
 /// Les universités, pour l'inscription. Lues une fois.

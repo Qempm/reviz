@@ -23,6 +23,7 @@ abstract final class Fr {
   static const profil = _Profil();
   static const correction = _Correction();
   static const suppression = _Suppression();
+  static const miseAJour = _MiseAJour();
   static const erreurs = _Erreurs();
 }
 
@@ -343,6 +344,38 @@ class _Suppression {
   final String echec =
       'La suppression n’a pas abouti. Réessaie dans un instant.';
   final String faite = 'Ton compte a été supprimé.';
+}
+
+class _MiseAJour {
+  const _MiseAJour();
+
+  // --- Réseau
+  final String horsLigne = 'Pas de connexion';
+  final String horsLigneDetail =
+      'Tes QCM déjà chargés restent jouables. Le reste attendra le réseau.';
+
+  // --- Mise à jour conseillée
+  final String conseillee = 'Une nouvelle version est là';
+  final String telecharger = 'Télécharger';
+  final String plusTard = 'Plus tard';
+
+  // --- Mise à jour exigée
+  final String exigee = 'Il faut mettre Reviz à jour';
+  final String exigeeDetail =
+      'Cette version ne peut plus fonctionner avec nos serveurs. La mise à '
+      'jour prend moins d’une minute.';
+
+  // --- Maintenance
+  final String maintenance = 'Reviz est en entretien';
+  final String maintenanceDetail =
+      'On répare quelque chose. Reviens dans quelques minutes — rien de ce '
+      'que tu as fait n’est perdu.';
+
+  String versionInstallee(String v) => 'Version installée : $v';
+  final String reessayer = 'Réessayer';
+  final String lienIndisponible =
+      'Le lien de téléchargement n’est pas disponible. Demande-le sur '
+      'WhatsApp.';
 }
 
 class _Commun {
