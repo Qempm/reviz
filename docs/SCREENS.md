@@ -9,7 +9,7 @@ deux pages publiques : l'accueil et le téléchargement (lot D).
 
 ---
 
-## Les seize qui tournent
+## Les dix-sept qui tournent
 
 Chemins définis dans `apps/mobile/lib/routage.dart`. Ils reprennent ceux du
 web : un lien partagé par WhatsApp doit pouvoir ouvrir l'application comme il
@@ -20,7 +20,8 @@ ouvrait le site.
 | `/connexion` | `connexion.dart` | Code à chiffres par e-mail, en deux temps. Le bouton Google est désactivé faute d'identifiants OAuth. |
 | `/inscription` | `inscription.dart` | Prénom, université, filière, année, code parrain. Passe par `POST /api/profil` — jamais d'insertion directe. |
 | `/` | `accueil.dart` | Série de sept jours, objectif du jour, quatre matières. |
-| `/reviser` | `reviser.dart` | Liste des cours, démonstration épinglée. Le dépôt attend le lot IA. |
+| `/reviser` | `reviser.dart` | Liste des cours, démonstration épinglée. |
+| `/reviser/ajouter` | `ajouter_cours.dart` | Dépôt d'un PDF, d'un .docx ou d'une photo, par URL signée. Empreinte SHA-256 calculée sur l'appareil. |
 | `/cours/:id` | `cours.dart` | Progression, chapitres, trois états de traitement. |
 | `/cours/:id/session` | `session.dart` | Dix questions, une par écran, correction immédiate, confettis au-delà de 60 %. |
 | `/cours/:id/fiches` | `fiches.dart` | Paquet retournable, une fiche à l'écran. |
@@ -44,7 +45,6 @@ quand la version installée est trop ancienne ou le serveur en entretien
 
 | Écran | Bloqué par |
 | --- | --- |
-| Dépôt d'un cours | Les traitements `ingest_course` et `generate_questions` n'existent pas : un cours déposé resterait « en préparation » pour toujours. Le bouton dit « bientôt » plutôt que de mener à une attente sans fin. |
 | Photo de carte étudiante | Le traitement `verify_card` n'existe pas. C'est pourtant la seule barrière « un compte par personne » depuis que le téléphone est facultatif. |
 | Page d'un chapitre | `Chemins.chapitre(id)` est déclaré et n'a ni route ni appelant. La page de cours suffit pour l'instant. |
 | Paiement Mobile Money | `FEDAPAY_SECRET_KEY` manque. La boutique le dit à l'écran. |

@@ -92,14 +92,10 @@ class _Liste extends StatelessWidget {
           ),
           const SizedBox(height: Espaces.x20),
 
-          // Le dépôt d'un cours arrive avec l'écran D1 : le bouton dit ce
-          // qu'il en est plutôt que de mener nulle part.
-          Bouton(libelle: Fr.reviser.ajouterCours, icone: Icons.add),
-          const SizedBox(height: Espaces.x4),
-          Text(
-            Fr.commun.bientot,
-            style: Typo.labelSm.copyWith(color: Couleurs.attenue),
-            textAlign: TextAlign.center,
+          Bouton(
+            libelle: Fr.reviser.ajouterCours,
+            icone: Icons.add,
+            onTap: () => context.go(Chemins.ajouterCours),
           ),
           const SizedBox(height: Espaces.x20),
 
@@ -110,6 +106,11 @@ class _Liste extends StatelessWidget {
                   icone: Icons.upload_file,
                   titre: Fr.reviser.aucunCours,
                   description: Fr.reviser.aucunCoursDetail,
+                  action: Bouton(
+                    libelle: Fr.reviser.ajouterCours,
+                    icone: Icons.add,
+                    onTap: () => context.go(Chemins.ajouterCours),
+                  ),
                 ),
               ],
             )

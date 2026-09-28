@@ -144,6 +144,14 @@ final reseauProvider = StreamProvider<bool>((ref) async* {
   yield* depot.flux();
 });
 
+/// Les matières de la faculté de l'étudiant, pour le dépôt d'un cours.
+final matieresProvider = FutureProvider<List<Matiere>>((ref) async {
+  final profil = await ref.watch(profilProvider.future);
+  final faculte = profil?.faculteId;
+  if (faculte == null) return const [];
+  return ref.read(depotCoursProvider).matieres(faculte);
+});
+
 /// Les universités, pour l'inscription. Lues une fois.
 final universitesProvider = FutureProvider<List<Universite>>((ref) {
   return ref.read(depotProfilProvider).universites();

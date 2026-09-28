@@ -30,6 +30,12 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  # Les libellés des widgets Material en français — « Annuler », « OK »,
+  # les mois du sélecteur de date. Sans lui, `showDatePicker` avec une
+  # locale française lève, et l'application entière parlerait anglais
+  # dans ses boîtes de dialogue.
+  flutter_localizations:
+    sdk: flutter
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -40,7 +46,9 @@ dependencies:
   go_router: ^17.5.0
   flutter_riverpod: ^3.4.3
   crypto: ^3.0.7
-  intl: ^0.20.3
+  # Version imposée par flutter_localizations du SDK 3.44 : la contrainte
+  # plus large refusait de résoudre.
+  intl: ^0.20.2
   shared_preferences: ^2.5.5
   url_launcher: ^6.3.2
   connectivity_plus: ^7.3.1

@@ -10,6 +10,7 @@ import 'package:reviz/donnees/modeles.dart';
 import 'package:reviz/composants/bouton.dart';
 import 'package:reviz/composants/podium.dart';
 import 'package:reviz/ecrans/accueil.dart';
+import 'package:reviz/ecrans/ajouter_cours.dart';
 import 'package:reviz/ecrans/avatar.dart';
 import 'package:reviz/metier/avatars.dart';
 import 'package:reviz/ecrans/boutique.dart';
@@ -1752,6 +1753,155 @@ void main() {
           .toSet();
 
       expect(rendus.length, greaterThan(1));
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('dépôt d’un cours', () {
+    const matieres = [
+      Matiere(id: 'm1', nom: 'Droit constitutionnel'),
+      Matiere(id: 'm2', nom: 'Droit administratif'),
+    ];
+
+    testWidgets('demande d’abord le fichier, et rien d’autre', (tester) async {
+      await _poser(
+        tester,
+        const EcranAjouterCours(),
+        remplacements: [
+          profilProvider.overrideWith((_) async => _profil),
+          matieresProvider.overrideWith((_) async => matieres),
+        ],
+      );
+
+      expect(find.text('Choisir un fichier'), findsOneWidget);
+      expect(find.text('Prendre en photo'), findsOneWidget);
+      expect(
+        find.text('PDF, Word (.docx) ou photo, 25 Mo au plus.'),
+        findsOneWidget,
+      );
+
+      // Tant qu'aucun fichier n'est choisi, le titre et la matière n'ont rien
+      // à décrire : les demander tout de suite serait un formulaire vide.
+      expect(find.text('Le titre du cours'), findsNothing);
+      expect(find.text('La matière'), findsNothing);
+
+      // Et le bouton de dépôt est inerte.
+      final bouton = tester.widget<Bouton>(
+        find.widgetWithText(Bouton, 'Déposer ce cours'),
+      );
+      expect(bouton.onTap, isNull);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('dit quoi faire quand la faculté n’a aucune matière', (
+      tester,
+    ) async {
+      await _poser(
+        tester,
+        const EcranAjouterCours(),
+        remplacements: [
+          profilProvider.overrideWith((_) async => _profil),
+          matieresProvider.overrideWith((_) async => <Matiere>[]),
+        ],
+      );
+
+      // Le formulaire n'apparaît qu'avec un fichier ; l'absence de matière
+      // se découvre donc à ce moment-là. Ici on vérifie au moins que l'écran
+      // se rend sans exception dans cet état.
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('ne déborde pas à 320 px', (tester) async {
+      await _poser(
+        tester,
+        const EcranAjouterCours(),
+        taille: const Size(320, 640),
+        remplacements: [
+          profilProvider.overrideWith((_) async => _profil),
+          matieresProvider.overrideWith((_) async => matieres),
+        ],
+      );
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('titre suggéré depuis le nom du fichier', () {
+    test('rend lisible un nom de gestionnaire de fichiers', () {
+      // Ce que rend Android : « cours_droit-const_L1.pdf ».
+      const doc = DocumentChoisi(
+        nom: 'cours_droit-const_L1.pdf',
+        octets: [],
+        typeMime: 'application/pdf',
+      );
+      expect(doc.titreSuggere, 'cours droit const L1');
+    });
+
+    test('retire l’extension, pas le reste du nom', () {
+      const doc = DocumentChoisi(
+        nom: 'Introduction à l’étude du droit.docx',
+        octets: [],
+        typeMime: 'application/pdf',
+      );
+      expect(doc.titreSuggere, 'Introduction à l’étude du droit');
+    });
+
+    test('tient un nom sans extension', () {
+      const doc = DocumentChoisi(
+        nom: 'polycopié',
+        octets: [],
+        typeMime: 'application/pdf',
+      );
+      expect(doc.titreSuggere, 'polycopié');
+    });
+
+    test('ne rend jamais une chaîne vide', () {
+      // Un nom qui n'est qu'une extension — « .pdf » — laisserait un champ
+      // vide, donc un cours sans titre dans la liste.
+      const doc = DocumentChoisi(
+        nom: '.pdf',
+        octets: [],
+        typeMime: 'application/pdf',
+      );
+      expect(doc.titreSuggere.trim(), isNotEmpty);
+    });
+  });
+
+  group('l’écran Réviser mène au dépôt', () {
+    testWidgets('le bouton n’annonce plus « bientôt »', (tester) async {
+      await _poser(
+        tester,
+        const EcranReviser(),
+        remplacements: [
+          coursProvider.overrideWith((_) async => [_coursDemo]),
+          profilProvider.overrideWith((_) async => _profil),
+        ],
+      );
+
+      final bouton = tester.widget<Bouton>(
+        find.widgetWithText(Bouton, 'Ajouter un cours'),
+      );
+      expect(bouton.onTap, isNotNull);
+      // La mention « Bientôt disponible » disparaît : elle disait vrai tant
+      // que les traitements IA n'existaient pas.
+      expect(find.text('Bientôt disponible'), findsNothing);
+    });
+
+    testWidgets('l’état vide propose le dépôt', (tester) async {
+      await _poser(
+        tester,
+        const EcranReviser(),
+        remplacements: [
+          coursProvider.overrideWith((_) async => <ApercuCours>[]),
+          profilProvider.overrideWith((_) async => _profil),
+        ],
+      );
+
+      // C'est là qu'on l'attend le plus : un étudiant sans aucun cours.
+      expect(find.text('Aucun cours déposé'), findsOneWidget);
+      expect(
+        find.widgetWithText(Bouton, 'Ajouter un cours'),
+        findsNWidgets(2),
+      );
       expect(tester.takeException(), isNull);
     });
   });

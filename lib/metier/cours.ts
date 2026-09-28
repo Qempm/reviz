@@ -27,10 +27,18 @@ import { attribuerXp } from '@/lib/xp/attribuer'
  * dépasserait de toute façon la limite d'une fonction serverless.
  */
 
+/**
+ * Formats acceptés au dépôt.
+ *
+ * `application/msword` — l'ancien format binaire `.doc` — en est **retiré** :
+ * aucune bibliothèque utilisable en serverless ne le lit, et l'ingestion le
+ * refuse (`lib/ai/formats.ts`). L'accepter au dépôt revenait à prendre un
+ * fichier pour le rejeter quarante secondes plus tard, après l'envoi. Mieux
+ * vaut le dire avant, et demander un export en PDF.
+ */
 const MIMES = {
   'application/pdf': 'pdf',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
-  'application/msword': 'doc',
   'image/jpeg': 'jpg',
   'image/png': 'png',
   'image/webp': 'webp',

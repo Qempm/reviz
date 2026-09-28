@@ -5,6 +5,7 @@
 // exige un privilège passe par une route Next.js. Les quatre vues sont en
 // `security_invoker`, donc consommables telles quelles.
 
+import 'package:crypto/crypto.dart';
 import '../metier/acces.dart';
 import 'api.dart';
 import 'modeles.dart';
@@ -261,6 +262,104 @@ class DepotCours {
   /// Fin de session — par la route : le serveur recorrige depuis
   /// `questions.answer` avant d'écrire, et attribue les XP avec le rôle de
   /// service.
+  /// Les matières de la faculté de l'étudiant, pour le choix au dépôt.
+  ///
+  /// « Matières lisibles par tous » : aucune route nécessaire. On les filtre
+  /// sur la faculté, sinon la liste contiendrait celles de toutes les
+  /// universités du pays.
+  Future<List<Matiere>> matieres(String faculteId) async {
+    final lignes = await supabase
+        .from('subjects')
+        .select('id, name, faculty_id')
+        .eq('faculty_id', faculteId)
+        .order('name');
+
+    return _garder(lignes, Matiere.depuis);
+  }
+
+  /// Dépose un cours : préparation, envoi direct au stockage, confirmation.
+  ///
+  /// Le fichier ne traverse pas nos fonctions — 25 Mo dépasseraient la charge
+  /// utile d'une fonction serverless. L'empreinte SHA-256 est calculée **ici**
+  /// : c'est elle qui permet au serveur de retrouver un cours déjà traité par
+  /// quelqu'un de la même faculté, et donc de ne rien repayer (règle 4).
+  ///
+  /// En cas d'échec d'envoi, la préparation est annulée : sans cela
+  /// l'empreinte resterait prise par `unique (owner_id, file_hash)`, et le
+  /// même document ne pourrait plus jamais être redéposé.
+  Future<Reponse<String>> deposer({
+    required ApiReviz api,
+    required DocumentChoisi document,
+    required String matiereId,
+    required String titre,
+    DateTime? dateExamen,
+    void Function(double part)? progression,
+  }) async {
+    final empreinte = sha256.convert(document.octets).toString();
+
+    final prepare = await api.poster<DepotCoursPrepare>(
+      '/api/cours/preparer',
+      corps: {
+        'fileHash': empreinte,
+        'subjectId': matiereId,
+        'title': titre,
+        'mime': document.typeMime,
+        'taille': document.octets.length,
+        'examDate': ?_jour(dateExamen),
+      },
+      depuis: DepotCoursPrepare.depuis,
+    );
+
+    if (prepare case ReponseEchec(:final erreur, :final motif)) {
+      return Reponse.echec(erreur, motif: motif);
+    }
+
+    final depot = (prepare as ReponseSucces<DepotCoursPrepare>).data;
+
+    final echec = await api.televerser(
+      url: depot.urlEnvoi,
+      octets: document.octets,
+      typeMime: document.typeMime,
+      progression: (envoyes, total) =>
+          progression?.call(total <= 0 ? 0 : envoyes / total),
+    );
+
+    if (echec != null) {
+      await annuler(api, depot.coursId);
+      return Reponse.echec(echec, motif: 'envoi');
+    }
+
+    final confirme = await api.poster<String>(
+      '/api/cours/confirmer',
+      corps: {'courseId': depot.coursId},
+      depuis: (data) => data['courseId'] as String,
+    );
+
+    if (confirme case ReponseEchec(:final erreur, :final motif)) {
+      // Le fichier est arrivé : on ne supprime pas la ligne, le cours pourra
+      // être relancé.
+      return Reponse.echec(erreur, motif: motif);
+    }
+
+    return Reponse.succes(depot.coursId);
+  }
+
+  /// Renonce à une préparation. Silencieux : c'est un nettoyage.
+  Future<void> annuler(ApiReviz api, String coursId) async {
+    await api.poster<bool>(
+      '/api/cours/annuler',
+      corps: {'courseId': coursId},
+      depuis: (_) => true,
+    );
+  }
+
+  /// `AAAA-MM-JJ`, ce que le schéma du serveur attend.
+  static String? _jour(DateTime? d) => d == null
+      ? null
+      : '${d.year.toString().padLeft(4, '0')}-'
+            '${d.month.toString().padLeft(2, '0')}-'
+            '${d.day.toString().padLeft(2, '0')}';
+
   Future<Reponse<ResultatSession>> terminerSession({
     required ApiReviz api,
     required String coursId,

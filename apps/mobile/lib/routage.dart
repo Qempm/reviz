@@ -8,6 +8,7 @@ import 'composants/bouton.dart';
 import 'composants/etat_vide.dart';
 import 'donnees/supabase.dart';
 import 'ecrans/accueil.dart';
+import 'ecrans/ajouter_cours.dart';
 import 'ecrans/avatar.dart';
 import 'ecrans/boutique.dart';
 import 'ecrans/classement.dart';
@@ -38,6 +39,7 @@ abstract final class Chemins {
   static const inscription = '/inscription';
   static const accueil = '/';
   static const reviser = '/reviser';
+  static const ajouterCours = '/reviser/ajouter';
   static const galerie = '/galerie';
   static const boutique = '/boutique';
   static const gains = '/gains';
@@ -94,7 +96,16 @@ GoRouter creerRouteur(Ref ref) {
         builder: (_, _) => const EcranInscription(),
       ),
       GoRoute(path: Chemins.accueil, builder: (_, _) => const EcranAccueil()),
-      GoRoute(path: Chemins.reviser, builder: (_, _) => const EcranReviser()),
+      GoRoute(
+        path: Chemins.reviser,
+        builder: (_, _) => const EcranReviser(),
+        routes: [
+          GoRoute(
+            path: 'ajouter',
+            builder: (_, _) => const EcranAjouterCours(),
+          ),
+        ],
+      ),
       GoRoute(path: Chemins.galerie, builder: (_, _) => const Galerie()),
       GoRoute(
         path: '/cours/:id',

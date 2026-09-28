@@ -25,6 +25,7 @@ abstract final class Fr {
   static const suppression = _Suppression();
   static const miseAJour = _MiseAJour();
   static const avatar = _Avatar();
+  static const depot = _Depot();
   static const erreurs = _Erreurs();
 }
 
@@ -394,6 +395,68 @@ class _Avatar {
   final String desImages =
       'Les dessins arrivent plus tard : les couleurs, elles, marchent déjà et '
       'ne coûtent rien à télécharger.';
+}
+
+class _Depot {
+  const _Depot();
+
+  final String titre = 'Ajouter un cours';
+  final String sousTitre =
+      'Dépose un PDF, un Word ou une photo. Reviz le découpe en chapitres et '
+      'en tire des questions.';
+
+  // --- Le fichier
+  final String choisirFichier = 'Choisir un fichier';
+  final String prendrePhoto = 'Prendre en photo';
+  final String changerFichier = 'Changer de fichier';
+  final String formatsAcceptes = 'PDF, Word (.docx) ou photo, 25 Mo au plus.';
+  final String docRefuse =
+      'Les anciens fichiers Word (.doc) ne sont pas lisibles. Enregistre-le '
+      'en PDF et réessaie.';
+  final String tropGros = 'Ce fichier dépasse 25 Mo.';
+  final String formatRefuse = 'On ne sait pas lire ce type de fichier.';
+
+  // --- Les champs
+  final String titreDuCours = 'Le titre du cours';
+  final String aideTitre = 'C’est ce que tu verras dans ta liste.';
+  final String matiere = 'La matière';
+  final String choisirMatiere = 'Choisis la matière';
+  final String aucuneMatiere =
+      'Aucune matière pour ta faculté. Préviens-nous, on l’ajoute.';
+  final String dateExamen = 'Date de l’examen (facultatif)';
+  final String aideDateExamen =
+      'Reviz s’en sert pour te dire ce qui va probablement tomber.';
+  final String choisirDate = 'Choisir une date';
+  final String retirerDate = 'Retirer la date';
+
+  final String titreManquant = 'Donne un titre à ton cours.';
+  final String matiereManquante = 'Choisis une matière.';
+
+  // --- Envoi
+  final String envoyer = 'Déposer ce cours';
+  String envoiPourcent(int p) => 'Envoi… $p %';
+  final String preparation = 'Préparation…';
+  final String enTraitement = 'Reviz lit ton cours';
+  final String enTraitementDetail =
+      'Le découpage et les questions prennent une à deux minutes. Tu peux '
+      'fermer, on garde tout.';
+
+  // --- Refus du serveur
+  final String aucunAcces =
+      'Il te faut un pack actif pour déposer un cours.';
+  final String accesExpire =
+      'Ton pack est arrivé à terme. Réactive-le pour déposer.';
+
+  String plafondMatieres(int? n) => n == null
+      ? 'Tu as atteint le nombre de matières de ton pack.'
+      : 'Ton pack couvre $n matière${n > 1 ? 's' : ''}. Choisis-en une que tu '
+            'utilises déjà, ou passe à un pack plus large.';
+
+  final String dejaDepose = 'Tu as déjà déposé ce document.';
+  final String voirLeCours = 'Voir le cours';
+  final String echec =
+      'Le dépôt n’a pas abouti. Réessaie dans un instant.';
+  final String voirLesPacks = 'Voir les packs';
 }
 
 class _Commun {

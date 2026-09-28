@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'composants/bandeau.dart';
@@ -34,6 +35,16 @@ class AppReviz extends ConsumerWidget {
     return MaterialApp.router(
       title: 'Reviz',
       theme: themeReviz,
+      // Tout est en français, y compris ce que Material écrit lui-même : les
+      // boutons d'une boîte de dialogue, les mois d'un sélecteur de date.
+      // Sans ces délégués, `showDatePicker(locale: fr)` lève.
+      locale: const Locale('fr'),
+      supportedLocales: const [Locale('fr')],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       routerConfig: ref.watch(routeurProvider),
       debugShowCheckedModeBanner: false,
       // Les états transversaux se montent **ici**, au-dessus du routeur,

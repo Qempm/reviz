@@ -690,3 +690,63 @@ class DepotPrepare {
     );
   }
 }
+
+// ------------------------------------------------------- Dépôt d'un cours
+
+/// Une matière de la faculté, pour le choix au dépôt.
+class Matiere {
+  const Matiere({required this.id, required this.nom});
+
+  final String id;
+  final String nom;
+
+  static Matiere? depuis(Map<String, dynamic> l) {
+    final id = l['id'] as String?;
+    final nom = l['name'] as String?;
+    if (id == null || nom == null) return null;
+    return Matiere(id: id, nom: nom);
+  }
+}
+
+/// Un document choisi, en mémoire, prêt à partir.
+class DocumentChoisi {
+  const DocumentChoisi({
+    required this.nom,
+    required this.octets,
+    required this.typeMime,
+  });
+
+  final String nom;
+  final List<int> octets;
+  final String typeMime;
+
+  int get kilos => (octets.length / 1024).round();
+
+  /// Le nom du fichier sans son extension : un titre par défaut convenable,
+  /// que l'étudiant n'a plus qu'à corriger.
+  String get titreSuggere {
+    final sansExtension = nom.contains('.')
+        ? nom.substring(0, nom.lastIndexOf('.'))
+        : nom;
+    // Les gestionnaires de fichiers rendent volontiers
+    // « cours_droit-const_L1 » : on rend cela lisible.
+    final propre = sansExtension
+        .replaceAll(RegExp(r'[_\-]+'), ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+    return propre.isEmpty ? nom : propre;
+  }
+}
+
+/// Ce que la préparation du dépôt rend.
+class DepotCoursPrepare {
+  const DepotCoursPrepare({required this.coursId, required this.urlEnvoi});
+
+  final String coursId;
+  final String urlEnvoi;
+
+  static DepotCoursPrepare depuis(Map<String, dynamic> l) => DepotCoursPrepare(
+    coursId: l['courseId'] as String,
+    urlEnvoi: l['uploadUrl'] as String,
+  );
+}
