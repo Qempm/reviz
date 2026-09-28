@@ -1168,6 +1168,11 @@ export type Database = {
         }[]
       }
       consommer_correction: { Args: { p_user: string }; Returns: number }
+      copier_contenu_cours: {
+        Args: { p_cible: string; p_source: string }
+        Returns: Json
+      }
+      cours_deja_traite: { Args: { p_cours: string }; Returns: string }
       current_faculty_id: { Args: never; Returns: string }
       daily_goal: { Args: never; Returns: number }
       enregistrer_paiement: {

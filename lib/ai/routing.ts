@@ -34,6 +34,10 @@ export const ROUTES: Record<AiTask, ModelKey[]> = {
   // Lecture de photo : GLM 5.3 Flash a la vision native et passe avant Qwen,
   // dont le modèle vision est qwen3-vl-flash et non qwen3.8-flash.
   student_card: ['deepseekVision', 'glmFlash', 'qwenVlFlash'],
+  // Transcription d'une page photographiée : même chaîne que la carte, pour
+  // les mêmes raisons. Pas de raisonnement — recopier n'est pas raisonner, et
+  // le payer serait payer pour rien.
+  transcription: ['deepseekVision', 'glmFlash', 'qwenVlFlash'],
 }
 
 /**
@@ -49,6 +53,9 @@ const TASK_PARAMS: Record<AiTask, { temperature: number; maxTokens: number }> = 
   exam_predictions: { temperature: 0.7, maxTokens: 8000 },
   correction: { temperature: 0.2, maxTokens: 4000 },
   student_card: { temperature: 0.2, maxTokens: 2000 },
+  // Température au plancher : une transcription qui paraphrase n'est pas
+  // une transcription. Et de la place, parce qu'une page dense est longue.
+  transcription: { temperature: 0, maxTokens: 12000 },
 }
 
 /** Codes HTTP qui justifient un réessai chez le même fournisseur. */

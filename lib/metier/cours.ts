@@ -172,19 +172,25 @@ export async function preparerDepot(
 }
 
 /**
- * Le fichier est arrivé : le cours passe en attente de traitement.
+ * Le fichier est arrivé : le cours part en traitement.
  *
- * Aucun job n'est mis en file, et c'est délibéré : le traitement
- * `ingest_course` n'existe pas encore, et le runner échoue **définitivement**
- * sur un type sans traitement enregistré. Mettre le job en file maintenant
- * ferait passer chaque cours déposé en `failed` au premier passage du cron.
- * Les cours en `processing` sont donc la file d'attente.
+ * Le job `ingest_course` est enfin mis en file. Il ne l'était pas, et pour une
+ * bonne raison : le traitement n'existait pas, et le runner échoue
+ * **définitivement** sur un type sans traitement enregistré — chaque cours
+ * déposé serait passé en `failed` au premier passage du cron. Il existe
+ * maintenant (`lib/jobs/handlers.ts`).
+ *
+ * Le traitement part **tout de suite**, dans la même invocation, comme la
+ * correction de copie : le cron ne tourne qu'une fois par jour sur l'offre
+ * Hobby, et un étudiant qui dépose son cours la veille d'un contrôle ne peut
+ * pas attendre demain soir. C'est à l'appelant de le lancer — on rend
+ * l'identifiant du job pour cela.
  */
 export async function confirmerDepot(
   supabase: ClientReviz,
   userId: string,
   courseId: string,
-): Promise<{ ok: boolean }> {
+): Promise<{ ok: boolean; jobId?: string }> {
   const parse = z.string().uuid().safeParse(courseId)
   if (!parse.success) return { ok: false }
 
@@ -205,15 +211,33 @@ export async function confirmerDepot(
     return { ok: false }
   }
 
-  if ((modifie ?? []).length > 0) {
-    await attribuerXp({
-      userId,
-      gains: [{ reason: 'course_added', amount: BAREME.course_added }],
-      referenceId: parse.data,
-    })
+  // La transition n'a lieu qu'une fois : sans cela, un client qui rappelle
+  // l'action recréditerait les XP et enfilerait un second traitement.
+  if ((modifie ?? []).length === 0) return { ok: true }
+
+  await attribuerXp({
+    userId,
+    gains: [{ reason: 'course_added', amount: BAREME.course_added }],
+    referenceId: parse.data,
+  })
+
+  // La file n'a aucune politique RLS : elle s'écrit avec le rôle de service.
+  const { createAdminClient } = await import('@/lib/supabase/admin')
+  const { data: job, error: erreurJob } = await createAdminClient()
+    .from('jobs')
+    .insert({ type: 'ingest_course', payload: { course_id: parse.data } })
+    .select('id')
+    .single()
+
+  if (erreurJob || !job) {
+    // Le cours est en `processing` et les XP sont crédités : on ne revient pas
+    // en arrière pour une mise en file ratée. Le cours restera en attente, et
+    // c'est visible à l'écran.
+    console.error('[cours] mise en file du traitement impossible', erreurJob)
+    return { ok: true }
   }
 
-  return { ok: true }
+  return { ok: true, jobId: job.id }
 }
 
 /**

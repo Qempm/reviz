@@ -154,6 +154,50 @@ export type CorrectionPayload = z.infer<typeof correctionPayloadSchema>
 export type CopieCorrigee = z.infer<typeof copieCorrigeeSchema>
 
 /**
+ * Transcription d'une page photographiée.
+ *
+ * Le public visé photographie le tableau ou le polycopié d'un camarade : c'est
+ * le format de dépôt le plus courant, et le seul que ni `unpdf` ni `mammoth`
+ * ne savent lire. Même forme que la correction et la carte étudiante : une
+ * photo floue est une **réponse valide**, pas un échec de validation qui
+ * brûlerait toute la chaîne de secours.
+ */
+const pageLisibleSchema = z.object({
+  isReadable: z.literal(true),
+  /**
+   * Le texte, tel qu'il est sur la page.
+   *
+   * Plafonné à 40 000 caractères, ce qui laisse largement de quoi transcrire
+   * une page dense et borne ce qui entre en base.
+   */
+  text: z.string().min(1).max(40000),
+})
+
+const pageIllisibleSchema = z.object({
+  isReadable: z.literal(false),
+  reason: z.string().min(1).max(500),
+})
+
+export const transcriptionPayloadSchema = z.preprocess(
+  (brut) => {
+    // Un modèle qui rend du texte sans se prononcer l'a de fait jugée
+    // lisible — même arbitrage que pour la correction.
+    if (
+      brut !== null &&
+      typeof brut === 'object' &&
+      !('isReadable' in brut) &&
+      'text' in brut
+    ) {
+      return { ...brut, isReadable: true }
+    }
+    return brut
+  },
+  z.discriminatedUnion('isReadable', [pageLisibleSchema, pageIllisibleSchema]),
+)
+
+export type TranscriptionPayload = z.infer<typeof transcriptionPayloadSchema>
+
+/**
  * Lecture d'une carte étudiante.
  *
  * `isReadable` à false est une réponse valide : une photo floue doit produire
@@ -183,6 +227,7 @@ export const TASK_SCHEMAS = {
   flashcards: flashcardsPayloadSchema,
   exam_predictions: questionsPayloadSchema,
   correction: correctionPayloadSchema,
+  transcription: transcriptionPayloadSchema,
   student_card: studentCardPayloadSchema,
 } as const
 

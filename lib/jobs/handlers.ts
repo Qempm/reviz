@@ -1,5 +1,10 @@
 import { z } from 'zod'
-import type { CorrectionPayload } from '@/lib/ai/schemas'
+import type {
+  CorrectionPayload,
+  FlashcardsPayload,
+  QuestionsPayload,
+  TranscriptionPayload,
+} from '@/lib/ai/schemas'
 import type { Handlers } from './runner'
 import { PermanentJobError, type Job, type JobContext } from './types'
 
@@ -11,8 +16,8 @@ import { PermanentJobError, type Job, type JobContext } from './types'
  * et un job orphelin doit se voir tout de suite plutôt que d'être réessayé
  * cinq fois.
  *
- * Restent à écrire : `ingest_course`, `generate_questions` et `verify_card`,
- * qui dépendent des écrans correspondants.
+ * Reste à écrire : `verify_card`, qui attend l'écran de photo de carte
+ * étudiante.
  */
 
 /**
@@ -327,7 +332,534 @@ export const correctCopyHandler = async (
   })
 }
 
+// ------------------------------------------------- Ingestion d'un cours
+
+/**
+ * Découper un cours déposé en chapitres.
+ *
+ * Première moitié de la chaîne : ce traitement ne génère **aucune** question.
+ * Il extrait le texte, découpe, insère les chapitres, puis enfile
+ * `generate_questions`. La raison est le budget d'une fonction serverless :
+ * une fonction Vercel a soixante secondes, et un cours de trente chapitres
+ * demande trente appels de modèle. Tout faire ici garantissait de se faire
+ * couper au milieu.
+ *
+ * Avant d'extraire quoi que ce soit, il regarde si **quelqu'un de la même
+ * faculté a déjà fait traiter ce document** (règle métier 4). `file_hash` et
+ * l'index qui va avec attendaient cet appelant depuis le premier jour. Un
+ * polycopié de licence 1 circule entre des centaines d'étudiants : le premier
+ * dépôt paie les appels, les suivants n'en paient aucun.
+ */
+const ingestCourseSchema = z.object({
+  course_id: z.string().uuid(),
+})
+
+/** Consigne de transcription d'une page photographiée. */
+const CONSIGNE_TRANSCRIPTION = `Tu transcris une page de cours photographiée.
+
+Recopie le texte **tel qu'il est**. Tu ne résumes pas, tu ne reformules pas, tu
+n'ajoutes rien. Garde les titres, les numérotations et les paragraphes.
+
+Si la photo est illisible — floue, trop sombre, cadrage qui coupe le texte,
+page blanche — réponds :
+{"isReadable": false, "reason": "<ce que l'étudiant doit corriger, en une phrase, en le tutoyant>"}
+
+Sinon :
+{"isReadable": true, "text": "<le texte de la page>"}
+
+Rien que du JSON, sans texte avant ni après.`
+
+export const ingestCourseHandler = async (
+  job: Job,
+  ctx: JobContext,
+): Promise<void> => {
+  const parsed = ingestCourseSchema.safeParse(job.payload)
+  if (!parsed.success) {
+    throw new PermanentJobError(
+      `Charge utile invalide : ${parsed.error.issues
+        .map((i) => `${i.path.join('.') || '(racine)'} ${i.message}`)
+        .join(' ; ')}`,
+    )
+  }
+
+  const { course_id } = parsed.data
+
+  const { createAdminClient } = await import('@/lib/supabase/admin')
+  const { extraireTexte } = await import('@/lib/ai/extraction')
+  const { decouperEnChapitres } = await import('@/lib/ai/decoupage')
+  const admin = createAdminClient()
+
+  /**
+   * Clôt le cours en échec.
+   *
+   * Toujours appelée avant de relancer : un cours laissé en `processing` fait
+   * attendre l'étudiant indéfiniment, ce qui est pire qu'un échec annoncé.
+   * Le motif part dans `last_error` du job, que l'écran ne lit pas encore —
+   * il lit le statut, qui suffit à dire « ça n'a pas marché ».
+   */
+  const marquerEchec = async () => {
+    const { error } = await admin
+      .from('courses')
+      .update({ status: 'failed' })
+      .eq('id', course_id)
+
+    if (error) {
+      ctx.log('échec non consigné sur le cours', { erreur: error.message })
+    }
+  }
+
+  const { data: cours, error: erreurCours } = await admin
+    .from('courses')
+    .select('id, owner_id, title, storage_path, file_hash, status')
+    .eq('id', course_id)
+    .maybeSingle()
+
+  if (erreurCours) {
+    // Passager : la base a hoqueté, le job sera repris.
+    throw new Error(`Lecture du cours impossible : ${erreurCours.message}`)
+  }
+
+  if (!cours) {
+    throw new PermanentJobError(`Cours ${course_id} introuvable.`)
+  }
+
+  // Déjà traité — reprise d'un job, ou double mise en file.
+  if (cours.status === 'ready') {
+    ctx.log('cours déjà prêt, rien à faire', { course_id })
+    return
+  }
+
+  // 1. Le cache par empreinte, avant tout appel payant.
+  const { data: source } = await admin.rpc('cours_deja_traite', {
+    p_cours: course_id,
+  })
+
+  if (source) {
+    const { data: copie, error: erreurCopie } = await admin.rpc(
+      'copier_contenu_cours',
+      { p_source: source, p_cible: course_id },
+    )
+
+    if (erreurCopie) {
+      throw new Error(`Copie du cours impossible : ${erreurCopie.message}`)
+    }
+
+    const issue = (copie as { resultat?: string } | null)?.resultat
+
+    if (issue === 'copie') {
+      ctx.log('cours repris du cache, aucun appel de modèle', {
+        course_id,
+        source,
+        ...(copie as Record<string, unknown>),
+      })
+      return
+    }
+
+    // `cible-non-vide` ou `source-non-prete` : on continue par le chemin
+    // normal plutôt que d'échouer sur une optimisation.
+    ctx.log('cache inutilisable, traitement normal', { course_id, issue })
+  }
+
+  // 2. Le fichier.
+  const { data: fichier, error: erreurFichier } = await admin.storage
+    .from('cours')
+    .download(cours.storage_path)
+
+  if (erreurFichier || !fichier) {
+    await marquerEchec()
+    throw new PermanentJobError(
+      `Fichier du cours introuvable dans le stockage : ${cours.storage_path}.`,
+    )
+  }
+
+  // 3. Le texte. Une photo passe par le modèle de vision ; un PDF et un
+  //    document Word, non — les lire coûte zéro appel.
+  const { data: signature } = await admin.storage
+    .from('cours')
+    .createSignedUrl(cours.storage_path, DUREE_URL_SIGNEE_S)
+
+  const extraction = await extraireTexte({
+    octets: await fichier.arrayBuffer(),
+    mime: fichier.type,
+    urlSignee: signature?.signedUrl,
+    transcrire: async (url) => {
+      const { runAiTask } = await import('@/lib/ai/routing')
+      const { recordAiUsage } = await import('@/lib/ai/usage')
+      const { AiError } = await import('@/lib/ai/types')
+
+      try {
+        const resultat = await runAiTask<TranscriptionPayload>({
+          task: 'transcription',
+          messages: [
+            {
+              role: 'user',
+              content: [
+                { type: 'text', text: CONSIGNE_TRANSCRIPTION },
+                { type: 'image_url', image_url: { url } },
+              ],
+            },
+          ],
+          jobId: job.id,
+          userId: cours.owner_id ?? undefined,
+          recordUsage: recordAiUsage,
+          signal: ctx.signal,
+        })
+
+        return resultat.data.isReadable ? resultat.data.text : null
+      } catch (e) {
+        if (e instanceof AiError) {
+          ctx.log('aucun fournisseur n’a transcrit la page', {
+            tentatives: e.attempts
+              .map((a) => `${a.model}:${a.outcome}`)
+              .join(', '),
+          })
+          return null
+        }
+        throw e
+      }
+    },
+  })
+
+  if (!extraction.ok) {
+    await marquerEchec()
+    ctx.log('extraction impossible', {
+      course_id,
+      motif: extraction.error,
+      detail: extraction.detail,
+    })
+    throw new PermanentJobError(
+      `${extraction.error} : ${extraction.detail ?? 'sans détail'}`,
+    )
+  }
+
+  // 4. Le découpage, sans réseau.
+  const chapitres = decouperEnChapitres(extraction.texte, cours.title)
+
+  if (chapitres.length === 0) {
+    await marquerEchec()
+    throw new PermanentJobError('Le découpage n’a produit aucun chapitre.')
+  }
+
+  const { error: erreurChapitres } = await admin.from('chapters').insert(
+    chapitres.map((c) => ({
+      course_id,
+      index: c.index,
+      title: c.title,
+      text: c.text,
+      token_count: c.tokenCount,
+      // `embedding` reste nul : aucun fournisseur de la pile n'expose
+      // d'embeddings dans docs/STACK-IA.md, et la colonne ne sert qu'à la
+      // recherche sémantique — pas à la boucle de révision.
+    })),
+  )
+
+  if (erreurChapitres) {
+    throw new Error(`Insertion des chapitres impossible : ${erreurChapitres.message}`)
+  }
+
+  // Le nombre de pages vient du document. Le plafond SQL est de 150 : au-delà,
+  // on garde le contenu déjà découpé et on n'écrit pas une valeur que la
+  // contrainte refuserait.
+  if (extraction.pages !== null && extraction.pages <= 150) {
+    await admin
+      .from('courses')
+      .update({ page_count: extraction.pages })
+      .eq('id', course_id)
+  }
+
+  // 5. La génération, dans un job à part.
+  const { error: erreurJob } = await admin.from('jobs').insert({
+    type: 'generate_questions',
+    payload: { course_id },
+  })
+
+  if (erreurJob) {
+    throw new Error(`Mise en file de la génération impossible : ${erreurJob.message}`)
+  }
+
+  ctx.log('cours découpé', {
+    course_id,
+    chapitres: chapitres.length,
+    pages: extraction.pages,
+    parVision: extraction.parVision,
+  })
+}
+
+// --------------------------------------------- Génération des questions
+
+/**
+ * Générer les questions et les fiches d'un cours, **un chapitre à la fois**.
+ *
+ * Le traitement prend le premier chapitre sans question, l'traite, et se
+ * remet en file s'il en reste. C'est ce découpage qui tient dans les soixante
+ * secondes d'une fonction serverless : un cours de trente chapitres devient
+ * trente invocations d'une dizaine de secondes, et une coupure ne perd que le
+ * chapitre en cours.
+ *
+ * Le plafond de 200 questions par cours est tenu par le trigger SQL
+ * `questions_cap`. On le vérifie aussi ici, pour arrêter de générer — et donc
+ * de payer — avant de se faire refuser l'insertion.
+ */
+const generateQuestionsSchema = z.object({
+  course_id: z.string().uuid(),
+})
+
+/** Questions par chapitre. */
+const QUESTIONS_PAR_CHAPITRE = 4
+
+/** Fiches par chapitre. */
+const FICHES_PAR_CHAPITRE = 4
+
+/** Plafond SQL, répété ici pour arrêter avant le refus (règle métier 5). */
+const PLAFOND_QUESTIONS = 200
+
+function consigneQuestions(titre: string, texte: string): string {
+  return `Tu prépares des questions de révision pour un étudiant d'université d'Afrique francophone.
+
+Voici un chapitre du cours « ${titre} » :
+
+---
+${texte}
+---
+
+Écris ${QUESTIONS_PAR_CHAPITRE} questions à choix multiple sur **ce chapitre seulement**.
+
+Règles :
+- chaque question a 4 propositions, dont une seule est juste ;
+- la réponse juste doit figurer mot pour mot dans les propositions ;
+- tu ne poses de question que sur ce qui est écrit dans le chapitre — tu n'ajoutes rien ;
+- l'explication dit pourquoi la réponse est juste, en une ou deux phrases ;
+- \`probability\` vaut "high" si la notion a toutes les chances de tomber à l'examen, "medium" sinon, "low" pour un détail ;
+- tu t'adresses à l'étudiant en le tutoyant.
+
+Réponds en JSON :
+{"questions": [{"type": "mcq", "statement": "…", "options": ["…", "…", "…", "…"], "answer": "…", "explanation": "…", "probability": "high"}]}
+
+Rien que du JSON, sans texte avant ni après.`
+}
+
+function consigneFiches(titre: string, texte: string): string {
+  return `Tu prépares des fiches de révision pour un étudiant d'université d'Afrique francophone.
+
+Voici un chapitre du cours « ${titre} » :
+
+---
+${texte}
+---
+
+Écris ${FICHES_PAR_CHAPITRE} fiches sur **ce chapitre seulement**.
+
+Une fiche, c'est une question courte au recto et sa réponse au verso. Le recto
+tient en une ligne ; le verso en deux ou trois phrases. Tu ne fiches que ce qui
+est écrit dans le chapitre.
+
+Réponds en JSON :
+{"flashcards": [{"front": "…", "back": "…"}]}
+
+Rien que du JSON, sans texte avant ni après.`
+}
+
+export const generateQuestionsHandler = async (
+  job: Job,
+  ctx: JobContext,
+): Promise<void> => {
+  const parsed = generateQuestionsSchema.safeParse(job.payload)
+  if (!parsed.success) {
+    throw new PermanentJobError(
+      `Charge utile invalide : ${parsed.error.issues
+        .map((i) => `${i.path.join('.') || '(racine)'} ${i.message}`)
+        .join(' ; ')}`,
+    )
+  }
+
+  const { course_id } = parsed.data
+
+  const { createAdminClient } = await import('@/lib/supabase/admin')
+  const { runAiTask } = await import('@/lib/ai/routing')
+  const { recordAiUsage } = await import('@/lib/ai/usage')
+  const { AiError } = await import('@/lib/ai/types')
+  const admin = createAdminClient()
+
+  const { data: cours } = await admin
+    .from('courses')
+    .select('id, owner_id, title, status')
+    .eq('id', course_id)
+    .maybeSingle()
+
+  if (!cours) throw new PermanentJobError(`Cours ${course_id} introuvable.`)
+  if (cours.status === 'ready') {
+    ctx.log('cours déjà prêt, rien à générer', { course_id })
+    return
+  }
+
+  const { data: chapitres, error: erreurChapitres } = await admin
+    .from('chapters')
+    .select('id, index, title, text, questions(id)')
+    .eq('course_id', course_id)
+    .order('index')
+
+  if (erreurChapitres) {
+    throw new Error(`Lecture des chapitres impossible : ${erreurChapitres.message}`)
+  }
+
+  if (!chapitres || chapitres.length === 0) {
+    await admin.from('courses').update({ status: 'failed' }).eq('id', course_id)
+    throw new PermanentJobError(
+      'Aucun chapitre : l’ingestion n’a pas abouti ou a été contournée.',
+    )
+  }
+
+  const dejaGenerees = chapitres.reduce(
+    (total, c) => total + ((c.questions as unknown[] | null)?.length ?? 0),
+    0,
+  )
+
+  const suivant = chapitres.find(
+    (c) => ((c.questions as unknown[] | null)?.length ?? 0) === 0,
+  )
+
+  // Tous les chapitres ont leurs questions : le cours est prêt.
+  if (!suivant || dejaGenerees >= PLAFOND_QUESTIONS) {
+    const { error } = await admin
+      .from('courses')
+      .update({ status: 'ready' })
+      .eq('id', course_id)
+
+    if (error) {
+      throw new Error(`Passage en « prêt » impossible : ${error.message}`)
+    }
+
+    ctx.log('cours prêt', {
+      course_id,
+      questions: dejaGenerees,
+      chapitres: chapitres.length,
+      plafondAtteint: dejaGenerees >= PLAFOND_QUESTIONS,
+    })
+    return
+  }
+
+  // Un chapitre, deux appels : les questions et les fiches. Deux appels
+  // séparés plutôt qu'un seul JSON qui porte les deux — un JSON de 8 000
+  // jetons se fait tronquer, et on perdrait les deux à la fois.
+  const commun = {
+    jobId: job.id,
+    userId: cours.owner_id ?? undefined,
+    recordUsage: recordAiUsage,
+    signal: ctx.signal,
+  }
+
+  let questions
+  let fiches
+  try {
+    questions = await runAiTask<QuestionsPayload>({
+      task: 'questions',
+      messages: [
+        {
+          role: 'user',
+          content: consigneQuestions(suivant.title, suivant.text),
+        },
+      ],
+      ...commun,
+    })
+
+    fiches = await runAiTask<FlashcardsPayload>({
+      task: 'flashcards',
+      messages: [
+        { role: 'user', content: consigneFiches(suivant.title, suivant.text) },
+      ],
+      ...commun,
+    })
+  } catch (e) {
+    if (e instanceof AiError) {
+      // Aucun fournisseur n'a produit de JSON valide pour ce chapitre. On
+      // n'échoue pas tout le cours pour un chapitre : on le marque en posant
+      // une question de secours, qui le fait sortir de la file.
+      ctx.log('chapitre non généré, on passe au suivant', {
+        chapitre: suivant.index,
+        tentatives: e.attempts.map((a) => `${a.model}:${a.outcome}`).join(', '),
+      })
+
+      await admin.from('questions').insert({
+        chapter_id: suivant.id,
+        type: 'open',
+        statement: `Relis « ${suivant.title} » et résume-le en cinq lignes.`,
+        answer:
+          'Ta réponse t’appartient : ce chapitre n’a pas pu être découpé en ' +
+          'questions automatiquement.',
+        probability: 'low',
+      })
+
+      await admin.from('jobs').insert({
+        type: 'generate_questions',
+        payload: { course_id },
+      })
+      return
+    }
+    throw e
+  }
+
+  // Le plafond porte sur le cours entier : on n'insère que ce qui rentre.
+  const place = PLAFOND_QUESTIONS - dejaGenerees
+  const aInserer = questions.data.questions.slice(0, place)
+
+  const { error: erreurQuestions } = await admin.from('questions').insert(
+    aInserer.map((q) => ({
+      chapter_id: suivant.id,
+      type: q.type,
+      statement: q.statement,
+      // La contrainte SQL exige un tableau pour un QCM et NULL pour une
+      // question ouverte.
+      options: q.type === 'mcq' ? q.options : null,
+      answer: q.answer,
+      explanation: q.explanation ?? null,
+      probability: q.probability,
+    })),
+  )
+
+  if (erreurQuestions) {
+    throw new Error(`Insertion des questions impossible : ${erreurQuestions.message}`)
+  }
+
+  const { error: erreurFiches } = await admin.from('flashcards').insert(
+    fiches.data.flashcards.slice(0, FICHES_PAR_CHAPITRE).map((f) => ({
+      chapter_id: suivant.id,
+      front: f.front,
+      back: f.back,
+    })),
+  )
+
+  if (erreurFiches) {
+    // Les questions sont écrites : perdre les fiches d'un chapitre ne
+    // justifie pas de refaire les deux appels.
+    ctx.log('fiches non insérées', {
+      chapitre: suivant.index,
+      erreur: erreurFiches.message,
+    })
+  }
+
+  // Il reste des chapitres : on se remet en file plutôt que de continuer et
+  // de se faire couper au milieu du suivant.
+  const { error: erreurJob } = await admin.from('jobs').insert({
+    type: 'generate_questions',
+    payload: { course_id },
+  })
+
+  if (erreurJob) {
+    throw new Error(`Remise en file impossible : ${erreurJob.message}`)
+  }
+
+  ctx.log('chapitre généré', {
+    course_id,
+    chapitre: suivant.index,
+    questions: aInserer.length,
+    fiches: fiches.data.flashcards.length,
+    modele: questions.model,
+  })
+}
+
 export const handlers: Handlers = {
   notify: notifyHandler,
   correct_copy: correctCopyHandler,
+  ingest_course: ingestCourseHandler,
+  generate_questions: generateQuestionsHandler,
 }
