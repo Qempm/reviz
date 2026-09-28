@@ -220,21 +220,13 @@ class _Contenu extends ConsumerWidget {
                   : Fr.profil.nonVerifieDetail,
               style: Typo.bodyMd.copyWith(color: Couleurs.attenue),
             ),
-            if (!profil.verifie && !profil.verificationEnCours) ...[
+            if (!profil.verifie && !profil.verificationEnCours)
               Bouton(
                 libelle: Fr.profil.ajouterCarte,
                 icone: Icons.photo_camera,
                 variante: VarianteBouton.secondaire,
+                onTap: () => context.go(Chemins.carte),
               ),
-              Text(
-                // Le traitement `verify_card` n'a pas de gestionnaire : le
-                // bouton ne peut pas encore aboutir, et le dire vaut mieux
-                // que de faire semblant.
-                Fr.commun.bientot,
-                style: Typo.labelSm.copyWith(color: Couleurs.attenue),
-                textAlign: TextAlign.center,
-              ),
-            ],
           ],
         ),
         const SizedBox(height: Espaces.x16),

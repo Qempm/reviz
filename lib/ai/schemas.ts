@@ -216,7 +216,19 @@ export const studentCardPayloadSchema = z.object({
     .regex(/^\d{4}-\d{2}-\d{2}$/)
     .nullable()
     .default(null),
-  confidence: z.number().min(0).max(1),
+  /**
+   * Ce que le modèle dit de sa propre lecture du numéro d'étudiant.
+   *
+   * **Défaut à zéro**, et c'est le point : la consigne demande à un modèle qui
+   * ne lit rien de répondre `{"isReadable": false, "reason": "…"}` — sans
+   * confiance, puisqu'il n'a rien lu. Exiger le champ faisait échouer la
+   * validation sur cette réponse-là, donc basculer sur les deux fournisseurs
+   * suivants, donc payer trois appels pour une photo floue, avant de finir en
+   * échec permanent. C'est exactement ce que `isReadable` existe pour éviter.
+   */
+  confidence: z.number().min(0).max(1).default(0),
+  /** Ce qu'on dira à l'étudiant quand la photo est inexploitable. */
+  reason: z.string().max(500).nullable().default(null),
 })
 
 export type StudentCardPayload = z.infer<typeof studentCardPayloadSchema>

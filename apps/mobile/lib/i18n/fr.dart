@@ -25,6 +25,7 @@ abstract final class Fr {
   static const suppression = _Suppression();
   static const miseAJour = _MiseAJour();
   static const avatar = _Avatar();
+static const carte = _Carte();
   static const depot = _Depot();
   static const erreurs = _Erreurs();
 }
@@ -378,6 +379,52 @@ class _MiseAJour {
   final String lienIndisponible =
       'Le lien de téléchargement n’est pas disponible. Demande-le sur '
       'WhatsApp.';
+}
+
+class _Carte {
+  const _Carte();
+
+  final String titre = 'Ma carte étudiante';
+  final String sousTitre =
+      'Une photo de ta carte, et ton compte est vérifié. C’est ce qui ouvre '
+      'le parrainage et les cours partagés de ta faculté.';
+
+  final String prendrePhoto = 'Prendre la photo';
+  final String choisirGalerie = 'Choisir dans mes photos';
+  final String reprendre = 'Reprendre la photo';
+  final String envoyer = 'Envoyer ma carte';
+
+  final String conseil =
+      'À plat, bien éclairée, sans reflet sur le plastique. Le numéro '
+      'd’étudiant doit être net : c’est lui qu’on lit.';
+
+  String envoiPourcent(int p) => 'Envoi de ta carte… $p %';
+  final String lecture = 'On lit ta carte…';
+  final String lectureDetail =
+      'Ça prend moins d’une minute. Tu peux rester là.';
+
+  final String verifie = 'C’est vérifié';
+  final String verifieDetail =
+      'Ton compte est vérifié. Le parrainage et les cours partagés sont '
+      'ouverts.';
+
+  final String enAttente = 'On regarde ta carte';
+  final String enAttenteDetail =
+      'La lecture automatique n’a pas suffi. Quelqu’un va la regarder — tu '
+      'n’as rien à refaire.';
+
+  final String refusee = 'Carte non validée';
+  final String refuseeDetail =
+      'Reprends la photo à plat et bien éclairée, ou écris-nous si ta carte '
+      'est déjà utilisée sur un autre compte.';
+
+  final String uneSeuleFois =
+      'Une carte ne vaut que pour un seul compte : c’est ce qui empêche '
+      'quelqu’un de se parrainer lui-même.';
+
+  final String echec =
+      'On n’a pas pu envoyer ta carte. Réessaie dans un instant.';
+  final String retour = 'Revenir à mon profil';
 }
 
 class _Avatar {

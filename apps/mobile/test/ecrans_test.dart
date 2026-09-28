@@ -14,6 +14,7 @@ import 'package:reviz/ecrans/ajouter_cours.dart';
 import 'package:reviz/ecrans/avatar.dart';
 import 'package:reviz/metier/avatars.dart';
 import 'package:reviz/ecrans/boutique.dart';
+import 'package:reviz/ecrans/carte.dart';
 import 'package:reviz/ecrans/classement.dart';
 import 'package:reviz/ecrans/correction.dart';
 import 'package:reviz/ecrans/corriger.dart';
@@ -1905,4 +1906,105 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   });
+
+  group('carte étudiante', () {
+    Profil profilAu(String statut) => Profil(
+      id: 'u1',
+      prenom: 'Awa',
+      xpTotal: 1280,
+      serieCourante: 4,
+      dernierJourValide: _hier,
+      faculteId: 'f1',
+      universiteNom: 'UAC',
+      faculteNom: 'FADESP',
+      codeParrain: 'ABC123',
+      statutVerification: statut,
+    );
+
+    testWidgets('propose le dépôt, et dit pourquoi une carte ne vaut qu’une fois', (
+      tester,
+    ) async {
+      await _poser(
+        tester,
+        const EcranCarte(),
+        remplacements: [
+          profilProvider.overrideWith((_) async => profilAu('none')),
+        ],
+      );
+
+      expect(find.text('Prendre la photo'), findsOneWidget);
+      expect(find.text('Choisir dans mes photos'), findsOneWidget);
+
+      // La règle est expliquée, pas subie : c'est ce qui la rend acceptable.
+      expect(
+        find.textContaining('un seul compte'),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('n’offre pas un second dépôt à un compte vérifié', (
+      tester,
+    ) async {
+      // La route refuserait : laisser le bouton mènerait à un 409.
+      await _poser(
+        tester,
+        const EcranCarte(),
+        remplacements: [
+          profilProvider.overrideWith((_) async => profilAu('verified')),
+        ],
+      );
+
+      expect(find.text('C’est vérifié'), findsOneWidget);
+      expect(find.text('Prendre la photo'), findsNothing);
+      expect(find.text('Reprendre la photo'), findsNothing);
+    });
+
+    testWidgets('laisse redéposer après un refus', (tester) async {
+      // Refusée est le seul état qui rouvre le dépôt : illisible ou périmée,
+      // l'étudiant peut y faire quelque chose.
+      await _poser(
+        tester,
+        const EcranCarte(),
+        remplacements: [
+          profilProvider.overrideWith((_) async => profilAu('rejected')),
+        ],
+      );
+
+      expect(find.text('Carte non validée'), findsOneWidget);
+      expect(find.text('Reprendre la photo'), findsOneWidget);
+
+      await _taper(tester, find.text('Reprendre la photo'));
+      expect(find.text('Prendre la photo'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('ne promet rien pendant qu’une vérification tourne', (
+      tester,
+    ) async {
+      await _poser(
+        tester,
+        const EcranCarte(),
+        remplacements: [
+          profilProvider.overrideWith((_) async => profilAu('pending')),
+        ],
+      );
+
+      expect(find.text('On regarde ta carte'), findsOneWidget);
+      expect(find.text('Prendre la photo'), findsNothing);
+    });
+
+    testWidgets('ne déborde pas à 320 px', (tester) async {
+      await _poser(
+        tester,
+        const EcranCarte(),
+        taille: const Size(320, 640),
+        remplacements: [
+          profilProvider.overrideWith((_) async => profilAu('none')),
+        ],
+      );
+      expect(tester.takeException(), isNull);
+    });
+  });
+
 }

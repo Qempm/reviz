@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import type {
   CorrectionPayload,
+  StudentCardPayload,
   FlashcardsPayload,
   QuestionsPayload,
   TranscriptionPayload,
@@ -16,8 +17,7 @@ import { PermanentJobError, type Job, type JobContext } from './types'
  * et un job orphelin doit se voir tout de suite plutôt que d'être réessayé
  * cinq fois.
  *
- * Reste à écrire : `verify_card`, qui attend l'écran de photo de carte
- * étudiante.
+ * Les cinq types de la file ont désormais leur traitement.
  */
 
 /**
@@ -857,9 +857,199 @@ export const generateQuestionsHandler = async (
   })
 }
 
+// --------------------------------------------- Vérification de la carte
+
+/**
+ * Lire une carte étudiante, et trancher.
+ *
+ * **C'est la seule barrière « un compte par personne. »** Depuis que le
+ * téléphone est facultatif et non vérifié, rien d'autre n'empêche une
+ * personne d'ouvrir dix comptes, de se parrainer elle-même et d'encaisser
+ * 25 % de ses propres paiements (règle métier 3). Le traitement n'existait
+ * pas : l'index unique sur `student_card_hash` attendait depuis le premier
+ * jour qu'on l'alimente.
+ *
+ * La décision est dans `lib/metier/carte.ts`, testée sans réseau ; l'écriture
+ * dans `enregistrer_verification_carte()`, qui transforme une violation
+ * d'unicité en refus motivé plutôt qu'en job en échec.
+ *
+ * Ce traitement **ne supprime pas la photo**. Elle reste dans le seau
+ * `cartes`, que seul son propriétaire peut lire : une vérification qu'on ne
+ * peut plus revoir ne se conteste pas.
+ */
+const verifyCardSchema = z.object({
+  profile_id: z.string().uuid(),
+  storage_path: z.string().min(1),
+})
+
+/** Consigne de lecture d'une carte étudiante. */
+const CONSIGNE_CARTE = `Tu lis la photo d'une carte d'étudiant d'une université d'Afrique francophone.
+
+Tu ne devines rien. Ce que tu ne lis pas clairement, tu le rends à null.
+
+Si la photo est inexploitable — floue, trop sombre, reflet sur le plastique,
+cadrage qui coupe la carte, ce n'est pas une carte d'étudiant — réponds :
+{"isReadable": false, "reason": "<ce que l'étudiant doit corriger, en une phrase, en le tutoyant>"}
+
+Sinon :
+{
+  "isReadable": true,
+  "fullName": "<nom et prénom tels qu'écrits, ou null>",
+  "university": "<nom de l'université, ou null>",
+  "faculty": "<faculté ou école, ou null>",
+  "studentId": "<numéro d'étudiant ou matricule, tel qu'écrit, ou null>",
+  "expiresOn": "<AAAA-MM-JJ de fin de validité, ou null>",
+  "confidence": <0 à 1 : ta certitude d'avoir bien lu le numéro d'étudiant>
+}
+
+Le numéro d'étudiant est le champ qui compte : recopie-le caractère par
+caractère, sans corriger ce qui te semble bizarre. Si tu n'en es pas sûr,
+baisse "confidence" au lieu de deviner.
+
+Rien que du JSON, sans texte avant ni après.`
+
+export const verifyCardHandler = async (
+  job: Job,
+  ctx: JobContext,
+): Promise<void> => {
+  const parsed = verifyCardSchema.safeParse(job.payload)
+  if (!parsed.success) {
+    throw new PermanentJobError(
+      `Charge utile invalide : ${parsed.error.issues
+        .map((i) => `${i.path.join('.') || '(racine)'} ${i.message}`)
+        .join(' ; ')}`,
+    )
+  }
+
+  const { profile_id, storage_path } = parsed.data
+
+  const { createAdminClient } = await import('@/lib/supabase/admin')
+  const { runAiTask } = await import('@/lib/ai/routing')
+  const { recordAiUsage } = await import('@/lib/ai/usage')
+  const { AiError } = await import('@/lib/ai/types')
+  const { deciderVerification } = await import('@/lib/metier/carte')
+  const admin = createAdminClient()
+
+  /** Écrit l'issue. Toujours, même en échec : sans cela le profil reste en
+   * `pending` pour toujours et l'étudiant attend sans rien savoir. */
+  const enregistrer = async (
+    statut: 'verified' | 'pending' | 'rejected',
+    empreinte?: string | null,
+    valideJusqua?: Date | null,
+  ) => {
+    const { data, error } = await admin.rpc('enregistrer_verification_carte', {
+      p_user: profile_id,
+      p_statut: statut,
+      p_empreinte: empreinte ?? undefined,
+      p_valide_jusqua: valideJusqua?.toISOString() ?? undefined,
+    })
+
+    if (error) {
+      throw new Error(`Vérification non consignée : ${error.message}`)
+    }
+
+    return (data as { resultat?: string } | null)?.resultat
+  }
+
+  const { data: signature, error: erreurUrl } = await admin.storage
+    .from('cartes')
+    .createSignedUrl(storage_path, DUREE_URL_SIGNEE_S)
+
+  if (erreurUrl || !signature?.signedUrl) {
+    await enregistrer('rejected')
+    throw new PermanentJobError(
+      `Photo de carte introuvable dans le stockage : ${storage_path}.`,
+    )
+  }
+
+  let resultat
+  try {
+    resultat = await runAiTask<StudentCardPayload>({
+      task: 'student_card',
+      messages: [
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: CONSIGNE_CARTE },
+            { type: 'image_url', image_url: { url: signature.signedUrl } },
+          ],
+        },
+      ],
+      jobId: job.id,
+      userId: profile_id,
+      recordUsage: recordAiUsage,
+      signal: ctx.signal,
+    })
+  } catch (e) {
+    if (e instanceof AiError) {
+      // Aucun fournisseur n'a rendu de JSON valide. On ne refuse pas — ce
+      // n'est pas la faute de l'étudiant : on laisse en attente, et le
+      // message de l'écran l'invite à reprendre la photo.
+      ctx.log('aucun fournisseur n’a lu la carte', {
+        tentatives: e.attempts.map((a) => `${a.model}:${a.outcome}`).join(', '),
+      })
+      await enregistrer('pending')
+      throw new PermanentJobError(e.message)
+    }
+    throw e
+  }
+
+  const decision = deciderVerification({ payload: resultat.data })
+
+  switch (decision.issue) {
+    case 'refusee':
+      await enregistrer('rejected')
+      ctx.log('carte refusée', {
+        profile_id,
+        motif: decision.motif,
+        modele: resultat.model,
+      })
+      return
+
+    case 'a_revoir':
+      await enregistrer('pending', decision.empreinte)
+      ctx.log('carte à revoir', {
+        profile_id,
+        raison: decision.raison,
+        confiance: decision.lecture.confiance,
+        modele: resultat.model,
+      })
+      return
+
+    case 'verifiee': {
+      const issue = await enregistrer(
+        'verified',
+        decision.empreinte,
+        decision.valideJusqua,
+      )
+
+      if (issue === 'deja-utilisee') {
+        // La carte appartient déjà à un autre compte : c'est exactement ce
+        // que la barrière existe pour attraper. Le profil a été refusé par la
+        // fonction, pas par nous.
+        ctx.log('carte déjà rattachée à un autre compte', { profile_id })
+        return
+      }
+
+      ctx.log('carte vérifiée', {
+        profile_id,
+        // Ce que le modèle a lu, pour qu'une contestation puisse se relire.
+        // Jamais l'empreinte : elle **est** le secret de la barrière.
+        universite: decision.lecture.universite,
+        faculte: decision.lecture.faculte,
+        confiance: decision.lecture.confiance,
+        valideJusqua: decision.valideJusqua.toISOString(),
+        modele: resultat.model,
+      })
+      return
+    }
+  }
+}
+
 export const handlers: Handlers = {
   notify: notifyHandler,
   correct_copy: correctCopyHandler,
   ingest_course: ingestCourseHandler,
   generate_questions: generateQuestionsHandler,
+  verify_card: verifyCardHandler,
 }

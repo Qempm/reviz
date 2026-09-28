@@ -49,6 +49,11 @@ class Profil {
   bool get verifie => statutVerification == 'verified';
   bool get verificationEnCours => statutVerification == 'pending';
 
+  /// Carte refusée : illisible, périmée, ou déjà rattachée à un autre compte.
+  /// L'étudiant peut en redéposer une — c'est le seul état qui le permette
+  /// après un premier essai.
+  bool get verificationRefusee => statutVerification == 'rejected';
+
   static Profil depuis(Map<String, dynamic> l) => Profil(
     id: l['id'] as String,
     prenom: l['first_name'] as String?,
@@ -747,6 +752,20 @@ class DepotCoursPrepare {
 
   static DepotCoursPrepare depuis(Map<String, dynamic> l) => DepotCoursPrepare(
     coursId: l['courseId'] as String,
+    urlEnvoi: l['uploadUrl'] as String,
+  );
+}
+
+/// Ce que rend `/api/carte/preparer`.
+class CartePreparee {
+  const CartePreparee({required this.chemin, required this.urlEnvoi});
+
+  /// Le chemin dans le seau `cartes`, à renvoyer à la confirmation.
+  final String chemin;
+  final String urlEnvoi;
+
+  static CartePreparee depuis(Map<String, dynamic> l) => CartePreparee(
+    chemin: l['chemin'] as String,
     urlEnvoi: l['uploadUrl'] as String,
   );
 }

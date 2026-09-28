@@ -254,6 +254,41 @@ Le fichier ne traverse jamais ces routes : une photo de copie pèse 3 à 8 Mo,
 et la charge utile d'une fonction serverless est plafonnée à 4,5 Mo. L'ancienne
 `POST /api/corrections` en multipart est supprimée.
 
+### Les deux routes de la carte étudiante
+
+`POST /api/carte/preparer` — `{ mime, taille }`. Signe une URL d'envoi vers le
+seau `cartes`, **sous l'identité de l'appelant** : la politique « Je dépose ma
+carte » s'applique au moment de la signature. Réponse : `{ chemin, uploadUrl }`.
+**409** avec un `motif` `deja-verifie` ou `en-cours` — accepter un second dépôt
+laisserait essayer des cartes jusqu'à ce qu'une passe.
+
+Rien n'est réservé avant l'envoi, contrairement au dépôt d'un cours : le profil
+existe déjà, et il n'y a pas de plafond journalier à faire trancher tôt. Donc
+pas de route `annuler` — un envoi interrompu ne consomme rien.
+
+Le chemin porte un horodatage : une carte redéposée n'écrase pas la
+précédente, qui sert de pièce en cas de contestation.
+
+`POST /api/carte/confirmer` — `{ chemin }`. Vérifie que la photo est arrivée,
+passe le profil en `pending`, enfile le job `verify_card` et **lance le
+traitement dans la même invocation** par `after()`, comme la correction. Le
+statut passe à `pending` **ici** et non dans le traitement : c'est ce qui fait
+que l'écran annonce « on lit ta carte » dès le retour, sans attendre le premier
+appel de vision.
+
+Le chemin est vérifié comme appartenant à l'appelant
+(`cheminDeSonDossier()` dans `lib/metier/carte.ts`, testée). C'est le vrai
+risque du dépôt : faire vérifier la carte d'un camarade reviendrait à
+**s'attribuer son empreinte**, et à faire refuser la sienne comme « déjà
+utilisée ».
+
+**Le verdict n'est pas dans la réponse.** Il arrive dans
+`profiles.verification_status`, que l'écran relit — la vérification part après
+la réponse, et `jobs` n'est lisible par aucun client. Une lecture trop floue
+laisse le profil en `pending`, indiscernable du traitement en cours ; les deux
+demandent la même chose à l'étudiant — rien —, donc l'écran affiche « on
+regarde ta carte » passé une minute d'attente.
+
 ### `POST /api/profile/delete`
 
 Sans corps. Réponse : `{ anonymise, dejaFait, fichiersRetires }`.
@@ -331,14 +366,13 @@ n'a aucune raison d'accepter un jeton d'étudiant.
 
 ## 5. Ce qui reste à faire de ce côté
 
-- Convertir les trois routes antérieures restantes (`payments/init`,
-  `payments/status`, `payments/webhook`)
-  sur `authentifier()`, l'enveloppe commune et le français. Tant qu'elles ne le
-  sont pas, aucun écran Flutter ne peut les appeler.
-- Le dépôt de correction par URL signée, pour lever le plafond de 4,5 Mo.
-- `/api/payments/init` et la Server Action `initiatePayment` font la même
-  chose : n'en garder qu'une. La route est celle que l'application Flutter
-  appellera, une fois convertie sur `authentifier()`.
+- ~~Convertir `payments/init` et `payments/status`.~~ Fait au lot D. Reste
+  `payments/webhook`, dont seuls les messages sont à harmoniser : elle
+  s'authentifie par signature, pas par session.
+- ~~Le dépôt de correction par URL signée.~~ Fait : quatre routes, voir plus
+  haut.
+- ~~`/api/payments/init` et la Server Action `initiatePayment` font la même
+  chose.~~ La Server Action est partie avec les écrans web.
 - Le cron de `/api/jobs/run` est planifié **une fois par jour** dans
   `vercel.json` (limite de l'offre Hobby), alors que le code annonce « toutes
   les minutes » : avec `BATCH_SIZE = 5`, cinq jobs par jour au plus. C'est la

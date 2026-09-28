@@ -93,6 +93,51 @@ class DepotProfil {
     );
   }
 
+  /// Dépose la photo de sa carte étudiante, et lance la vérification.
+  ///
+  /// Même chemin que les cours et les copies : URL signée, `PUT` direct au
+  /// stockage, confirmation. Le retour n'est pas le verdict — c'est
+  /// l'identifiant du traitement. Le verdict arrive dans
+  /// `profiles.verification_status`, que l'écran relit.
+  ///
+  /// Aucune annulation à prévoir ici : contrairement au dépôt d'un cours,
+  /// rien n'est réservé avant l'envoi, donc un envoi interrompu ne consomme
+  /// rien et ne bloque aucun redépôt.
+  Future<Reponse<String>> deposerCarte({
+    required ApiReviz api,
+    required List<int> octets,
+    required String typeMime,
+    void Function(double part)? progression,
+  }) async {
+    final prepare = await api.poster<CartePreparee>(
+      '/api/carte/preparer',
+      corps: {'mime': typeMime, 'taille': octets.length},
+      depuis: CartePreparee.depuis,
+    );
+
+    if (prepare case ReponseEchec(:final erreur, :final motif)) {
+      return Reponse.echec(erreur, motif: motif);
+    }
+
+    final depot = (prepare as ReponseSucces<CartePreparee>).data;
+
+    final echec = await api.televerser(
+      url: depot.urlEnvoi,
+      octets: octets,
+      typeMime: typeMime,
+      progression: (envoyes, total) =>
+          progression?.call(total <= 0 ? 0 : envoyes / total),
+    );
+
+    if (echec != null) return Reponse.echec(echec, motif: 'envoi');
+
+    return api.poster<String>(
+      '/api/carte/confirmer',
+      corps: {'chemin': depot.chemin},
+      depuis: (data) => data['jobId'] as String,
+    );
+  }
+
   /// Création du profil — par la route, pas en direct.
   ///
   /// Le code parrain désigne un profil dont la RLS ne laisse rien lire : la

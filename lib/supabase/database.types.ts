@@ -1190,6 +1190,15 @@ export type Database = {
         }
         Returns: Json
       }
+      enregistrer_verification_carte: {
+        Args: {
+          p_empreinte?: string
+          p_statut: Database["public"]["Enums"]["verification_status"]
+          p_user: string
+          p_valide_jusqua?: string
+        }
+        Returns: Json
+      }
       generate_referral_code: { Args: never; Returns: string }
       get_user_rank: { Args: never; Returns: number }
       job_peut_demarrer: {
