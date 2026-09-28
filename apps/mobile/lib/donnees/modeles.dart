@@ -486,3 +486,207 @@ class DonneesGains {
   /// Un filleul ne compte que s'il a payé au moins une fois (règle 2).
   final int filleulsPayants;
 }
+
+
+// ------------------------------------------------------- Correction de copie
+
+/// Un nombre tel qu'on l'écrit en français : virgule décimale, et pas de
+/// décimale quand il n'y en a pas — « 13,5 » et « 20 », jamais « 13.5 » ni
+/// « 20,0 ».
+String nombreFr(double v) =>
+    v.toStringAsFixed(v % 1 == 0 ? 0 : 1).replaceAll('.', ',');
+
+/// Une ligne du barème.
+class LigneBareme {
+  const LigneBareme({
+    required this.critere,
+    required this.points,
+    required this.maximum,
+    required this.commentaire,
+  });
+
+  final String critere;
+  final double points;
+  final double maximum;
+  final String? commentaire;
+
+  /// Part obtenue, entre 0 et 1, pour la barre de progression.
+  double get part => maximum <= 0 ? 0 : (points / maximum).clamp(0.0, 1.0);
+
+  static LigneBareme? depuis(Map<String, dynamic> l) {
+    final critere = l['criterion'] as String?;
+    final maximum = (l['maxPoints'] as num?)?.toDouble();
+    if (critere == null || maximum == null || maximum <= 0) return null;
+
+    return LigneBareme(
+      critere: critere,
+      points: (l['points'] as num?)?.toDouble() ?? 0,
+      maximum: maximum,
+      commentaire: l['comment'] as String?,
+    );
+  }
+}
+
+/// Le retour rédigé, en trois parties.
+class RetourCorrection {
+  const RetourCorrection({
+    required this.resume,
+    required this.pointsForts,
+    required this.aTravailler,
+  });
+
+  final String? resume;
+  final List<String> pointsForts;
+  final List<String> aTravailler;
+
+  static List<String> _liste(dynamic valeur) {
+    if (valeur is! List) return const [];
+    return valeur.whereType<String>().where((t) => t.trim().isNotEmpty).toList();
+  }
+
+  static RetourCorrection depuis(Map<String, dynamic> l) => RetourCorrection(
+    resume: l['summary'] as String?,
+    pointsForts: _liste(l['strengths']),
+    aTravailler: _liste(l['improvements']),
+  );
+}
+
+/// Une correction, telle que la base la rend.
+///
+/// `rubric` et `feedback` sont du `jsonb` : on les décode défensivement — une
+/// ligne de barème malformée est ignorée, elle ne fait pas échouer la lecture
+/// de toute la correction.
+class Correction {
+  const Correction({
+    required this.id,
+    required this.statut,
+    required this.note,
+    required this.bareme,
+    required this.lignes,
+    required this.retour,
+    required this.modele,
+    required this.creeLe,
+    required this.motifIllisible,
+  });
+
+  final String id;
+
+  /// `pending` | `processing` | `ready` | `failed`, tel quel.
+  final String statut;
+  final double? note;
+  final double? bareme;
+  final List<LigneBareme> lignes;
+  final RetourCorrection? retour;
+  final String? modele;
+  final DateTime? creeLe;
+
+  /// Renseigné quand le modèle a déclaré la copie illisible : ce n'est pas une
+  /// panne, l'étudiant n'a qu'à reprendre la photo.
+  final String? motifIllisible;
+
+  bool get enAttente => statut == 'pending' || statut == 'processing';
+  bool get prete => statut == 'ready';
+  bool get echouee => statut == 'failed';
+  bool get illisible => motifIllisible != null;
+
+  /// Taux obtenu, entre 0 et 1.
+  double get taux {
+    final n = note;
+    final b = bareme;
+    if (n == null || b == null || b <= 0) return 0;
+    return (n / b).clamp(0.0, 1.0);
+  }
+
+  static Correction? depuis(Map<String, dynamic> l) {
+    final id = l['id'] as String?;
+    if (id == null) return null;
+
+    final brutRetour = l['feedback'];
+    final retour = brutRetour is Map
+        ? Map<String, dynamic>.from(brutRetour)
+        : null;
+
+    final lignes = <LigneBareme>[];
+    final brutBareme = l['rubric'];
+    if (brutBareme is List) {
+      for (final ligne in brutBareme) {
+        if (ligne is! Map) continue;
+        final lue = LigneBareme.depuis(Map<String, dynamic>.from(ligne));
+        if (lue != null) lignes.add(lue);
+      }
+    }
+
+    final creeLe = l['created_at'] as String?;
+
+    return Correction(
+      id: id,
+      statut: l['status'] as String? ?? 'pending',
+      note: (l['grade'] as num?)?.toDouble(),
+      bareme: (l['max_grade'] as num?)?.toDouble(),
+      lignes: lignes,
+      // Le retour du serveur porte `summary` quand la copie a été corrigée,
+      // et `motif` quand elle ne l'a pas été.
+      retour: retour != null && retour['summary'] != null
+          ? RetourCorrection.depuis(retour)
+          : null,
+      modele: l['model_used'] as String?,
+      creeLe: creeLe == null ? null : DateTime.tryParse(creeLe),
+      // Parenthèses nécessaires : sans elles, l'analyseur lit `as String`
+      // puis prend le `?` de `String?` pour un second opérateur ternaire.
+      motifIllisible: retour?['illisible'] == true
+          ? (retour?['motif'] as String?)
+          : null,
+    );
+  }
+}
+
+/// Un fichier prêt à partir : ce que la route de préparation attend, et ce
+/// qu'il faudra téléverser ensuite.
+class FichierAEnvoyer {
+  const FichierAEnvoyer({
+    required this.champ,
+    required this.octets,
+    required this.typeMime,
+  });
+
+  /// `copie` ou `sujet`.
+  final String champ;
+  final List<int> octets;
+  final String typeMime;
+
+  Map<String, dynamic> get description => {
+    'mime': typeMime,
+    'taille': octets.length,
+  };
+}
+
+/// Ce que la préparation rend : l'identifiant réservé et les URL d'envoi.
+class DepotPrepare {
+  const DepotPrepare({required this.correctionId, required this.envois});
+
+  final String correctionId;
+
+  /// Une entrée par fichier, dans l'ordre : la copie, puis le sujet.
+  final List<({String champ, String url})> envois;
+
+  static DepotPrepare depuis(Map<String, dynamic> l) {
+    final brut = l['envois'];
+    final envois = <({String champ, String url})>[];
+
+    if (brut is List) {
+      for (final e in brut) {
+        if (e is! Map) continue;
+        final champ = e['champ'] as String?;
+        final url = e['url'] as String?;
+        if (champ != null && url != null) {
+          envois.add((champ: champ, url: url));
+        }
+      }
+    }
+
+    return DepotPrepare(
+      correctionId: l['correctionId'] as String,
+      envois: envois,
+    );
+  }
+}

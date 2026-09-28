@@ -433,3 +433,131 @@ class DepotClassement {
     );
   }
 }
+
+
+// ------------------------------------------------------------ Corrections
+
+/// Ce que le dépôt d'une copie peut refuser, traduit côté écran.
+typedef EchecDepot = ({String message, String? motif});
+
+class DepotCorrections {
+  const DepotCorrections();
+
+  /// L'historique des corrections, lecture directe.
+  ///
+  /// La politique « Je lis mes corrections » filtre déjà sur `auth.uid()` :
+  /// aucune route n'est nécessaire pour lire sa propre liste.
+  Future<List<Correction>> mes({int limite = 20}) async {
+    final lignes = await supabase
+        .from('corrections')
+        .select(
+          'id, course_id, status, grade, max_grade, rubric, feedback, '
+          'model_used, created_at',
+        )
+        .order('created_at', ascending: false)
+        .limit(limite);
+
+    return _garder(lignes, Correction.depuis);
+  }
+
+  /// Une correction, **par la route**.
+  ///
+  /// Et non en direct, bien que la RLS l'autoriserait : la route relance le
+  /// traitement quand un réessai attend, si bien que l'attente de l'étudiant
+  /// devient le moteur des reprises (voir `lib/jobs/immediat.ts`).
+  Future<Reponse<Correction>> une(ApiReviz api, String id) {
+    return api.obtenir<Correction>(
+      '/api/corrections/$id',
+      depuis: (data) {
+        final lue = Correction.depuis(data);
+        if (lue == null) {
+          throw StateError('Correction illisible dans la réponse.');
+        }
+        return lue;
+      },
+    );
+  }
+
+  /// Dépose une copie : préparation, envoi direct au stockage, confirmation.
+  ///
+  /// Trois étapes et non une, parce que le fichier ne traverse pas nos
+  /// fonctions — une photo de copie dépasse les 4,5 Mo de charge utile d'une
+  /// fonction serverless (docs/API.md). En cas d'échec d'envoi, la
+  /// préparation est annulée : sans cela, une coupure consommerait une des
+  /// cinq corrections du jour sans que rien ne soit corrigé.
+  Future<Reponse<String>> deposer({
+    required ApiReviz api,
+    required List<FichierAEnvoyer> fichiers,
+    String? coursId,
+    void Function(double part)? progression,
+  }) async {
+    final copie = fichiers.firstWhere((f) => f.champ == 'copie');
+    final sujet = fichiers.where((f) => f.champ == 'sujet').firstOrNull;
+
+    final prepare = await api.poster<DepotPrepare>(
+      '/api/corrections/preparer',
+      corps: {
+        'copie': copie.description,
+        if (sujet != null) 'sujet': sujet.description,
+        'courseId': ?coursId,
+      },
+      depuis: DepotPrepare.depuis,
+    );
+
+    if (prepare case ReponseEchec(:final erreur, :final motif)) {
+      return Reponse.echec(erreur, motif: motif);
+    }
+
+    final depot = (prepare as ReponseSucces<DepotPrepare>).data;
+
+    // Un seul compteur pour les deux fichiers : l'étudiant voit une barre,
+    // pas deux.
+    final total = fichiers.fold<int>(0, (t, f) => t + f.octets.length);
+    var deja = 0;
+
+    for (final envoi in depot.envois) {
+      final fichier = fichiers.firstWhere((f) => f.champ == envoi.champ);
+      final avant = deja;
+
+      final echec = await api.televerser(
+        url: envoi.url,
+        octets: fichier.octets,
+        typeMime: fichier.typeMime,
+        progression: total == 0
+            ? null
+            : (envoyes, _) => progression?.call((avant + envoyes) / total),
+      );
+
+      if (echec != null) {
+        await annuler(api, depot.correctionId);
+        return Reponse.echec(echec, motif: 'envoi');
+      }
+
+      deja += fichier.octets.length;
+      progression?.call(total == 0 ? 1 : deja / total);
+    }
+
+    final confirme = await api.poster<String>(
+      '/api/corrections/confirmer',
+      corps: {'correctionId': depot.correctionId},
+      depuis: (data) => data['correctionId'] as String,
+    );
+
+    if (confirme case ReponseEchec(:final erreur, :final motif)) {
+      // La copie est arrivée mais le traitement n'a pas démarré : on ne
+      // supprime pas la ligne, l'étudiant pourra réessayer.
+      return Reponse.echec(erreur, motif: motif);
+    }
+
+    return Reponse.succes(depot.correctionId);
+  }
+
+  /// Renonce à une préparation. Silencieux : c'est un nettoyage.
+  Future<void> annuler(ApiReviz api, String correctionId) async {
+    await api.poster<bool>(
+      '/api/corrections/annuler',
+      corps: {'correctionId': correctionId},
+      depuis: (data) => data['annule'] as bool? ?? true,
+    );
+  }
+}

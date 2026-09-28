@@ -1,0 +1,467 @@
+import 'dart:async';
+import 'package:confetti/confetti.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import '../composants/bouton.dart';
+import '../composants/carte.dart';
+import '../composants/etat_vide.dart';
+import '../composants/progression.dart';
+import '../composants/puce.dart';
+import '../donnees/modeles.dart';
+import '../donnees/reglages.dart';
+import '../etat/fournisseurs.dart';
+import '../i18n/fr.dart';
+import '../routage.dart';
+import '../theme/jetons.dart';
+import '../theme/typographie.dart';
+
+/// Le résultat d'une correction : attente, note, copie illisible ou échec.
+///
+/// L'écran **interroge** la route toutes les quelques secondes tant que la
+/// correction n'est pas tranchée, plutôt que d'ouvrir un canal Realtime :
+/// `corrections` n'est dans aucune publication, l'attente normale est de
+/// vingt à soixante secondes, et un websocket sur un lien mobile béninois se
+/// coupe sans arrêt. Surtout, chaque appel **relance** un traitement dont le
+/// report est écoulé : l'attente de l'étudiant est le moteur des reprises.
+class EcranCorrection extends ConsumerStatefulWidget {
+  const EcranCorrection({super.key, required this.correctionId});
+
+  final String correctionId;
+
+  @override
+  ConsumerState<EcranCorrection> createState() => _EcranCorrectionState();
+}
+
+class _EcranCorrectionState extends ConsumerState<EcranCorrection> {
+  /// Cadence qui s'espace : serré au début, où la réponse est probable,
+  /// relâché ensuite pour ne pas marteler la route.
+  static const _cadences = [
+    (jusqua: 10, secondes: 3),
+    (jusqua: 24, secondes: 5),
+    (jusqua: 999, secondes: 10),
+  ];
+
+  /// Au-delà, on cesse d'interroger et on propose un bouton : mieux vaut une
+  /// action que trois minutes de roue qui tourne.
+  static const _limiteSondages = 40;
+
+  Timer? _minuteur;
+  int _sondages = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _programmer();
+  }
+
+  @override
+  void dispose() {
+    _minuteur?.cancel();
+    super.dispose();
+  }
+
+  void _programmer() {
+    _minuteur?.cancel();
+    if (_sondages >= _limiteSondages) return;
+
+    final cadence = _cadences
+        .firstWhere((c) => _sondages < c.jusqua)
+        .secondes;
+
+    _minuteur = Timer(Duration(seconds: cadence), () {
+      if (!mounted) return;
+      _sondages++;
+      ref.invalidate(correctionProvider(widget.correctionId));
+      _programmer();
+    });
+  }
+
+  void _relancerASonRythme() {
+    setState(() => _sondages = 0);
+    ref.invalidate(correctionProvider(widget.correctionId));
+    _programmer();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final correction = ref.watch(correctionProvider(widget.correctionId));
+
+    // Tranché : plus rien à interroger.
+    if (correction case AsyncData(:final value) when !value.enAttente) {
+      _minuteur?.cancel();
+    }
+
+    return Scaffold(
+      backgroundColor: Couleurs.cream,
+      appBar: AppBar(
+        backgroundColor: Couleurs.cream,
+        surfaceTintColor: Colors.transparent,
+        title: Text(Fr.correction.titre, style: Typo.headlineLg),
+        leading: IconButton(
+          onPressed: () => context.go(Chemins.corriger),
+          icon: const Icon(Icons.arrow_back, color: Couleurs.encre),
+          tooltip: Fr.commun.retour,
+        ),
+      ),
+      body: SafeArea(
+        top: false,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: Mesures.largeurApp),
+            child: switch (correction) {
+              AsyncData(:final value) when value.prete => _Resultat(
+                correction: value,
+              ),
+              AsyncData(:final value) when value.illisible => _Message(
+                icone: Icons.image_not_supported_outlined,
+                teinte: Couleurs.orange,
+                titre: Fr.correction.illisible,
+                description: value.motifIllisible,
+                action: Fr.correction.reprendrePhoto,
+              ),
+              AsyncData(:final value) when value.echouee => _Message(
+                icone: Icons.error_outline,
+                teinte: Couleurs.danger,
+                titre: Fr.correction.echec,
+                description: Fr.correction.echecDetail,
+                action: Fr.correction.reprendrePhoto,
+              ),
+              AsyncData() => _Attente(
+                epuise: _sondages >= _limiteSondages,
+                onActualiser: _relancerASonRythme,
+              ),
+              AsyncError(:final error) => Padding(
+                padding: const EdgeInsets.all(Espaces.ecran),
+                child: EtatVide(
+                  icone: Icons.cloud_off,
+                  titre: Fr.erreurs.chargementImpossible,
+                  description: '$error',
+                  action: Bouton(
+                    libelle: Fr.commun.reessayer,
+                    icone: Icons.refresh,
+                    onTap: _relancerASonRythme,
+                  ),
+                ),
+              ),
+              _ => const Center(child: CircularProgressIndicator()),
+            },
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// L'attente pendant que le modèle corrige.
+class _Attente extends StatelessWidget {
+  const _Attente({required this.epuise, required this.onActualiser});
+
+  final bool epuise;
+  final VoidCallback onActualiser;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(Espaces.ecran),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          if (!epuise)
+            const CircularProgressIndicator(color: Couleurs.orange)
+          else
+            const Icon(Icons.schedule, size: 56, color: Couleurs.orange),
+          const SizedBox(height: Espaces.x20),
+          Text(
+            epuise ? Fr.correction.plusLongQuePrevu : Fr.correction.enCours,
+            style: Typo.headlineMd,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: Espaces.x8),
+          Text(
+            epuise
+                ? Fr.correction.plusLongQuePrevuDetail
+                : Fr.correction.enCoursDetail,
+            style: Typo.bodyMd.copyWith(color: Couleurs.attenue),
+            textAlign: TextAlign.center,
+          ),
+          if (epuise) ...[
+            const SizedBox(height: Espaces.x20),
+            Bouton(
+              libelle: Fr.correction.actualiser,
+              icone: Icons.refresh,
+              onTap: onActualiser,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Copie illisible, ou correction en échec. Deux états distincts : dans le
+/// premier, rien n'a planté — l'étudiant n'a qu'à reprendre la photo.
+class _Message extends StatelessWidget {
+  const _Message({
+    required this.icone,
+    required this.teinte,
+    required this.titre,
+    required this.description,
+    required this.action,
+  });
+
+  final IconData icone;
+  final Color teinte;
+  final String titre;
+  final String? description;
+  final String action;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(Espaces.ecran),
+      child: EtatVide(
+        icone: icone,
+        titre: titre,
+        description: description,
+        action: Bouton(
+          libelle: action,
+          icone: Icons.photo_camera,
+          onTap: () => context.go(Chemins.corriger),
+        ),
+      ),
+    );
+  }
+}
+
+/// La note, le barème et le retour.
+class _Resultat extends ConsumerStatefulWidget {
+  const _Resultat({required this.correction});
+
+  final Correction correction;
+
+  @override
+  ConsumerState<_Resultat> createState() => _ResultatState();
+}
+
+class _ResultatState extends ConsumerState<_Resultat> {
+  /// Le seuil de la session de QCM, repris tel quel : au-dessus on fête,
+  /// en dessous on encourage.
+  static const _seuil = 0.6;
+
+  late final ConfettiController _confettis = ConfettiController(
+    duration: const Duration(seconds: 2),
+  );
+
+  /// Palette strictement chaude : la réussite se fête en jaune et orange,
+  /// jamais en vert (docs/DESIGN.md § 11).
+  static const _couleursConfettis = [
+    Couleurs.jaune,
+    Couleurs.jauneDoux,
+    Couleurs.orange,
+    Couleurs.orangeDoux,
+  ];
+
+  bool _confettisLances = false;
+
+  /// Et non `initState` : `MediaQuery` passe par un `InheritedWidget`, qu'on
+  /// n'a pas le droit de consulter avant que les dépendances soient prêtes.
+  /// L'y appeler lève, et les deux écrans de résultat échouaient au test.
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_confettisLances) return;
+
+    // Les animations réduites valent aussi pour les confettis : c'est le
+    // réglage de l'écran profil, et la préférence système.
+    final sansAnimation =
+        MediaQuery.disableAnimationsOf(context) ||
+        ref.read(animationsReduitesProvider);
+
+    if (widget.correction.taux >= _seuil && !sansAnimation) {
+      _confettisLances = true;
+      _confettis.play();
+    }
+  }
+
+  @override
+  void dispose() {
+    _confettis.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = widget.correction;
+    final reussi = c.taux >= _seuil;
+    final retour = c.retour;
+
+    return Stack(
+      alignment: Alignment.topCenter,
+      children: [
+        ListView(
+          padding: const EdgeInsets.symmetric(
+            horizontal: Espaces.ecran,
+            vertical: Espaces.x16,
+          ),
+          children: [
+            Icon(
+              reussi ? Icons.celebration : Icons.sentiment_neutral,
+              size: 56,
+              color: reussi ? Couleurs.jaune : Couleurs.orange,
+            ),
+            const SizedBox(height: Espaces.x12),
+            Text(
+              reussi
+                  ? Fr.correction.bravo
+                  : c.taux >= 0.4
+                  ? Fr.correction.presque
+                  : Fr.correction.aRevoir,
+              style: Typo.headlineLg,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: Espaces.x20),
+
+            // --- La note
+            Carte(
+              enfants: [
+                Text(
+                  c.note == null || c.bareme == null
+                      ? '—'
+                      : Fr.correction.note(
+                          nombreFr(c.note!),
+                          nombreFr(c.bareme!),
+                        ),
+                  style: Typo.displayHerosMobile.copyWith(
+                    color: reussi ? Couleurs.texteAccent : Couleurs.orange,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                BarreProgression(valeur: c.taux),
+                if (c.modele != null)
+                  Text(
+                    '${Fr.correction.corrigePar} ${c.modele}',
+                    style: Typo.caption.copyWith(color: Couleurs.attenue),
+                    textAlign: TextAlign.center,
+                  ),
+              ],
+            ),
+
+            // --- Le barème, ligne par ligne
+            if (c.lignes.isNotEmpty) ...[
+              const SizedBox(height: Espaces.x20),
+              Text(Fr.correction.leBareme, style: Typo.headlineMd),
+              const SizedBox(height: Espaces.x12),
+              for (final ligne in c.lignes) ...[
+                _LigneBareme(ligne: ligne),
+                const SizedBox(height: Espaces.x8),
+              ],
+            ],
+
+            // --- Le retour rédigé
+            if (retour != null) ...[
+              const SizedBox(height: Espaces.x12),
+              Carte(
+                enfants: [
+                  if (retour.resume != null)
+                    Text(retour.resume!, style: Typo.bodyMd),
+
+                  if (retour.pointsForts.isNotEmpty) ...[
+                    Text(Fr.correction.pointsForts, style: Typo.labelLg),
+                    Wrap(
+                      spacing: Espaces.x8,
+                      runSpacing: Espaces.x8,
+                      children: [
+                        for (final p in retour.pointsForts)
+                          Puce(
+                            libelle: p,
+                            ton: TonPuce.jaune,
+                            icone: Icons.check,
+                          ),
+                      ],
+                    ),
+                  ],
+
+                  if (retour.aTravailler.isNotEmpty) ...[
+                    Text(Fr.correction.aTravailler, style: Typo.labelLg),
+                    Wrap(
+                      spacing: Espaces.x8,
+                      runSpacing: Espaces.x8,
+                      children: [
+                        for (final p in retour.aTravailler)
+                          Puce(
+                            libelle: p,
+                            ton: TonPuce.orange,
+                            icone: Icons.trending_up,
+                          ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            ],
+
+            const SizedBox(height: Espaces.x20),
+            Bouton(
+              libelle: Fr.correction.titre,
+              icone: Icons.photo_camera,
+              variante: VarianteBouton.secondaire,
+              onTap: () => context.go(Chemins.corriger),
+            ),
+            const SizedBox(height: Espaces.x32),
+          ],
+        ),
+
+        ConfettiWidget(
+          confettiController: _confettis,
+          blastDirectionality: BlastDirectionality.explosive,
+          colors: _couleursConfettis,
+          numberOfParticles: 18,
+          shouldLoop: false,
+        ),
+      ],
+    );
+  }
+}
+
+class _LigneBareme extends StatelessWidget {
+  const _LigneBareme({required this.ligne});
+
+  final LigneBareme ligne;
+
+  @override
+  Widget build(BuildContext context) {
+    return Carte(
+      petite: true,
+      enfants: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Text(
+                ligne.critere,
+                style: Typo.labelLg,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: Espaces.x8),
+            Text(
+              Fr.correction.lignePoints(
+                nombreFr(ligne.points),
+                nombreFr(ligne.maximum),
+              ),
+              style: Typo.labelLg.copyWith(color: Couleurs.texteAccent),
+            ),
+          ],
+        ),
+        BarreProgression(valeur: ligne.part),
+        if (ligne.commentaire != null)
+          Text(
+            ligne.commentaire!,
+            style: Typo.labelSm.copyWith(color: Couleurs.attenue),
+          ),
+      ],
+    );
+  }
+}

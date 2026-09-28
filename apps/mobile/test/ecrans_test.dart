@@ -5,11 +5,14 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:reviz/composants/option_qcm.dart';
 import 'package:reviz/donnees/depots.dart';
+import 'package:reviz/metier/acces.dart';
 import 'package:reviz/donnees/modeles.dart';
 import 'package:reviz/composants/bouton.dart';
 import 'package:reviz/ecrans/accueil.dart';
 import 'package:reviz/ecrans/boutique.dart';
 import 'package:reviz/ecrans/classement.dart';
+import 'package:reviz/ecrans/correction.dart';
+import 'package:reviz/ecrans/corriger.dart';
 import 'package:reviz/ecrans/cours.dart';
 import 'package:reviz/ecrans/fiches.dart';
 import 'package:reviz/ecrans/gains.dart';
@@ -245,6 +248,67 @@ const _classement = [
   ),
 ];
 
+
+// ------------------------------------------ Fixtures de la correction
+
+/// Une correction prête, de la forme réelle : rubrique en **tableau**, retour
+/// avec ses deux listes, et un commentaire long qui doit s'ellipser.
+final _corrigee = Correction(
+  id: 'k1',
+  statut: 'ready',
+  note: 13.5,
+  bareme: 20,
+  lignes: const [
+    LigneBareme(
+      critere: 'Compréhension du sujet',
+      points: 4,
+      maximum: 5,
+      commentaire: 'Tu as bien cerné la question posée.',
+    ),
+    LigneBareme(critere: 'Argumentation', points: 3, maximum: 5, commentaire: null),
+    LigneBareme(
+      critere: 'Exemples et références',
+      points: 4.5,
+      maximum: 6,
+      commentaire:
+          'Deux exemples pertinents, mais le troisième est hors sujet et la '
+          'référence à la jurisprudence de 2019 n’est pas datée correctement, '
+          'ce qui affaiblit l’ensemble du paragraphe.',
+    ),
+    LigneBareme(critere: 'Expression écrite', points: 2, maximum: 4, commentaire: null),
+  ],
+  retour: const RetourCorrection(
+    resume: 'Copie solide, à resserrer sur l’expression.',
+    pointsForts: ['Plan clair', 'Bonnes références'],
+    aTravailler: ['Orthographe', 'Conclusion trop courte'],
+  ),
+  modele: 'deepseek-v4-flash-vision-exp',
+  creeLe: null,
+  motifIllisible: null,
+);
+
+Correction _correctionAuStatut(String statut, {String? motifIllisible}) =>
+    Correction(
+      id: 'k1',
+      statut: statut,
+      note: null,
+      bareme: null,
+      lignes: const [],
+      retour: null,
+      modele: null,
+      creeLe: null,
+      motifIllisible: motifIllisible,
+    );
+
+/// Un pack actif, avec du crédit — l'état que `etatAcces()` produit.
+EtatAcces _accesAvecCredit(int corrections) => AccesActif(
+  fin: DateTime.now().toUtc().add(const Duration(days: 5)),
+  joursRestants: 5,
+  correctionsRestantes: corrections,
+  plafondMatieres: 2,
+  packs: const [CodePack.controle],
+);
+
 // ----------------------------------------------------------------- Banc
 
 Future<void> _poser(
@@ -252,6 +316,11 @@ Future<void> _poser(
   Widget ecran, {
   List<Override> remplacements = const [],
   Size taille = const Size(375, 812),
+  /// `false` quand l'écran porte une animation sans fin — une roue de
+  /// chargement, des confettis, un minuteur de sondage. `pumpAndSettle`
+  /// attendrait alors qu'elle s'arrête, ce qu'elle ne fait jamais, et le test
+  /// expirerait au lieu d'échouer sur ce qu'il vérifie.
+  bool stabiliser = true,
 }) async {
   tester.view.physicalSize = taille;
   tester.view.devicePixelRatio = 1.0;
@@ -263,7 +332,16 @@ Future<void> _poser(
       child: MaterialApp(theme: themeReviz, home: ecran),
     ),
   );
-  await tester.pumpAndSettle();
+
+  if (stabiliser) {
+    await tester.pumpAndSettle();
+  } else {
+    // Assez de trames pour que les fournisseurs se résolvent et que l'écran
+    // se construise, sans attendre la fin d'une animation perpétuelle.
+    for (var i = 0; i < 5; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+  }
 }
 
 /// Tape sur une cible, en la faisant venir à l'écran si besoin.
@@ -962,6 +1040,267 @@ void main() {
         const EcranProfil(),
         taille: const Size(320, 640),
         remplacements: [profilProvider.overrideWith((_) async => _profil)],
+      );
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('dépôt de copie', () {
+    testWidgets('annonce le crédit et propose la photo', (tester) async {
+      await _poser(
+        tester,
+        const EcranCorriger(),
+        remplacements: [
+          profilProvider.overrideWith((_) async => _profil),
+          accesCorrectionProvider.overrideWith(
+            (_) async => _accesAvecCredit(3),
+          ),
+          correctionsProvider.overrideWith((_) async => <Correction>[]),
+        ],
+      );
+
+      expect(
+        find.text('3 corrections restantes dans ton pack'),
+        findsOneWidget,
+      );
+      expect(find.text('Prendre ma copie en photo'), findsOneWidget);
+      expect(find.text('Aucune copie corrigée'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('dit lequel des quatre refus s’applique', (tester) async {
+      // Un seul « accès refusé » ne dirait pas quoi faire. Ici : le crédit est
+      // épuisé, donc il faut un pack, pas attendre demain.
+      await _poser(
+        tester,
+        const EcranCorriger(),
+        remplacements: [
+          profilProvider.overrideWith((_) async => _profil),
+          accesCorrectionProvider.overrideWith(
+            (_) async => _accesAvecCredit(0),
+          ),
+          correctionsProvider.overrideWith((_) async => <Correction>[]),
+        ],
+      );
+
+      expect(
+        find.text('Tu n’as plus de correction dans ton pack.'),
+        findsOneWidget,
+      );
+      expect(find.text('Voir les packs'), findsOneWidget);
+      // Pas de bouton photo : le refus est dit avant le clic.
+      expect(find.text('Prendre ma copie en photo'), findsNothing);
+    });
+
+    testWidgets('distingue un pack expiré d’un pack absent', (tester) async {
+      await _poser(
+        tester,
+        const EcranCorriger(),
+        remplacements: [
+          profilProvider.overrideWith((_) async => _profil),
+          accesCorrectionProvider.overrideWith(
+            (_) async => AccesExpire(
+              DateTime.now().toUtc().subtract(const Duration(days: 3)),
+            ),
+          ),
+          correctionsProvider.overrideWith((_) async => <Correction>[]),
+        ],
+      );
+
+      expect(
+        find.text('Ton pack est arrivé à terme. Réactive-le pour continuer.'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('montre l’historique, note comprise', (tester) async {
+      await _poser(
+        tester,
+        const EcranCorriger(),
+        remplacements: [
+          profilProvider.overrideWith((_) async => _profil),
+          accesCorrectionProvider.overrideWith(
+            (_) async => _accesAvecCredit(2),
+          ),
+          correctionsProvider.overrideWith(
+            (_) async => [_corrigee, _correctionAuStatut('processing')],
+          ),
+        ],
+      );
+
+      expect(find.text('13,5 / 20'), findsOneWidget);
+      expect(find.text('En cours de correction'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('ne déborde pas à 320 px', (tester) async {
+      await _poser(
+        tester,
+        const EcranCorriger(),
+        taille: const Size(320, 640),
+        remplacements: [
+          profilProvider.overrideWith((_) async => _profil),
+          accesCorrectionProvider.overrideWith(
+            (_) async => _accesAvecCredit(2),
+          ),
+          correctionsProvider.overrideWith((_) async => [_corrigee]),
+        ],
+      );
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('résultat de correction', () {
+    testWidgets('affiche la note, le barème et le retour, sans vert', (
+      tester,
+    ) async {
+      await _poser(
+        tester,
+        const EcranCorrection(correctionId: 'k1'),
+        stabiliser: false,
+        remplacements: [
+          correctionProvider('k1').overrideWith((_) async => _corrigee),
+        ],
+      );
+
+      expect(find.text('13,5 / 20'), findsOneWidget);
+      expect(find.text('Le barème'), findsOneWidget);
+      expect(find.text('Compréhension du sujet'), findsOneWidget);
+      // Une ligne à 4,5/6 affiche ses deux nombres, pas un pourcentage.
+      expect(find.text('4,5 / 6'), findsOneWidget);
+      // 13,5/20 = 67 %, au-dessus du seuil : on fête.
+      expect(find.text('Beau travail'), findsOneWidget);
+
+      // Le retour rédigé est sous le pli : une `ListView` construit
+      // paresseusement, `find` ne voit pas ce qui n'est pas dans l'arbre.
+      await tester.scrollUntilVisible(
+        find.text('Plan clair'),
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.text('Plan clair'), findsOneWidget);
+      expect(find.text('Orthographe'), findsOneWidget);
+
+      // Aucun vert nulle part : la réussite se célèbre en jaune, et une
+      // mauvaise note en orange ou en rouge (docs/DESIGN.md § 11).
+      final icones = tester.widgetList<Icon>(find.byType(Icon));
+      for (final i in icones) {
+        expect(i.color, isNot(const Color(0xFF22C55E)));
+        expect(i.color, isNot(const Color(0xFFEF4444)));
+      }
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('encourage en dessous du seuil, sans fêter', (tester) async {
+      final faible = Correction(
+        id: 'k1',
+        statut: 'ready',
+        note: 6,
+        bareme: 20,
+        lignes: const [
+          LigneBareme(
+            critere: 'Argumentation',
+            points: 2,
+            maximum: 8,
+            commentaire: null,
+          ),
+        ],
+        retour: const RetourCorrection(
+          resume: 'Il faut reprendre la méthode.',
+          pointsForts: [],
+          aTravailler: ['Construire un plan'],
+        ),
+        modele: 'glm-5.3',
+        creeLe: null,
+        motifIllisible: null,
+      );
+
+      await _poser(
+        tester,
+        const EcranCorrection(correctionId: 'k1'),
+        remplacements: [
+          correctionProvider('k1').overrideWith((_) async => faible),
+        ],
+      );
+
+      expect(find.text('6 / 20'), findsOneWidget);
+      expect(find.text('Il faut reprendre ça'), findsOneWidget);
+      expect(find.text('Beau travail'), findsNothing);
+      // Aucune liste de points forts : la carte ne doit pas afficher son
+      // titre pour rien.
+      expect(find.text('Ce qui va'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('sépare la copie illisible de l’échec', (tester) async {
+      await _poser(
+        tester,
+        const EcranCorrection(correctionId: 'k1'),
+        remplacements: [
+          correctionProvider('k1').overrideWith(
+            (_) async => _correctionAuStatut(
+              'failed',
+              motifIllisible:
+                  'La photo est trop floue pour lire ton écriture.',
+            ),
+          ),
+        ],
+      );
+
+      // Rien n'a planté : l'étudiant n'a qu'à reprendre la photo.
+      expect(find.text('On n’arrive pas à lire ta copie'), findsOneWidget);
+      expect(
+        find.text('La photo est trop floue pour lire ton écriture.'),
+        findsOneWidget,
+      );
+      expect(find.text('La correction n’a pas abouti'), findsNothing);
+      expect(find.text('Reprendre la photo'), findsOneWidget);
+    });
+
+    testWidgets('annonce un échec, et que rien n’a été décompté', (
+      tester,
+    ) async {
+      await _poser(
+        tester,
+        const EcranCorrection(correctionId: 'k1'),
+        remplacements: [
+          correctionProvider('k1').overrideWith(
+            (_) async => _correctionAuStatut('failed'),
+          ),
+        ],
+      );
+
+      expect(find.text('La correction n’a pas abouti'), findsOneWidget);
+      expect(find.textContaining('Rien ne t’a été décompté'), findsOneWidget);
+    });
+
+    testWidgets('patiente pendant le traitement', (tester) async {
+      await _poser(
+        tester,
+        const EcranCorrection(correctionId: 'k1'),
+        stabiliser: false,
+        remplacements: [
+          correctionProvider('k1').overrideWith(
+            (_) async => _correctionAuStatut('processing'),
+          ),
+        ],
+      );
+
+      expect(find.text('On corrige ta copie'), findsOneWidget);
+      // L'étudiant peut fermer : le résultat n'est pas perdu.
+      expect(find.textContaining('on garde le résultat'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('ne déborde pas à 320 px', (tester) async {
+      await _poser(
+        tester,
+        const EcranCorrection(correctionId: 'k1'),
+        taille: const Size(320, 640),
+        stabiliser: false,
+        remplacements: [
+          correctionProvider('k1').overrideWith((_) async => _corrigee),
+        ],
       );
       expect(tester.takeException(), isNull);
     });

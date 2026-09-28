@@ -21,6 +21,7 @@ abstract final class Fr {
   static const gains = _Gains();
   static const classement = _Classement();
   static const profil = _Profil();
+  static const correction = _Correction();
   static const erreurs = _Erreurs();
 }
 
@@ -208,6 +209,88 @@ class _Profil {
   final String confirmerDeconnexion = 'Te déconnecter de Reviz ?';
   final String confirmerDeconnexionDetail =
       'Tes cours et ta progression restent en place.';
+}
+
+class _Correction {
+  const _Correction();
+
+  final String titre = 'Corriger ma copie';
+  final String sousTitre =
+      'Photographie ta copie. On te rend une note, un barème détaillé et ce '
+      'qu’il faut retravailler.';
+
+  // --- Choix de la photo
+  final String prendrePhoto = 'Prendre ma copie en photo';
+  final String choisirGalerie = 'Choisir dans mes photos';
+  final String reprendrePhoto = 'Reprendre la photo';
+  final String copie = 'Ta copie';
+  final String sujet = 'Le sujet';
+  final String sujetFacultatif = 'Ajouter le sujet (facultatif)';
+  final String aideSujet =
+      'Avec le sujet, la correction sait ce qui était demandé.';
+  final String retirerSujet = 'Retirer le sujet';
+  final String envoyer = 'Envoyer pour correction';
+  final String conseilPhoto =
+      'Une photo bien éclairée, à plat, sans ombre sur le texte.';
+
+  // --- Ce qui reste
+  String restantes(int n) => n <= 1
+      ? '$n correction restante dans ton pack'
+      : '$n corrections restantes dans ton pack';
+
+  String duJour(int faites, int max) => 'Aujourd’hui : $faites sur $max';
+
+  final String aucunPack =
+      'Il te faut un pack actif pour faire corriger une copie.';
+  final String packExpire =
+      'Ton pack est arrivé à terme. Réactive-le pour continuer.';
+  final String creditEpuise = 'Tu n’as plus de correction dans ton pack.';
+  final String plafondJournalier =
+      'Tu as atteint les 5 corrections du jour. Reviens demain.';
+  final String voirLesPacks = 'Voir les packs';
+
+  // --- Envoi
+  final String envoiEnCours = 'Envoi de ta copie…';
+  String envoiPourcent(int p) => 'Envoi de ta copie… $p %';
+  final String envoiEchoue = 'L’envoi n’a pas abouti. Réessaie.';
+
+  // --- Attente
+  final String enCours = 'On corrige ta copie';
+  final String enCoursDetail =
+      'Compte une à deux minutes. Tu peux fermer l’application, on garde le '
+      'résultat.';
+  final String plusLongQuePrevu = 'C’est plus long que prévu';
+  final String plusLongQuePrevuDetail =
+      'La correction est toujours en cours. Reviens dans un instant.';
+  final String actualiser = 'Actualiser';
+
+  // --- Résultat
+  String note(String note, String bareme) => '$note / $bareme';
+  final String leBareme = 'Le barème';
+  final String pointsForts = 'Ce qui va';
+  final String aTravailler = 'À retravailler';
+  final String bravo = 'Beau travail';
+  final String presque = 'Tu y es presque';
+  final String aRevoir = 'Il faut reprendre ça';
+
+  String lignePoints(String points, String maximum) => '$points / $maximum';
+
+  final String corrigePar = 'Corrigé par';
+
+  // --- Illisible et échec
+  final String illisible = 'On n’arrive pas à lire ta copie';
+  final String echec = 'La correction n’a pas abouti';
+  final String echecDetail =
+      'Rien ne t’a été décompté. Reprends la photo, ou réessaie plus tard.';
+
+  // --- Historique
+  final String historique = 'Mes corrections';
+  final String aucune = 'Aucune copie corrigée';
+  final String aucuneDetail =
+      'Photographie ta première copie : la correction arrive en une à deux '
+      'minutes.';
+  final String voirLaCorrection = 'Voir la correction';
+  final String enAttente = 'En cours de correction';
 }
 
 class _Commun {

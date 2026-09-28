@@ -5,13 +5,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' show AuthState;
 import 'package:go_router/go_router.dart';
 import 'composants/bouton.dart';
-import 'composants/coquille.dart';
 import 'composants/etat_vide.dart';
 import 'donnees/supabase.dart';
 import 'ecrans/accueil.dart';
 import 'ecrans/boutique.dart';
 import 'ecrans/classement.dart';
 import 'ecrans/connexion.dart';
+import 'ecrans/correction.dart';
+import 'ecrans/corriger.dart';
 import 'ecrans/cours.dart';
 import 'ecrans/fiches.dart';
 import 'ecrans/gains.dart';
@@ -41,14 +42,13 @@ abstract final class Chemins {
   static const classement = '/classement';
   static const profil = '/profil';
 
-  /// Le seul onglet encore sans écran : le dépôt de copie attend le seau de
-  /// stockage `corrections`, qui n'existe pas (phase 0.4 du rapport).
   static const corriger = '/corriger';
 
   static String cours(String id) => '/cours/$id';
   static String session(String id) => '/cours/$id/session';
   static String fiches(String id) => '/cours/$id/fiches';
   static String chapitre(String id) => '/chapitre/$id';
+  static String correction(String id) => '/corrections/$id';
 }
 
 /// Chemins accessibles sans session.
@@ -118,13 +118,11 @@ GoRouter creerRouteur(Ref ref) {
       ),
       GoRoute(path: Chemins.profil, builder: (_, _) => const EcranProfil()),
 
-      // « Corriger » garde un onglet qui dit ce qu'il en est, plutôt que de
-      // mener dans le vide ou de prétendre fonctionner : le seau de stockage
-      // que la route attend n'a jamais été créé.
+      GoRoute(path: Chemins.corriger, builder: (_, _) => const EcranCorriger()),
       GoRoute(
-        path: Chemins.corriger,
-        builder: (_, _) =>
-            const _APreparer(chemin: Chemins.corriger, titre: 'Corriger'),
+        path: '/corrections/:id',
+        builder: (_, etat) =>
+            EcranCorrection(correctionId: etat.pathParameters['id'] ?? ''),
       ),
     ],
     errorBuilder: (context, etat) => Scaffold(
@@ -143,35 +141,6 @@ GoRouter creerRouteur(Ref ref) {
       ),
     ),
   );
-}
-
-/// Onglet dont l'écran n'est pas encore écrit.
-class _APreparer extends ConsumerWidget {
-  const _APreparer({required this.chemin, required this.titre});
-
-  final String chemin;
-  final String titre;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final profil = ref.watch(profilProvider);
-
-    return Coquille(
-      ongletActif: chemin,
-      xpTotal: switch (profil) {
-        AsyncData(:final value) when value != null => value.xpTotal,
-        _ => null,
-      },
-      enfant: Padding(
-        padding: const EdgeInsets.all(Espaces.ecran),
-        child: EtatVide(
-          icone: Icons.construction,
-          titre: titre,
-          description: Fr.commun.bientot,
-        ),
-      ),
-    );
-  }
 }
 
 /// Fait réévaluer la redirection quand l'authentification change.

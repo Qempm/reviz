@@ -14,7 +14,9 @@ import 'supabase.dart';
 /// une heure, et l'étudiant qui reprend son application le lendemain matin ne
 /// doit pas voir un écran d'erreur avant de pouvoir continuer.
 class ApiReviz {
-  ApiReviz({Dio? dio}) : _dio = dio ?? Dio() {
+  ApiReviz({Dio? dio, Dio? dioStockage})
+    : _dio = dio ?? Dio(),
+      _stockage = dioStockage ?? Dio() {
     _dio.options
       ..baseUrl = Config.apiBase
       ..connectTimeout = const Duration(seconds: 15)
@@ -34,19 +36,83 @@ class ApiReviz {
         },
       ),
     );
+
+    // Client séparé pour le stockage, **sans l'intercepteur ci-dessus**.
+    //
+    // Une URL signée porte déjà son propre jeton, dans sa query. Y ajouter le
+    // JWT Supabase l'enverrait à une autre origine que la nôtre pour rien :
+    // une fuite gratuite. Le délai d'envoi est long, parce qu'une photo de
+    // copie sur une 3G béninoise prend son temps.
+    _stockage.options
+      ..connectTimeout = const Duration(seconds: 20)
+      ..sendTimeout = const Duration(minutes: 3)
+      ..receiveTimeout = const Duration(seconds: 30)
+      ..validateStatus = (_) => true;
   }
 
   final Dio _dio;
+  final Dio _stockage;
 
   /// Appelle une route et déplie l'enveloppe `{ ok, data | error }`.
   Future<Reponse<T>> poster<T>(
     String chemin, {
     Object? corps,
     T Function(Map<String, dynamic>)? depuis,
-  }) async {
-    Future<Response<dynamic>> envoyer() =>
-        _dio.post<dynamic>(chemin, data: corps);
+  }) {
+    return _appeler(() => _dio.post<dynamic>(chemin, data: corps), depuis);
+  }
 
+  /// Lit une route. Même enveloppe, même rejeu sur 401.
+  Future<Reponse<T>> obtenir<T>(
+    String chemin, {
+    T Function(Map<String, dynamic>)? depuis,
+  }) {
+    return _appeler(() => _dio.get<dynamic>(chemin), depuis);
+  }
+
+  /// Envoie un fichier vers une URL signée, par un `PUT` direct.
+  ///
+  /// Ni enveloppe ni jeton : c'est le stockage Supabase qui répond, et l'URL
+  /// signée est l'autorisation. Rend `null` si tout va bien, un message
+  /// affichable sinon.
+  Future<String?> televerser({
+    required String url,
+    required List<int> octets,
+    required String typeMime,
+    void Function(int envoyes, int total)? progression,
+  }) async {
+    try {
+      final reponse = await _stockage.put<dynamic>(
+        url,
+        data: Stream.fromIterable([octets]),
+        options: Options(
+          headers: {
+            Headers.contentTypeHeader: typeMime,
+            Headers.contentLengthHeader: octets.length,
+          },
+        ),
+        onSendProgress: progression,
+      );
+
+      final code = reponse.statusCode ?? 0;
+      if (code >= 200 && code < 300) return null;
+
+      return 'L’envoi a échoué (code $code). Réessaie.';
+    } on DioException catch (e) {
+      // Coupure, délai dépassé : le message doit rester lisible pour un
+      // étudiant, pas reprendre la trace de Dio.
+      return e.type == DioExceptionType.sendTimeout ||
+              e.type == DioExceptionType.connectionTimeout
+          ? 'L’envoi prend trop de temps. Vérifie ta connexion et réessaie.'
+          : 'L’envoi a été interrompu. Réessaie.';
+    }
+  }
+
+  /// Le corps commun : rejeu unique sur 401, puis dépliage de l'enveloppe.
+  Future<Reponse<T>> _appeler<T>(
+    Future<Response<dynamic>> Function() envoyer,
+    T Function(Map<String, dynamic>)? depuis,
+  ) async {
     var reponse = await envoyer();
 
     // Une seule reprise, et seulement sur 401 : au-delà, c'est que la session
