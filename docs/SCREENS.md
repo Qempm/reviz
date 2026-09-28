@@ -33,6 +33,7 @@ ouvrait le site.
 | `/profil` | `profil.dart` | Identité, vérification de carte, chiffres, réglages, déconnexion. |
 | `/profil/avatar` | `avatar.dart` | Douze couleurs, initiale dessus. |
 | `/profil/supprimer-compte` | `suppression.dart` | Ce qui part, ce qui reste, confirmation par le prénom. |
+| `/profil/carte-etudiante` | `carte.dart` | Photo de la carte, attente du verdict, issue. La seule barrière « un compte par personne ». |
 | `/galerie` | `galerie.dart` | Le kitchen-sink du design system. Public, sans compte. |
 
 Plus un écran sans chemin : `mise_a_jour.dart`, monté par-dessus le routeur
@@ -45,7 +46,6 @@ quand la version installée est trop ancienne ou le serveur en entretien
 
 | Écran | Bloqué par |
 | --- | --- |
-| Photo de carte étudiante | Le traitement `verify_card` n'existe pas. C'est pourtant la seule barrière « un compte par personne » depuis que le téléphone est facultatif. |
 | Page d'un chapitre | `Chemins.chapitre(id)` est déclaré et n'a ni route ni appelant. La page de cours suffit pour l'instant. |
 | Paiement Mobile Money | `FEDAPAY_SECRET_KEY` manque. La boutique le dit à l'écran. |
 | Connexion Google | Un ID client OAuth Android et un ID client Web à créer. |

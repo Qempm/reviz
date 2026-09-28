@@ -17,7 +17,10 @@ export const metadata: Metadata = {
   title: 'Reviz',
   description:
     'Révise tes cours, entraîne-toi sur des QCM et fais corriger tes copies.',
-  manifest: '/manifest.json',
+  // Pas de `manifest` : il n'y a plus d'application web à installer depuis le
+  // navigateur, et celui de `public/` désignait trois icônes qui n'ont jamais
+  // existé — soit trois 404 à chaque visite des deux pages publiques. La
+  // distribution passe par l'APK (`/app`).
 }
 
 export const viewport: Viewport = {

@@ -1,0 +1,24 @@
+# Signature de l'APK de release — GABARIT.
+#
+# Copier ce fichier en `key.properties` **dans ce dossier**, et le remplir.
+# `key.properties` est ignoré par git (`**/key.properties` à la racine, avec
+# `*.jks` et `*.keystore`) : ni la clé ni ses mots de passe n'entrent jamais
+# dans le dépôt. Ce gabarit, lui, est versionné, et ne contient aucune valeur.
+#
+# Créer la clé, hors du dépôt :
+#
+#   keytool -genkey -v -keystore ~/cles/reviz.jks \
+#     -keyalg RSA -keysize 2048 -validity 10000 -alias reviz
+#
+# Garder ce fichier .jks en sauvegarde ailleurs qu'ici. Le perdre, c'est
+# perdre la possibilité de mettre à jour l'application : Android refuse de
+# remplacer un APK par un autre signé d'une clé différente. Il faudrait alors
+# changer d'`applicationId` et demander à chaque étudiant de désinstaller.
+
+# Chemin du magasin, relatif à `apps/mobile/android/` ou absolu.
+# Le garder **hors** du dépôt : un chemin absolu est le plus sûr.
+storeFile=C:/Users/moi/cles/reviz.jks
+
+storePassword=
+keyAlias=reviz
+keyPassword=

@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "apk": "node scripts/apk.mjs",
     "db:link": "supabase link --project-ref",
     "db:push": "supabase db push",
     "db:push:dry": "supabase db push --dry-run",

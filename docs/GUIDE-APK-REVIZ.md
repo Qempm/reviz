@@ -24,10 +24,15 @@ déclare inconnu. Installer le composant depuis Android Studio (Settings →
 Languages & Frameworks → Android SDK → SDK Tools → « Android SDK Command-line
 Tools »), puis accepter les licences.
 
-> **Avant de réparer, essayer.** Une compilation de débogage peut très bien
-> passer alors que `flutter doctor` se plaint : le SDK a peut-être déjà tout ce
-> qu'il faut. Lancer `flutter build apk --debug` et lire l'erreur réelle coûte
-> moins cher que de réparer un diagnostic.
+> **Essayé, et c'était bien un faux diagnostic.** Le 28 septembre 2026,
+> `flutter build apk --debug` a **abouti** (exit 0, 820 s) sur une machine où
+> `flutter doctor` déclarait les licences inconnues et `cmdline-tools` absent :
+> le SDK avait déjà ce qu'il fallait, et les licences des paquets qui
+> manquaient — CMake 3.22.1 — se sont acceptées d'elles-mêmes depuis celles
+> déjà présentes. Rien n'était à réparer de ce côté. Le seul vrai blocage était
+> la clé de signature, § 3. Lire l'erreur réelle coûte moins cher que de
+> réparer un diagnostic : la fois précédente, 51 minutes de compilation avaient
+> été dépensées à conclure le contraire.
 
 ---
 
@@ -51,51 +56,108 @@ la base avant que la clé anonyme descende dans un téléphone.
 
 ## 3. Signer
 
-`apps/mobile/android/app/build.gradle.kts` signe encore la release avec la clé
-de **débogage**, ce que Flutter pose par défaut. Une clé propre est
-indispensable : sans elle, une mise à jour ne peut pas remplacer l'installation
-précédente.
+**Fait côté gradle, reste à faire côté clé.**
+`apps/mobile/android/app/build.gradle.kts` lit `android/key.properties`, et une
+compilation en release **s'arrête avec un message** quand ce fichier ou son
+magasin manquent. C'est le point : la version précédente écrivait
+`signingConfig = signingConfigs.getByName("debug")` sous un TODO, donc
+`flutter build apk --release` rendait un APK signé par la clé de débogage —
+installable, d'apparence normale, et impossible à remplacer plus tard par le
+vrai, puisque Android refuse un changement de signature. Un échec bruyant vaut
+mieux qu'un artefact qu'on distribue sans savoir ce qu'il vaut.
 
-Dans cet ordre — les règles d'exclusion **avant** la clé, parce qu'une clé de
-signature engagée par mégarde est une clé à révoquer :
+Ce qui reste, et qui n'est pas de moi : **créer la clé**. Les règles
+d'exclusion sont déjà en place (`*.jks`, `*.keystore`, `**/key.properties`) —
+c'était l'ordre à respecter, une clé engagée par mégarde étant une clé à
+révoquer.
 
 ```bash
-keytool -genkey -v -keystore reviz.jks -keyalg RSA -keysize 2048 -validity 10000 -alias reviz
+keytool -genkey -v -keystore ~/cles/reviz.jks   -keyalg RSA -keysize 2048 -validity 10000 -alias reviz
 ```
 
-Garder le fichier **hors du dépôt**, et poser ses mots de passe dans
-`apps/mobile/android/key.properties`, que `.gitignore` couvre déjà :
+Garder le fichier `.jks` **hors du dépôt**, puis copier
+`apps/mobile/android/key.properties.example` en `key.properties` dans le même
+dossier et le remplir :
 
 ```properties
-storeFile=/chemin/absolu/vers/reviz.jks
+storeFile=C:/Users/moi/cles/reviz.jks
 storePassword=…
 keyAlias=reviz
 keyPassword=…
 ```
 
-Puis faire lire ce fichier par `build.gradle.kts` et brancher un
-`signingConfigs.create("release")`.
+Je n'écris ni mot de passe ni clé dans un fichier versionné : le gradle lit un
+fichier ignoré que tu remplis. Le gabarit, lui, est versionné et ne contient
+aucune valeur.
 
 Perdre cette clé signifie ne plus jamais pouvoir mettre à jour l'application
-installée. À sauvegarder ailleurs que sur la machine de développement.
+installée — il faudrait changer d'`applicationId` et demander à chaque étudiant
+de désinstaller. À sauvegarder ailleurs que sur la machine de développement.
+
+Pour publier l'empreinte sur la page `/app`, et pour le client OAuth Android de
+Google Sign-In :
+
+```bash
+keytool -list -v -keystore ~/cles/reviz.jks -alias reviz
+```
 
 ---
 
 ## 4. Construire
 
 ```bash
-cd apps/mobile
-flutter build apk --release \
-  --dart-define=SUPABASE_URL=… \
-  --dart-define=SUPABASE_ANON_KEY=… \
-  --dart-define=API_BASE=https://…
+npm run apk
+```
+
+C'est la voie à prendre, et pas la commande brute. `flutter build apk
+--release` sans `--dart-define` produit un APK qui **s'installe et démarre**,
+puis affiche un bandeau rouge « configuration absente » : `Config.supabaseUrl`
+est une chaîne vide, donc rien ne se connecte. Aucune étape de compilation ne
+le signale, et un fichier partagé par WhatsApp ne se reprend pas.
+
+`scripts/apk.mjs` lit donc `.env.local`, **refuse de compiler** si une valeur
+manque, écarte toute variable de serveur — un APK se décompile, tout ce qu'il
+embarque est public — et rend à la fin la taille et l'empreinte SHA-256 à
+reporter dans `lib/metier/publication.ts`.
+
+Les valeurs attendues sont dans `.env.example` (`API_BASE`,
+`GOOGLE_WEB_CLIENT_ID`), en plus de l'URL et de la clé anonyme de Supabase.
+
+La commande brute reste là pour un essai sans configuration :
+
+```bash
+cd apps/mobile && flutter build apk --debug
 ```
 
 Le fichier sort dans `build/app/outputs/flutter-apk/app-release.apk`.
 
-`--split-per-abi` produit trois fichiers plus petits, un par architecture. Pour
-une distribution par lien WhatsApp, l'APK unique est plus simple : il s'installe
-partout, au prix de quelques mégaoctets.
+### Le poids, mesuré
+
+| Compilation | Taille |
+| --- | --- |
+| `--debug` | 155,6 Mo (jamais distribué : moteur de débogage, aucune optimisation) |
+| `--release`, APK unique | **55,5 Mo** |
+
+55,5 Mo, c'est beaucoup pour le public visé : forfait data limité, partage par
+WhatsApp, téléchargement la nuit avant un contrôle. Deux leviers, à décider :
+
+```bash
+npm run apk -- --split-per-abi
+```
+
+produit trois fichiers, un par architecture — environ un tiers du poids
+chacun. Le coût est réel : il faut alors savoir quel fichier envoyer à qui, et
+un mauvais choix ne s'installe pas. Le fichier unique reste donc le défaut,
+parce qu'un téléchargement qui échoue est pire qu'un téléchargement long.
+
+L'autre levier, moins coûteux, est d'écarter `x86_64`, qui ne sert qu'aux
+émulateurs :
+
+```bash
+npm run apk -- --target-platform=android-arm,android-arm64
+```
+
+Aucun des deux n'a été mesuré ; seul le 55,5 Mo ci-dessus l'a été.
 
 ---
 
@@ -110,15 +172,28 @@ L'ancienne coquille et l'application Flutter déclarent **le même**
 donc d'installer l'une par-dessus l'autre : il faut désinstaller l'ancienne
 d'abord, et la page `/app` le dit.
 
-`public/version.json` sert au contrôle de version côté application
-(`apps/mobile/lib/metier/version.dart`) :
+Le contrôle de version côté application
+(`apps/mobile/lib/metier/version.dart`) lit `/version.json`, désormais **servi
+par une route** (`app/version.json/route.ts`) qui rend
+`lib/metier/publication.ts`. Le fichier statique `public/version.json` est
+supprimé, pour deux raisons : un seul endroit décide de ce qui est publié — la
+page `/app` et les seuils sortaient du même fait déclaré deux fois —, et un
+fichier de `public/` est servi par le CDN avec un cache long, alors qu'un écran
+de blocage qu'on ne peut pas lever avant un jour n'est pas un blocage mais une
+panne.
+
+Publier une version, c'est donc éditer `lib/metier/publication.ts` :
 
 | Champ | Effet |
 | --- | --- |
 | `minimumVersion` | en dessous, l'application se bloque |
 | `latestVersion` | au-dessus de la version installée, un bandeau propose la mise à jour |
 | `maintenance` | bloque en annonçant un entretien, sans proposer de téléchargement |
-| `updateUrl` | où le bandeau et l'écran bloquant envoient |
+| `updateUrl` | où le bandeau et l'écran bloquant envoient — dérivé de la requête, plus écrit en dur |
+
+`VERSION_MINIMALE` ne doit **jamais** dépasser la version réellement
+téléchargeable : tout le parc s'arrêterait sans issue, y compris ceux qui
+viennent d'installer. `lib/metier/publication.test.ts` le vérifie.
 
 ---
 
@@ -126,8 +201,12 @@ d'abord, et la page `/app` le dit.
 
 **Pas dans `public/`.** Un binaire versionné alourdit l'historique git à chaque
 reconstruction, définitivement ; `.gitignore` couvre désormais `*.apk`. Publier
-l'APK en **release GitHub**, et faire pointer `/app` et `version.json` vers
-cette URL.
+l'APK en **release GitHub**, puis renseigner `APK` dans
+`lib/metier/publication.ts` — l'URL de l'asset, sa taille en octets et son
+empreinte SHA-256 (`sha256sum app-release.apk`). La page `/app` affiche alors
+le bouton de téléchargement, et `/version.json` porte le lien ; tant que `APK`
+vaut `{ publie: false }`, la page annonce honnêtement que le fichier n'est pas
+signé plutôt que de proposer un lien mort.
 
 Le Play Store viendra plus tard. Il demandera un compte développeur, une fiche,
 une politique de confidentialité, et un format `.aab` plutôt qu'`.apk`

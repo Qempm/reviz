@@ -1,4 +1,9 @@
 import Link from 'next/link'
+import {
+  APK,
+  tailleLisible,
+  VERSION,
+} from '@/lib/metier/publication'
 
 /**
  * Page de téléchargement de l'application.
@@ -24,7 +29,7 @@ const ETAPES = [
   'Autorise l’installation depuis ton navigateur, si Android le demande.',
   'Ouvre le fichier téléchargé depuis tes notifications ou l’application Fichiers.',
   'Appuie sur « Installer », puis ouvre Reviz.',
-  'Connecte-toi avec ton adresse e-mail : un code à chiffres t’arrive par mail.',
+  'Connecte-toi avec ton adresse e-mail : un code à 6 chiffres t’arrive par mail.',
 ]
 
 export default function Telechargement() {
@@ -39,13 +44,18 @@ export default function Telechargement() {
         </p>
       </header>
 
-      {/* Ce que l'étudiant obtient, sans promesse que le produit ne tient pas
-          encore : le dépôt de cours attend son traitement (lot IA). */}
+      {/* Ce que l'étudiant obtient. Le dépôt de cours y est entré quand les
+          traitements `ingest_course` et `generate_questions` ont existé : cette
+          liste ne promet que ce qui marche. */}
       <section className="rounded-card bg-reviz-card p-space-16 shadow-card">
         <h2 className="text-headline-md text-reviz-ink">
           Ce que tu peux faire aujourd’hui
         </h2>
         <ul className="mt-space-12 flex flex-col gap-space-8 text-body-md text-reviz-muted">
+          <li>
+            Déposer un cours en PDF, Word ou photo : Reviz en tire des QCM et
+            des fiches.
+          </li>
           <li>Réviser en QCM, une question par écran, et suivre ta série.</li>
           <li>Retourner des fiches, chapitre par chapitre.</li>
           <li>Photographier une copie et recevoir une note détaillée.</li>
@@ -53,21 +63,45 @@ export default function Telechargement() {
         </ul>
       </section>
 
-      {/* Le fichier n'est pas encore publié : l'APK signé arrive avec le lot
-          C. Annoncer un lien mort serait pire que de dire où l'on en est. */}
-      <section className="rounded-card border-2 border-reviz-border bg-reviz-card p-space-16">
-        <h2 className="text-headline-md text-reviz-ink">
-          Le fichier arrive
-        </h2>
-        <p className="mt-space-8 text-body-md text-reviz-muted">
-          La nouvelle version de l’application est en préparation. Le lien de
-          téléchargement sera partagé ici et par WhatsApp dès qu’elle est
-          signée.
-        </p>
-        {/* Pas de numéro en dur : l'ancienne version de cette page en portait
-            un factice, et un lien mort vaut moins que pas de lien. Le contact
-            réel viendra avec le lot C. */}
-      </section>
+      {/* Le bouton n'apparaît que quand le fichier existe vraiment. Annoncer
+          un lien mort vaut moins que dire où l'on en est — et un APK signé
+          avec la clé de débogage ne serait pas un APK publiable : Android
+          refuserait plus tard de le remplacer par le vrai. */}
+      {APK.publie ? (
+        <section className="rounded-card bg-reviz-card p-space-16 shadow-card">
+          <h2 className="text-headline-md text-reviz-ink">Télécharger</h2>
+          <a
+            href={APK.url}
+            className="mt-space-12 flex h-14 items-center justify-center rounded-xl bg-reviz-yellow text-headline-md text-reviz-on-yellow shadow-tactile active:translate-y-[2px]"
+          >
+            Télécharger Reviz {VERSION}
+          </a>
+          <dl className="mt-space-12 flex flex-col gap-space-8 text-label-sm text-reviz-muted">
+            <div className="flex justify-between gap-space-8">
+              <dt>Taille</dt>
+              <dd>{tailleLisible(APK.tailleOctets)}</dd>
+            </div>
+            <div className="flex flex-col gap-space-4">
+              <dt>Empreinte SHA-256</dt>
+              {/* Pour qui veut vérifier que le fichier reçu par WhatsApp est
+                  bien le nôtre : `sha256sum reviz.apk`. Le lien se partage de
+                  main en main, donc il peut être remplacé en route. */}
+              <dd className="break-all font-mono text-reviz-ink">
+                {APK.sha256}
+              </dd>
+            </div>
+          </dl>
+        </section>
+      ) : (
+        <section className="rounded-card border-2 border-reviz-border bg-reviz-card p-space-16">
+          <h2 className="text-headline-md text-reviz-ink">Le fichier arrive</h2>
+          <p className="mt-space-8 text-body-md text-reviz-muted">
+            La version {VERSION} est prête, mais pas encore signée : sans clé
+            de signature, Android l’installerait puis refuserait toute mise à
+            jour. Le lien sera partagé ici et par WhatsApp dès que c’est fait.
+          </p>
+        </section>
+      )}
 
       <section className="rounded-card bg-reviz-card p-space-16 shadow-card">
         <h2 className="text-headline-md text-reviz-ink">

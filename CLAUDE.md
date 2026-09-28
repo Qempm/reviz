@@ -99,11 +99,11 @@ RLS activée sur toutes les tables : un utilisateur ne lit et n'écrit que ses p
 
 ## Écrans du MVP (ordre de construction)
 
-> **État au 28 septembre 2026.** Les points 1 à 9 sont faits côté Flutter, à
-> une exception près : la **photo de carte étudiante** attend le traitement
-> `verify_card`. Le point 10 — la coquille — est remplacé par un APK Flutter
-> signé, qui attend les licences Android et une clé de signature. Voir
-> `docs/SCREENS.md`.
+> **État au 28 septembre 2026.** Les points 1 à 9 sont faits côté Flutter, la
+> photo de carte étudiante comprise depuis que `verify_card` existe. Le
+> point 10 — la coquille — est remplacé par un APK Flutter signé : la
+> compilation passe (`app-debug.apk` construit, versionCode 2), il ne manque
+> plus que **la clé de signature**. Voir `docs/SCREENS.md`.
 
 1. Design system : jetons dans `apps/mobile/lib/theme/`, composants dans `apps/mobile/lib/composants/`, et l'écran `/galerie` qui les affiche tous pour valider le rendu avant les écrans métier.
 2. Auth : Google ou email (code à 6 chiffres), université / filière / année, code parrain, téléphone facultatif, photo carte (job `verify_card`), connexion.
@@ -147,11 +147,17 @@ cd apps/mobile && flutter analyze && flutter test
 
 Ce qui reste à faire, par ordre de valeur :
 
-1. **Un APK signé** — attend les licences du SDK Android et une clé de
-   signature (`docs/GUIDE-APK-REVIZ.md`).
-3. **Le paiement réel** — attend `FEDAPAY_SECRET_KEY` et
+1. **Un APK signé** — attend **une clé de signature**, et rien d'autre.
+   `flutter build apk --debug` passe : les licences que `flutter doctor`
+   déclarait inconnues ne bloquaient pas, le SDK avait déjà ce qu'il fallait.
+   Le gradle lit `android/key.properties` et refuse une release sans clé,
+   plutôt que d'en signer une avec celle de débogage. Voir
+   `docs/GUIDE-APK-REVIZ.md` § 3.
+2. **Le paiement réel** — attend `FEDAPAY_SECRET_KEY` et
    `FEDAPAY_WEBHOOK_SECRET`.
-4. **La connexion Google** — attend un ID client OAuth Android et un ID client
-   Web.
-5. **Les assets** — icônes PWA, cinq états de la mascotte, 24 avatars en
-   images. Les avatars sont contournés par douze couleurs en attendant.
+3. **La connexion Google** — attend un ID client OAuth Android et un ID client
+   Web (l'Android est rattaché à `com.reviz.app` et à l'empreinte SHA-1 de la
+   clé de signature : il vient donc après elle).
+4. **Les assets** — cinq états de la mascotte, 24 avatars en images. Les
+   avatars sont contournés par douze couleurs en attendant. Les icônes PWA ne
+   sont plus attendues : le manifeste est parti avec la distribution web.

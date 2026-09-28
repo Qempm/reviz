@@ -4,6 +4,11 @@ gradle-wrapper.jar
 /gradlew
 /gradlew.bat
 /local.properties
+# Sorties de Gradle et sessions du compilateur Kotlin, apparues à la première
+# compilation réelle : `/build/` de `apps/mobile/.gitignore` ne couvre que la
+# racine du projet Flutter, pas celle du projet Android.
+/build/
+/.kotlin/
 GeneratedPluginRegistrant.java
 .cxx/
 
