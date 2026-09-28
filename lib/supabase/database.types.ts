@@ -1114,6 +1114,27 @@ export type Database = {
     }
     Functions: {
       can_read_course: { Args: { target: string }; Returns: boolean }
+      claim_job: {
+        Args: { p_id: string; stale_after?: string }
+        Returns: {
+          attempts: number
+          created_at: string
+          finished_at: string | null
+          id: string
+          last_error: string | null
+          payload: Json
+          run_after: string
+          started_at: string | null
+          status: Database["public"]["Enums"]["job_status"]
+          type: Database["public"]["Enums"]["job_type"]
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "jobs"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       claim_jobs: {
         Args: { batch_size?: number; stale_after?: string }
         Returns: {
@@ -1145,6 +1166,7 @@ export type Database = {
           xp_total: number
         }[]
       }
+      consommer_correction: { Args: { p_user: string }; Returns: number }
       current_faculty_id: { Args: never; Returns: string }
       daily_goal: { Args: never; Returns: number }
       enregistrer_paiement: {

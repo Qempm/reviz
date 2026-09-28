@@ -10,6 +10,13 @@ import { PermanentJobError, type Job, type JobContext, type JobHandler, type Job
 export type JobStore = {
   /** Prend un lot et le passe en `running` de façon atomique. */
   claim(batchSize: number, staleAfterMinutes: number): Promise<Job[]>
+  /**
+   * Prend **un job nommé**, aux mêmes conditions.
+   *
+   * Rend un tableau vide si le job est déjà pris, pas encore dû, ou bloqué
+   * par les heures pleines : l'appelant n'a alors rien à faire.
+   */
+  claimUn(id: string, staleAfterMinutes: number): Promise<Job[]>
   markDone(id: string): Promise<void>
   markFailed(id: string, lastError: string): Promise<void>
   requeue(id: string, runAfter: Date, lastError: string): Promise<void>
@@ -45,6 +52,15 @@ export type RunOptions = {
    * en plein traitement.
    */
   deadline?: Date
+  /**
+   * Ne traiter qu'un job précis, au lieu du lot le plus ancien.
+   *
+   * C'est ce qui permet de lancer un traitement depuis l'invocation de
+   * l'étudiant qui vient de déposer sa copie : sans cela, `claim()` lui
+   * ferait traiter les jobs des autres, et l'attente resterait la même.
+   * `batchSize` est alors sans objet.
+   */
+  jobId?: string
   log?: (message: string, extra?: Record<string, unknown>) => void
   signal?: AbortSignal
 }
@@ -62,7 +78,11 @@ export async function runJobs(opts: RunOptions): Promise<RunResult> {
   const batchSize = opts.batchSize ?? BATCH_SIZE
   const staleAfter = opts.staleAfterMinutes ?? STALE_AFTER_MINUTES
 
-  const claimed = await opts.store.claim(batchSize, staleAfter)
+  // Un seul endroit décide du sort d'un job : la prise change, tout le reste
+  // — échéance, clôture, abandon, remise en file — est commun.
+  const claimed = opts.jobId
+    ? await opts.store.claimUn(opts.jobId, staleAfter)
+    : await opts.store.claim(batchSize, staleAfter)
 
   const result: RunResult = {
     claimed: claimed.length,

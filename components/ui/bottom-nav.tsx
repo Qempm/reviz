@@ -11,11 +11,17 @@ export type NavTab = {
   icon: string
 }
 
-/** Les 5 onglets de CLAUDE.md, dans l'ordre. */
+/**
+ * Les onglets du site.
+ *
+ * « Corriger » n'y est plus : l'écran web a été retiré au profit de celui de
+ * l'application Flutter, qui envoie les photos par URL signée au lieu de les
+ * faire traverser une fonction serverless plafonnée à 4,5 Mo. Les cinq
+ * onglets de CLAUDE.md restent la règle **dans l'application**.
+ */
 export const NAV_TABS: NavTab[] = [
   { href: '/', label: 'Accueil', icon: 'home' },
   { href: '/reviser', label: 'Réviser', icon: 'menu_book' },
-  { href: '/corriger', label: 'Corriger', icon: 'fact_check' },
   { href: '/gains', label: 'Gains', icon: 'emoji_events' },
   { href: '/profil', label: 'Profil', icon: 'person' },
 ]

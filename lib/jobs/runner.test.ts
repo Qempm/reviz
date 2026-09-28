@@ -29,6 +29,9 @@ function magasin(lot: Job[]) {
 
   const store: JobStore = {
     claim: vi.fn(async () => lot),
+    // Le magasin nommé rend la ligne demandée si elle est dans le lot, et
+    // rien sinon — c'est le comportement de `claim_job` en SQL.
+    claimUn: vi.fn(async (id: string) => lot.filter((j) => j.id === id)),
     markDone: vi.fn(async (id) => void done.push(id)),
     markFailed: vi.fn(async (id, e) => void failed.push({ id, error: e })),
     requeue: vi.fn(async (id, runAfter, e) =>
@@ -213,5 +216,81 @@ describe('exécution d’un lot', () => {
     const { store } = magasin([])
     const r = await runJobs({ store, handlers: {}, now: () => T0 })
     expect(r).toMatchObject({ claimed: 0, done: 0, requeued: 0, failed: 0 })
+  })
+})
+
+describe('traitement d’un job nommé', () => {
+  it('prend le job demandé, et pas le lot', async () => {
+    // C'est ce qui permet de lancer la correction depuis l'invocation de
+    // l'étudiant qui vient de déposer sa copie, sans traiter celles des
+    // autres.
+    const { store, done } = magasin([job({ id: 'a' }), job({ id: 'b' })])
+
+    const r = await runJobs({
+      store,
+      handlers: { notify: async () => {} },
+      jobId: 'b',
+      staleAfterMinutes: 10,
+      now: () => T0,
+    })
+
+    expect(store.claimUn).toHaveBeenCalledWith('b', 10)
+    expect(store.claim).not.toHaveBeenCalled()
+    expect(r).toMatchObject({ claimed: 1, done: 1 })
+    expect(done).toEqual(['b'])
+  })
+
+  it('ne fait rien si le job est déjà pris ailleurs', async () => {
+    // `for update skip locked` rend zéro ligne : l'exécution immédiate et le
+    // cron sont alors inoffensifs l'un pour l'autre.
+    const { store } = magasin([job({ id: 'a' })])
+    const traite = vi.fn(async () => {})
+
+    const r = await runJobs({
+      store,
+      handlers: { notify: traite },
+      jobId: 'deja-pris',
+      now: () => T0,
+    })
+
+    expect(r).toMatchObject({ claimed: 0, done: 0, requeued: 0, failed: 0 })
+    expect(traite).not.toHaveBeenCalled()
+  })
+
+  it('remet en file un job nommé qui échoue, comme les autres', async () => {
+    // Le sort d'un job ne dépend pas de la façon dont il a été pris.
+    const { store, requeued } = magasin([job({ id: 'a', attempts: 1 })])
+
+    const r = await runJobs({
+      store,
+      handlers: {
+        notify: async () => {
+          throw new Error('fournisseur indisponible')
+        },
+      },
+      jobId: 'a',
+      now: () => T0,
+    })
+
+    expect(r).toMatchObject({ requeued: 1, failed: 0 })
+    expect(requeued[0].id).toBe('a')
+  })
+
+  it('abandonne un job nommé sur une erreur permanente', async () => {
+    const { store, failed } = magasin([job({ id: 'a' })])
+
+    const r = await runJobs({
+      store,
+      handlers: {
+        notify: async () => {
+          throw new PermanentJobError('charge utile invalide')
+        },
+      },
+      jobId: 'a',
+      now: () => T0,
+    })
+
+    expect(r).toMatchObject({ failed: 1, requeued: 0 })
+    expect(failed[0].id).toBe('a')
   })
 })

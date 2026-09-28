@@ -91,8 +91,10 @@ export const MODELS = {
     model: 'glm-5.3-flash',
     // Vision native et raisonnement (docs/STACK-IA.md § 3.1).
     capabilities: ['text', 'vision', 'thinking'],
-    // Le défaut du fournisseur est « high » : on force « low » partout sauf
-    // sur les corrections, sinon on paie du raisonnement pour rien.
+    // Le défaut du fournisseur est « high » : on force « low » ici, sinon on
+    // paie du raisonnement pour une lecture de carte étudiante. Là où le
+    // raisonnement sert — la correction notée — c'est `glmPro` qui est
+    // appelé, avec « high ».
     reasoningEffort: 'low',
     pricing: { input: 0.15, cacheHit: 0.15, output: 0.5 },
   },

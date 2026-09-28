@@ -47,6 +47,18 @@ export function createSupabaseJobStore(): JobStore {
       return (data ?? []).map(versJob)
     },
 
+    async claimUn(id, staleAfterMinutes) {
+      const { data, error } = await supabase.rpc('claim_job', {
+        p_id: id,
+        stale_after: `${staleAfterMinutes} minutes`,
+      })
+
+      if (error) {
+        throw new Error(`Prise du job ${id} impossible : ${error.message}`)
+      }
+      return (data ?? []).map(versJob)
+    },
+
     async markDone(id) {
       const { error } = await supabase
         .from('jobs')

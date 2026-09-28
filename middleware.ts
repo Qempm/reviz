@@ -14,7 +14,7 @@ import type { Database } from '@/lib/supabase/database.types'
 const PUBLIQUES = ['/connexion', '/inscription', '/app', '/kitchen-sink']
 
 /** Préfixes réservés aux comptes connectés. */
-const PROTEGEES = ['/reviser', '/corriger', '/gains', '/profil', '/cours', '/boutique']
+const PROTEGEES = ['/reviser', '/gains', '/profil', '/cours', '/boutique']
 
 function estDans(prefixes: string[], chemin: string): boolean {
   return prefixes.some((p) => chemin === p || chemin.startsWith(`${p}/`))

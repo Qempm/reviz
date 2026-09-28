@@ -68,12 +68,24 @@ describe('table de routage', () => {
     expect(ROUTES.questions).toEqual(['deepseekFlash', 'qwenFlash', 'glmFlash'])
   })
 
-  it('route la correction vers les deux modèles de raisonnement', () => {
-    // docs/STACK-IA.md § 0 : deepseek-v4-pro puis glm-5.3, pas les modèles
-    // Flash qui n'apportent rien sur une copie notée.
-    expect(ROUTES.correction).toEqual(['deepseekPro', 'glmPro'])
-    expect(MODELS.deepseekPro.thinking).toBe(true)
-    expect(MODELS.deepseekPro.reasoningEffort).toBe('high')
+  it('ne route la correction que vers des modèles de vision', () => {
+    // C'est l'invariant qui compte, plus que la liste des noms : une copie
+    // arrive **en photo**. La première version de cette route valait
+    // ['deepseekPro', 'glmPro'] — or deepseek-v4-pro n'a pas la vision, donc
+    // il était sauté et la chaîne de secours se réduisait à un seul modèle,
+    // le plus cher de la pile. Un modèle sans vision ajouté ici casse ce
+    // test avant de casser la production.
+    for (const key of ROUTES.correction) {
+      expect(MODELS[key].capabilities).toContain('vision')
+    }
+
+    expect(ROUTES.correction).toEqual([
+      'deepseekVision',
+      'glmPro',
+      'qwenVlFlash',
+    ])
+    // Le rattrapage garde le raisonnement élevé : une note se discute.
+    expect(MODELS.glmPro.reasoningEffort).toBe('high')
   })
 
   it('route la vision vers GLM avant Qwen', () => {
@@ -397,19 +409,25 @@ describe('paramètres envoyés au fournisseur', () => {
     expect(corr.max_tokens).toBe(4000)
   })
 
-  it('n’envoie user_id et thinking qu’à DeepSeek', async () => {
+  it('n’envoie user_id qu’à DeepSeek', async () => {
     const chezDeepSeek = await corpsEnvoye('correction', [erreurHttp(500)])
     expect(chezDeepSeek.user_id).toBe('etudiant_123')
-    expect(chezDeepSeek.thinking).toEqual({ type: 'enabled' })
-    expect(chezDeepSeek.reasoning_effort).toBe('high')
+    // `deepseek-v4-flash-vision-exp` n'est pas un modèle de raisonnement :
+    // ni `thinking`, ni `reasoning_effort`. L'émission de `thinking` pour un
+    // modèle qui l'annonce est vérifiée dans client.test.ts.
+    expect(chezDeepSeek.thinking).toBeUndefined()
+    expect(chezDeepSeek.reasoning_effort).toBeUndefined()
 
     // Deuxième maillon de la route correction : GLM. Ni user_id ni thinking.
     let corpsGlm: Record<string, unknown> = {}
     let appel = 0
     const impl = (async (_url: unknown, init?: unknown) => {
       appel++
-      if (appel === 1) return erreurHttp(500)
-      corpsGlm = JSON.parse((init as { body: string }).body)
+      // Le deuxième appel seulement : la route a désormais un troisième
+      // maillon (Qwen), qui écraserait la capture.
+      if (appel === 2) {
+        corpsGlm = JSON.parse((init as { body: string }).body)
+      }
       return erreurHttp(500)
     }) as unknown as typeof fetch
 

@@ -70,28 +70,88 @@ export const rubricLineSchema = z.object({
   comment: z.string().max(2000).optional(),
 })
 
-export const correctionPayloadSchema = z
-  .object({
-    grade: z.number().min(0),
-    maxGrade: z.number().positive(),
-    rubric: z.array(rubricLineSchema).min(1).max(30),
-    feedback: z.object({
-      summary: z.string().min(1).max(2000),
-      strengths: z.array(z.string().max(500)).max(10).default([]),
-      improvements: z.array(z.string().max(500)).max(10).default([]),
+/**
+ * Une copie corrigée.
+ *
+ * Les clés sont en anglais comme celles des autres sorties IA : ce sont les
+ * noms que le modèle doit écrire, pas des identifiants de notre code.
+ */
+const copieCorrigeeSchema = z.object({
+  isReadable: z.literal(true),
+  grade: z.number().min(0),
+  maxGrade: z.number().positive(),
+  rubric: z.array(rubricLineSchema).min(1).max(30),
+  feedback: z.object({
+    summary: z.string().min(1).max(2000),
+    strengths: z.array(z.string().max(500)).max(10).default([]),
+    improvements: z.array(z.string().max(500)).max(10).default([]),
+  }),
+})
+
+/**
+ * Une copie qu'on n'arrive pas à lire.
+ *
+ * Même raisonnement que `studentCardPayloadSchema.isReadable` plus bas : une
+ * photo floue prise à 23 h est le cas d'échec le plus fréquent, et c'est une
+ * **réponse valide**, pas un échec de validation. Sans cette branche, une
+ * mauvaise photo brûle toute la chaîne de secours — trois appels payés — puis
+ * laisse la correction en échec permanent, alors que l'étudiant n'a qu'à
+ * reprendre la photo à la lumière.
+ */
+const copieIllisibleSchema = z.object({
+  isReadable: z.literal(false),
+  /** Ce qu'on dira à l'étudiant : flou, cadrage, obscurité, page blanche. */
+  reason: z.string().min(1).max(500),
+})
+
+export const correctionPayloadSchema = z.preprocess(
+  (brut) => {
+    // Un modèle qui rend une note sans se prononcer sur la lisibilité l'a de
+    // fait jugée lisible. Faire basculer toute la chaîne pour un booléen
+    // absent coûterait trois appels pour rien — même arbitrage que le
+    // `"options": null` des questions ouvertes.
+    if (
+      brut !== null &&
+      typeof brut === 'object' &&
+      !('isReadable' in brut) &&
+      'grade' in brut
+    ) {
+      return { ...brut, isReadable: true }
+    }
+    return brut
+  },
+  z
+    .discriminatedUnion('isReadable', [
+      copieCorrigeeSchema,
+      copieIllisibleSchema,
+    ])
+    .superRefine((c, ctx) => {
+      if (!c.isReadable) return
+
+      // Miroir de la contrainte SQL corrections_note_dans_le_bareme : ce qui
+      // passe ici doit passer l'insertion.
+      if (c.grade > c.maxGrade) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'La note dépasse le barème.',
+          path: ['grade'],
+        })
+      }
+
+      if (c.rubric.some((l) => l.points > l.maxPoints)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Une ligne de barème dépasse son maximum.',
+          path: ['rubric'],
+        })
+      }
     }),
-  })
-  // Miroir de la contrainte SQL corrections_note_dans_le_bareme.
-  .refine((c) => c.grade <= c.maxGrade, {
-    message: 'La note dépasse le barème.',
-    path: ['grade'],
-  })
-  .refine(
-    (c) => c.rubric.every((l) => l.points <= l.maxPoints),
-    { message: 'Une ligne de barème dépasse son maximum.', path: ['rubric'] },
-  )
+)
 
 export type CorrectionPayload = z.infer<typeof correctionPayloadSchema>
+
+/** La branche lisible, quand l'appelant a déjà écarté l'autre. */
+export type CopieCorrigee = z.infer<typeof copieCorrigeeSchema>
 
 /**
  * Lecture d'une carte étudiante.

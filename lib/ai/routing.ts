@@ -22,9 +22,15 @@ export const ROUTES: Record<AiTask, ModelKey[]> = {
   questions: ['deepseekFlash', 'qwenFlash', 'glmFlash'],
   flashcards: ['deepseekFlash', 'qwenFlash', 'glmFlash'],
   exam_predictions: ['deepseekFlash', 'qwenFlash', 'glmFlash'],
-  // Correction notée difficile : DeepSeek Pro puis GLM 5.3, les deux seuls
-  // modèles de raisonnement de la pile.
-  correction: ['deepseekPro', 'glmPro'],
+  // Correction d'une copie : **la copie arrive en photo**, donc il faut la
+  // vision. L'ancienne chaîne `['deepseekPro', 'glmPro']` reposait sur les
+  // deux modèles de raisonnement de la pile, mais `deepseek-v4-pro` n'a pas
+  // la vision : avec une image il était sauté en `skipped_capability`, et la
+  // « chaîne de secours » se réduisait à `glm-5.3` seul — le modèle le plus
+  // cher de la pile. Vision et moins cher d'abord, raisonnement élevé en
+  // rattrapage (une correction est une note, la qualité compte plus que le
+  // coût sur un cas rare), Qwen en dernier ressort.
+  correction: ['deepseekVision', 'glmPro', 'qwenVlFlash'],
   // Lecture de photo : GLM 5.3 Flash a la vision native et passe avant Qwen,
   // dont le modèle vision est qwen3-vl-flash et non qwen3.8-flash.
   student_card: ['deepseekVision', 'glmFlash', 'qwenVlFlash'],

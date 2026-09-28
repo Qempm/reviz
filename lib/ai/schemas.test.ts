@@ -126,10 +126,51 @@ describe('correction', () => {
       feedback: { summary: 'Copie solide.' },
     })
     expect(r.success).toBe(true)
-    if (r.success) {
+    if (r.success && r.data.isReadable) {
       expect(r.data.feedback.strengths).toEqual([])
       expect(r.data.feedback.improvements).toEqual([])
     }
+  })
+
+  it('tient une note sans « isReadable », en la jugeant lisible', () => {
+    // `valide` n'a pas la clé : c'est la forme qu'un modèle rend
+    // spontanément. Basculer vers le fournisseur suivant pour un booléen
+    // absent coûterait trois appels pour rien.
+    const r = correctionPayloadSchema.safeParse(valide)
+    expect(r.success).toBe(true)
+    if (r.success) expect(r.data.isReadable).toBe(true)
+  })
+
+  it('accepte une copie déclarée illisible, avec son motif', () => {
+    // Le cas le plus fréquent : une photo floue prise à 23 h. C'est une
+    // réponse valide, pas un échec de validation.
+    const r = correctionPayloadSchema.safeParse({
+      isReadable: false,
+      reason: 'La photo est trop floue pour lire l’écriture.',
+    })
+    expect(r.success).toBe(true)
+    if (r.success) expect(r.data.isReadable).toBe(false)
+  })
+
+  it('exige un motif quand la copie est illisible', () => {
+    // Sans motif, l'écran n'aurait rien à dire à l'étudiant.
+    expect(
+      correctionPayloadSchema.safeParse({ isReadable: false }).success,
+    ).toBe(false)
+  })
+
+  it('refuse une copie illisible qui rend quand même une note', () => {
+    // Les deux branches s'excluent : une note sur une copie illisible est
+    // une note inventée.
+    const r = correctionPayloadSchema.safeParse({
+      isReadable: false,
+      reason: 'Flou.',
+      grade: 14,
+    })
+    // La branche illisible ignore les clés en trop, mais ne rend pas de
+    // note : c'est ce que l'appelant doit constater.
+    expect(r.success).toBe(true)
+    if (r.success) expect('grade' in r.data).toBe(false)
   })
 })
 
