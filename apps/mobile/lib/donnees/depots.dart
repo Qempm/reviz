@@ -64,6 +64,20 @@ class DepotProfil {
     return _garder(lignes, Faculte.depuis);
   }
 
+  /// Choisit son avatar — par la route, pour la liste blanche.
+  ///
+  /// `avatar_key` est une colonne `text` libre que le trigger
+  /// `protect_profile_columns` ne gèle pas : une écriture directe passerait,
+  /// avec n'importe quelle valeur. La route vérifie que la clé fait partie
+  /// des douze.
+  Future<Reponse<String>> choisirAvatar(ApiReviz api, String cle) {
+    return api.mettreAJour<String>(
+      '/api/profile/avatar',
+      corps: {'avatar_key': cle},
+      depuis: (data) => data['avatarKey'] as String,
+    );
+  }
+
   /// Supprime le compte — par anonymisation.
   ///
   /// La base refuse la suppression : trois clés étrangères en

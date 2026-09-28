@@ -129,7 +129,11 @@ class _Contenu extends ConsumerWidget {
           enfants: [
             Row(
               children: [
-                AvatarInitiale(prenom: profil.prenom, taille: 64),
+                AvatarInitiale(
+                  prenom: profil.prenom,
+                  cleAvatar: profil.avatar,
+                  taille: 64,
+                ),
                 const SizedBox(width: Espaces.x16),
                 Expanded(
                   child: Column(
@@ -258,6 +262,15 @@ class _Contenu extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: Espaces.x16),
+
+        // --- Avatar
+        Bouton(
+          libelle: Fr.profil.changerAvatar,
+          icone: Icons.face_retouching_natural,
+          variante: VarianteBouton.secondaire,
+          onTap: () => context.go(Chemins.avatar),
+        ),
+        const SizedBox(height: Espaces.x12),
 
         // --- Accès
         Bouton(

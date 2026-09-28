@@ -273,11 +273,26 @@ identité du profil) ; les lignes financières restent, sans nom dessus. Le
 compte devient inutilisable : adresse sur `.invalid`, identités détachées,
 sessions révoquées, `banned_until` à l'infini. Idempotente.
 
+### `PUT /api/profile/avatar`
+
+`{ avatar_key }` — une des **douze clés** de `lib/profil/avatars.ts`. Réponse :
+`{ avatarKey }`.
+
+La liste blanche est le point de la route. `profiles.avatar_key` est une
+colonne `text` libre que le trigger `protect_profile_columns` ne gèle pas : la
+version précédente acceptait n'importe quelle chaîne de cent caractères, et
+rien ne garantissait que ce qu'un écran lit soit un avatar.
+
+Les 24 PNG annoncés par `CLAUDE.md` n'existent pas, ni `public/avatars/` :
+l'ancien écran web construisait `/avatars/${avatar_key}.png` et récoltait des
+404. En attendant, un avatar est une initiale sur un fond de la palette. Les
+clés sont stables — le jour où les images arrivent, `ton-03` désigne un fichier
+au lieu d'une couleur, sans migration.
+
 ### Les routes antérieures
 
-`/api/payments/init`, `/api/payments/status`, `/api/payments/webhook`,
-`/api/profile/avatar` et `/api/jobs/run` existaient déjà, et **n'ont pas été
-converties** : elles construisent leur client
+`/api/payments/init`, `/api/payments/status`, `/api/payments/webhook` et
+`/api/jobs/run` existaient déjà, et **n'ont pas été converties** : elles construisent leur client
 Supabase à partir des cookies uniquement, donc tout appel depuis
 l'application Flutter reçoit 401. Leurs messages d'erreur sont en anglais et
 leur enveloppe n'est pas uniforme.
@@ -294,8 +309,8 @@ n'a aucune raison d'accepter un jeton d'étudiant.
 
 ## 5. Ce qui reste à faire de ce côté
 
-- Convertir les quatre routes antérieures restantes (`payments/init`,
-  `payments/status`, `payments/webhook`, `profile/avatar`)
+- Convertir les trois routes antérieures restantes (`payments/init`,
+  `payments/status`, `payments/webhook`)
   sur `authentifier()`, l'enveloppe commune et le français. Tant qu'elles ne le
   sont pas, aucun écran Flutter ne peut les appeler.
 - Le dépôt de correction par URL signée, pour lever le plafond de 4,5 Mo.

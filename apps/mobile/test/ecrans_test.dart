@@ -8,7 +8,10 @@ import 'package:reviz/donnees/depots.dart';
 import 'package:reviz/metier/acces.dart';
 import 'package:reviz/donnees/modeles.dart';
 import 'package:reviz/composants/bouton.dart';
+import 'package:reviz/composants/podium.dart';
 import 'package:reviz/ecrans/accueil.dart';
+import 'package:reviz/ecrans/avatar.dart';
+import 'package:reviz/metier/avatars.dart';
 import 'package:reviz/ecrans/boutique.dart';
 import 'package:reviz/ecrans/classement.dart';
 import 'package:reviz/ecrans/correction.dart';
@@ -1601,6 +1604,154 @@ void main() {
         ),
         taille: const Size(320, 640),
       );
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('choix de l’avatar', () {
+    Profil profilAvec(String? cle) => Profil(
+      id: 'u1',
+      prenom: 'Awa',
+      xpTotal: 100,
+      serieCourante: 1,
+      dernierJourValide: _hier,
+      faculteId: 'f1',
+      universiteNom: 'UAC',
+      faculteNom: 'FADESP',
+      codeParrain: 'ABC123',
+      avatar: cle,
+    );
+
+    testWidgets('montre les douze couleurs et un aperçu', (tester) async {
+      await _poser(
+        tester,
+        const EcranAvatar(),
+        remplacements: [
+          profilProvider.overrideWith((_) async => profilAvec('ton-05')),
+        ],
+      );
+
+      // Douze pastilles, plus l'aperçu en grand.
+      expect(find.byType(AvatarInitiale), findsNWidgets(avatars.length + 1));
+      // L'initiale du prénom, pas un rond vide ni deux lettres découpées
+      // dans la clé comme le faisait l'écran web.
+      expect(find.text('A'), findsWidgets);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('n’enregistre rien tant qu’on n’a rien changé', (tester) async {
+      await _poser(
+        tester,
+        const EcranAvatar(),
+        remplacements: [
+          profilProvider.overrideWith((_) async => profilAvec('ton-05')),
+        ],
+      );
+
+      final bouton = find.widgetWithText(Bouton, 'Garder celui-là');
+      await tester.scrollUntilVisible(
+        bouton,
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(tester.widget<Bouton>(bouton).onTap, isNull);
+    });
+
+    testWidgets('s’active dès qu’une autre couleur est choisie', (
+      tester,
+    ) async {
+      await _poser(
+        tester,
+        const EcranAvatar(),
+        remplacements: [
+          profilProvider.overrideWith((_) async => profilAvec('ton-05')),
+        ],
+      );
+
+      await _taper(tester, find.byKey(const ValueKey('avatar-ton-09')));
+
+      final bouton = find.widgetWithText(Bouton, 'Garder celui-là');
+      await tester.scrollUntilVisible(
+        bouton,
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(tester.widget<Bouton>(bouton).onTap, isNotNull);
+    });
+
+    testWidgets('retombe sur une tête pour un profil sans avatar', (
+      tester,
+    ) async {
+      // Et pour une clé de l'ancien écran web, qui ne fait pas partie des
+      // douze : un compte existant ne doit pas se retrouver sans visage.
+      for (final cle in [null, 'avatar-1-garcon-sourire']) {
+        await _poser(
+          tester,
+          const EcranAvatar(),
+          remplacements: [
+            profilProvider.overrideWith((_) async => profilAvec(cle)),
+          ],
+        );
+
+        expect(find.byType(AvatarInitiale), findsNWidgets(avatars.length + 1));
+        expect(tester.takeException(), isNull);
+      }
+    });
+
+    testWidgets('ne déborde pas à 320 px', (tester) async {
+      // La grille passe de quatre à trois colonnes en dessous de 340 px.
+      await _poser(
+        tester,
+        const EcranAvatar(),
+        taille: const Size(320, 640),
+        remplacements: [
+          profilProvider.overrideWith((_) async => profilAvec('ton-01')),
+        ],
+      );
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('couleur d’avatar au classement', () {
+    testWidgets('deux étudiants aux clés différentes n’ont pas le même fond', (
+      tester,
+    ) async {
+      // La couleur était figée sur `jauneDoux` : tout le monde avait la même
+      // tête, et la colonne `avatar_key` ne servait à rien.
+      await _poser(
+        tester,
+        const EcranClassement(),
+        remplacements: [
+          classementProvider.overrideWith(
+            (_) async => const DonneesClassement(
+              lignes: [
+                LigneClassement(
+                  rang: 1,
+                  prenom: 'Awa',
+                  avatar: 'ton-01',
+                  xp: 400,
+                  estMoi: false,
+                ),
+                LigneClassement(
+                  rang: 2,
+                  prenom: 'Koffi',
+                  avatar: 'ton-05',
+                  xp: 300,
+                  estMoi: false,
+                ),
+              ],
+              monRang: 2,
+            ),
+          ),
+        ],
+      );
+
+      final rendus = tester
+          .widgetList<AvatarInitiale>(find.byType(AvatarInitiale))
+          .map((a) => avatarDe(a.cleAvatar).fond.toARGB32())
+          .toSet();
+
+      expect(rendus.length, greaterThan(1));
       expect(tester.takeException(), isNull);
     });
   });

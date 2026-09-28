@@ -24,6 +24,7 @@ abstract final class Fr {
   static const correction = _Correction();
   static const suppression = _Suppression();
   static const miseAJour = _MiseAJour();
+  static const avatar = _Avatar();
   static const erreurs = _Erreurs();
 }
 
@@ -376,6 +377,23 @@ class _MiseAJour {
   final String lienIndisponible =
       'Le lien de téléchargement n’est pas disponible. Demande-le sur '
       'WhatsApp.';
+}
+
+class _Avatar {
+  const _Avatar();
+
+  final String titre = 'Mon avatar';
+  final String sousTitre =
+      'Choisis une couleur. Ton initiale se pose dessus, et c’est ce que voit '
+      'ta faculté au classement.';
+  final String apercu = 'Aperçu';
+  final String enregistrer = 'Garder celui-là';
+  final String enregistre = 'C’est enregistré';
+  final String echec =
+      'On n’a pas pu enregistrer ton avatar. Réessaie dans un instant.';
+  final String desImages =
+      'Les dessins arrivent plus tard : les couleurs, elles, marchent déjà et '
+      'ne coûtent rien à télécharger.';
 }
 
 class _Commun {

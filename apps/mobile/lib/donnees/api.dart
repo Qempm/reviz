@@ -70,6 +70,19 @@ class ApiReviz {
     return _appeler(() => _dio.get<dynamic>(chemin), depuis);
   }
 
+  /// Met à jour une ressource. Même enveloppe, même rejeu sur 401.
+  ///
+  /// Le verbe compte : `/api/profile/avatar` répond en `PUT`, et la faire
+  /// répondre en `POST` pour économiser une méthode ici aurait été
+  /// l'arranger dans le mauvais sens.
+  Future<Reponse<T>> mettreAJour<T>(
+    String chemin, {
+    Object? corps,
+    T Function(Map<String, dynamic>)? depuis,
+  }) {
+    return _appeler(() => _dio.put<dynamic>(chemin, data: corps), depuis);
+  }
+
   /// Envoie un fichier vers une URL signée, par un `PUT` direct.
   ///
   /// Ni enveloppe ni jeton : c'est le stockage Supabase qui répond, et l'URL

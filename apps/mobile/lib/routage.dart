@@ -8,6 +8,7 @@ import 'composants/bouton.dart';
 import 'composants/etat_vide.dart';
 import 'donnees/supabase.dart';
 import 'ecrans/accueil.dart';
+import 'ecrans/avatar.dart';
 import 'ecrans/boutique.dart';
 import 'ecrans/classement.dart';
 import 'ecrans/connexion.dart';
@@ -43,6 +44,7 @@ abstract final class Chemins {
   static const classement = '/classement';
   static const profil = '/profil';
   static const suppression = '/profil/supprimer-compte';
+  static const avatar = '/profil/avatar';
 
   static const corriger = '/corriger';
 
@@ -122,6 +124,7 @@ GoRouter creerRouteur(Ref ref) {
         path: Chemins.profil,
         builder: (_, _) => const EcranProfil(),
         routes: [
+          GoRoute(path: 'avatar', builder: (_, _) => const EcranAvatar()),
           GoRoute(
             path: 'supprimer-compte',
             builder: (_, _) => const EcranSuppression(),

@@ -72,21 +72,6 @@ export default async function Profil() {
         </Card>
       </Link>
 
-      {/* Avatar */}
-      <Link href="/profil/avatar">
-        <Card size="sm">
-          <div className="flex items-center justify-between gap-space-12">
-            <span className="flex items-center gap-space-12">
-              <Icon name="face" size={22} className="text-primary" />
-              <span className="text-label-lg text-reviz-ink">
-                Changer mon avatar
-              </span>
-            </span>
-            <Icon name="chevron_right" size={22} className="text-reviz-muted" />
-          </div>
-        </Card>
-      </Link>
-
       {/* Parametres */}
       <Link href="/profil/parametres">
         <Card size="sm">

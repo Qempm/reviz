@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../donnees/modeles.dart';
 import '../i18n/fr.dart';
+import '../metier/avatars.dart';
 import '../theme/jetons.dart';
 import '../theme/typographie.dart';
 
@@ -78,6 +79,7 @@ class _Marche extends StatelessWidget {
       children: [
         AvatarInitiale(
           prenom: ligne.prenom,
+          cleAvatar: ligne.avatar,
           taille: ligne.rang == 1 ? 56 : 44,
           couronne: ligne.rang == 1,
         ),
@@ -118,30 +120,31 @@ class _Marche extends StatelessWidget {
   }
 }
 
-/// Rond portant l'initiale du prénom.
+/// Rond portant l'initiale du prénom, sur la couleur de son avatar.
 ///
-/// Repli en attendant les 24 avatars ; il se remplacera par une `Image.asset`
-/// sans changer les appelants.
+/// La couleur vient de `avatar_key` — elle était figée sur `jauneDoux`, si
+/// bien que tout le monde avait la même tête et que la colonne ne servait à
+/// rien. Les 24 PNG n'existent toujours pas : quand ils arriveront, ce widget
+/// posera une `Image.asset` sur le même fond, sans changer ses appelants.
 class AvatarInitiale extends StatelessWidget {
   const AvatarInitiale({
     super.key,
     required this.prenom,
+    this.cleAvatar,
     this.taille = 44,
     this.couronne = false,
   });
 
   final String? prenom;
+
+  /// `null` ou inconnue : on retombe sur l'avatar par défaut.
+  final String? cleAvatar;
   final double taille;
   final bool couronne;
 
   @override
   Widget build(BuildContext context) {
-    final p = (prenom ?? '').trim();
-    // Par rune et non par `substring(0, 1)` : un prénom commençant par un
-    // caractère hors du plan de base se couperait en deux moitiés de paire.
-    final initiale = p.isEmpty
-        ? '?'
-        : String.fromCharCode(p.runes.first).toUpperCase();
+    final avatar = avatarDe(cleAvatar);
 
     final rond = Container(
       width: taille,
@@ -149,14 +152,19 @@ class AvatarInitiale extends StatelessWidget {
       alignment: Alignment.center,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: Couleurs.jauneDoux,
+        color: avatar.fond,
         border: couronne
             ? Border.all(color: Couleurs.areteJaune, width: 2)
             : null,
       ),
       child: Text(
-        initiale,
-        style: Typo.headlineMd.copyWith(color: Couleurs.surJaune),
+        initialeDe(prenom),
+        // La taille du rond commande celle de la lettre : un rond de 64 px
+        // avec une lettre de 18 semblerait vide.
+        style: Typo.headlineMd.copyWith(
+          color: avatar.encre,
+          fontSize: taille * 0.42,
+        ),
       ),
     );
 
@@ -200,7 +208,11 @@ class RangeeClassement extends StatelessWidget {
               style: Typo.labelLg.copyWith(color: Couleurs.attenue),
             ),
           ),
-          AvatarInitiale(prenom: ligne.prenom, taille: 36),
+          AvatarInitiale(
+            prenom: ligne.prenom,
+            cleAvatar: ligne.avatar,
+            taille: 36,
+          ),
           const SizedBox(width: Espaces.x12),
           Expanded(
             child: Text(
