@@ -273,11 +273,52 @@ function nommer(
   return (total === 1 ? base : `${base} — partie ${i + 1}`).slice(0, 200)
 }
 
-/** « CHAPITRE II — LES SOURCES » → « Chapitre II — Les sources ». */
+/**
+ * Chiffres romains de 1 à 50, en toutes lettres.
+ *
+ * Une expression régulière `[ivxlcdm]+` serait plus courte et fausse : elle
+ * transformerait « civil » en « CIVIL » et « il » en « IL ». On énumère.
+ */
+const ROMAINS = new Set(
+  (
+    'i ii iii iv v vi vii viii ix x xi xii xiii xiv xv xvi xvii xviii xix xx ' +
+    'xxi xxii xxiii xxiv xxv xxvi xxvii xxviii xxix xxx xxxi xxxii xxxiii ' +
+    'xxxiv xxxv xxxvi xxxvii xxxviii xxxix xl xli xlii xliii xliv xlv xlvi ' +
+    'xlvii xlviii xlix l'
+  ).split(' '),
+)
+
+/**
+ * « CHAPITRE II — LES SOURCES DU DROIT » → « Chapitre II — Les sources du
+ * droit ».
+ *
+ * Une majuscule par mot donnait « Chapitre Ii Le Contrôle De
+ * Constitutionnalité » : le chiffre romain était abîmé, et le reste ressemblait
+ * à un titre de journal anglais. On met une majuscule en début de titre et
+ * après une ponctuation forte, et on rend aux chiffres romains la leur.
+ */
 function enCapitales(titre: string): string {
-  return titre
-    .toLowerCase()
-    .replace(/(^|[\s—–\-().])([a-zà-ÿ])/g, (_, avant, lettre: string) =>
-      avant + lettre.toUpperCase(),
-    )
+  const mots = titre.toLowerCase().split(/(\s+)/)
+
+  const rendus = mots.map((mot) =>
+    ROMAINS.has(mot.replace(/[.)\-–—:]/g, '')) ? mot.toUpperCase() : mot,
+  )
+
+  return (
+    rendus
+      .join('')
+      // Début de titre, et après un tiret cadratin, un point ou un
+      // deux-points.
+      .replace(
+        /(^|[—–:.]\s*)([a-zà-ÿ])/g,
+        (_, avant, lettre: string) => avant + lettre.toUpperCase(),
+      )
+      // Et après une numérotation, même sans ponctuation : un document sans
+      // tiret donnait « Chapitre II le contrôle », ce qui se lit comme une
+      // faute.
+      .replace(
+        /^((?:chapitre|titre|partie|livre|section|leçon|module|unité)\s+(?:[IVXLCDM]+|\d+)\s+)([a-zà-ÿ])/i,
+        (_, avant, lettre: string) => avant + lettre.toUpperCase(),
+      )
+  )
 }

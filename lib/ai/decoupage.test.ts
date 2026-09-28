@@ -8,6 +8,9 @@ import {
   normaliser,
 } from './decoupage'
 
+/** Le saut de ligne, nommé. */
+const BR = String.fromCharCode(10)
+
 /**
  * Tests du découpage en chapitres.
  *
@@ -67,9 +70,12 @@ describe('découpage sur les titres du document', () => {
 
   it('reprend les titres du document, sans les crier', () => {
     // « CHAPITRE I — LA NOTION DE CONSTITUTION » en capitales intégrales se
-    // lit mal dans une liste.
-    expect(chapitres[0].title).toBe('Chapitre I — La Notion De Constitution')
-    expect(chapitres[1].title).toContain('Contrôle')
+    // lit mal dans une liste. Une majuscule par mot se lisait mal aussi :
+    // elle donnait « Chapitre Ii Le Contrôle De Constitutionnalité ».
+    expect(chapitres[0].title).toBe('Chapitre I — La notion de constitution')
+    expect(chapitres[1].title).toBe(
+      'Chapitre II — Le contrôle de constitutionnalité',
+    )
   })
 
   it('met chaque sujet dans son chapitre, et pas dans l’autre', () => {
@@ -88,6 +94,47 @@ describe('découpage sur les titres du document', () => {
   it('estime les jetons', () => {
     expect(chapitres[0].tokenCount).toBeGreaterThan(0)
     expect(chapitres[0].tokenCount).toBe(estimerJetons(chapitres[0].text))
+  })
+
+  it('met une capitale après une numérotation, même sans tiret', () => {
+    // Un document sans tiret donnait « Chapitre II le contrôle », ce qui se
+    // lit comme une faute. Constaté sur un vrai PDF.
+    const texte = [
+      'CHAPITRE II LE CONTRÔLE DE CONSTITUTIONNALITÉ',
+      '',
+      'Un contenu de chapitre avec assez de matière pour tenir le seuil de ' +
+        'recollage, soit plus de cent vingt caractères de texte utile ici.',
+    ].join(BR)
+
+    const c = decouperEnChapitres(texte, 'Droit')
+    expect(c[0].title).toBe('Chapitre II Le contrôle de constitutionnalité')
+  })
+
+  it('rend leur majuscule aux chiffres romains, et à eux seuls', () => {
+    // `[ivxlcdm]+` aurait transformé « civil » en « CIVIL » et « il » en
+    // « IL » : on énumère les chiffres romains au lieu de les devenir.
+    const texte = [
+      'CHAPITRE XIV — LE DROIT CIVIL ET CE QU IL COUVRE',
+      '',
+      'Un contenu de chapitre avec assez de matière pour tenir le seuil de ' +
+        'recollage sans être avalé par le bloc précédent, ce qui demande un ' +
+        'peu plus de cent vingt caractères.',
+    ].join(BR)
+
+    const c = decouperEnChapitres(texte, 'Droit')
+    expect(c[0].title).toBe('Chapitre XIV — Le droit civil et ce qu il couvre')
+  })
+
+  it('laisse tranquille un titre déjà correctement écrit', () => {
+    const texte = [
+      'Chapitre 3 — Les sources du droit administratif',
+      '',
+      'Un contenu de chapitre avec assez de matière pour tenir le seuil de ' +
+        'recollage, soit plus de cent vingt caractères de texte utile.',
+    ].join(BR)
+
+    const c = decouperEnChapitres(texte, 'Droit')
+    expect(c[0].title).toBe('Chapitre 3 — Les sources du droit administratif')
   })
 
   it('reconnaît aussi les numérotations nues', () => {

@@ -108,6 +108,10 @@ d'inconstitutionnalité que tout citoyen peut soulever.
 `
 
 async function main() {
+  // Pour ne compter que les appels de cet essai : `ai_usage` garde ceux
+  // des précédents, et additionner les vingt derniers gonflait le total.
+  const debut = new Date().toISOString()
+
   console.log('— Préparation')
 
   const [profil] = await rest('profiles?select=id,faculty_id&limit=1')
@@ -180,24 +184,49 @@ async function main() {
   console.log('— Résultat')
   const [apres] = await rest(`courses?id=eq.${cours.id}&select=status,page_count`)
   const chapitres = await rest(
-    `chapters?course_id=eq.${cours.id}&select=index,title,token_count,questions(id,type,statement),flashcards(id)&order=index`,
+    `chapters?course_id=eq.${cours.id}&select=index,title,token_count,questions(type,statement,options,answer,explanation,probability),flashcards(front,back)&order=index`,
   )
 
   console.log(`  statut : ${apres.status}, pages : ${apres.page_count ?? '—'}`)
+
   for (const c of chapitres) {
+    console.log('')
     console.log(
-      `  ${c.index}. ${c.title} — ${c.questions.length} questions, ` +
-        `${c.flashcards.length} fiches, ~${c.token_count} jetons`,
+      `  ${c.index}. ${c.title}  (~${c.token_count} jetons, ` +
+        `${c.questions.length} questions, ${c.flashcards.length} fiches)`,
     )
-    const q = c.questions[0]
-    if (q) console.log(`     ex. : ${q.statement.slice(0, 110)}`)
+
+    // Tout afficher, et pas seulement la première : l'essai sert à juger si
+    // les consignes produisent des questions utilisables ou du remplissage.
+    // Cela ne se devine pas en lisant le code.
+    for (const q of c.questions) {
+      console.log(`     • [${q.probability}] ${q.statement}`)
+      for (const o of q.options ?? []) {
+        console.log(`         ${o === q.answer ? '✓' : ' '} ${o}`)
+      }
+      if (q.explanation) console.log(`         → ${q.explanation}`)
+    }
+
+    for (const f of c.flashcards) {
+      console.log(`     ▭ ${f.front}`)
+      console.log(`         ${f.back}`)
+    }
   }
+  console.log('')
 
   const usage = await rest(
-    'ai_usage?select=provider,model,prompt_tokens,completion_tokens,cost_usd_estimate&order=created_at.desc&limit=20',
+    'ai_usage?select=provider,model,prompt_tokens,completion_tokens,' +
+      `cost_usd_estimate&created_at=gte.${debut}&order=created_at.desc`,
   )
   const cout = usage.reduce((t, u) => t + Number(u.cost_usd_estimate ?? 0), 0)
-  console.log(`  appels consignés : ${usage.length}, coût estimé : ${cout.toFixed(4)} $`)
+  const jetons = usage.reduce(
+    (t, u) => t + Number(u.prompt_tokens ?? 0) + Number(u.completion_tokens ?? 0),
+    0,
+  )
+  console.log(
+    `  ${usage.length} appels, ${jetons} jetons, ${cout.toFixed(5)} $ — ` +
+      `soit ${(cout / Math.max(1, chapitres.length)).toFixed(5)} $ par chapitre`,
+  )
 
   console.log('— Nettoyage')
   await rest(`courses?id=eq.${cours.id}`, { method: 'DELETE' })

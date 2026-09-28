@@ -12,9 +12,57 @@
  * tolérance plutôt que notre extraction.
  */
 
+/**
+ * Caractères typographiques que `latin1` ne sait pas écrire.
+ *
+ * WinAnsi leur réserve les positions 0x80 à 0x9F, là où latin1 n'a que des
+ * caractères de contrôle. Sans cette table, `Buffer.from(…, 'latin1')`
+ * écrivait 0x14 pour un tiret cadratin et l'extracteur le perdait : le banc
+ * d'essai modifiait donc son entrée sans le dire — le titre du chapitre II
+ * ressortait sans son tiret, et j'ai d'abord cru à un défaut du découpage.
+ */
+const WINANSI = {
+  '€': 0x80, // euro
+  '‚': 0x82,
+  'ƒ': 0x83,
+  '„': 0x84,
+  '…': 0x85, // points de suspension
+  '†': 0x86,
+  '‡': 0x87,
+  'ˆ': 0x88,
+  '‰': 0x89,
+  'Š': 0x8a,
+  '‹': 0x8b,
+  'Œ': 0x8c, // OE lié
+  'Ž': 0x8e,
+  '‘': 0x91, // apostrophe simple ouvrante
+  '’': 0x92, // apostrophe typographique
+  '“': 0x93, // guillemet anglais ouvrant
+  '”': 0x94, // guillemet anglais fermant
+  '•': 0x95, // puce
+  '–': 0x96, // tiret demi-cadratin
+  '—': 0x97, // tiret cadratin
+  '˜': 0x98,
+  '™': 0x99,
+  'š': 0x9a,
+  '›': 0x9b,
+  'œ': 0x9c, // oe lié
+  'ž': 0x9e,
+  'Ÿ': 0x9f,
+}
+
 /** Échappe une chaîne pour un littéral PDF, en WinAnsi. */
 function litteral(texte) {
-  return texte
+  return [...texte]
+    .map((c) => {
+      const winansi = WINANSI[c]
+      if (winansi !== undefined) return String.fromCharCode(winansi)
+      // Au-delà de WinAnsi on ne sait pas écrire : mieux vaut un point
+      // d'interrogation visible qu'un octet de contrôle que l'extracteur
+      // avale en silence.
+      return c.codePointAt(0) > 0xff ? '?' : c
+    })
+    .join('')
     .replace(/\\/g, '\\\\')
     .replace(/\(/g, '\\(')
     .replace(/\)/g, '\\)')
