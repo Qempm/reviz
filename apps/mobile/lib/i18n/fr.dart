@@ -551,6 +551,28 @@ class _Connexion {
       'Ce code ne marche pas. Vérifie, ou demandes-en un nouveau.';
   final String envoiImpossible =
       'On n’a pas pu envoyer le code. Vérifie ta connexion et réessaie.';
+
+  // --- Échecs de la connexion Google
+  //
+  // Un message par motif, et pas un « erreur de connexion » unique : la
+  // cause change complètement ce que l'étudiant doit faire. Une annulation
+  // n'a pas de message du tout — il a choisi de renoncer.
+  final String googleConfiguration =
+      'La connexion Google n’est pas encore prête de notre côté. Utilise ton '
+      'email pour l’instant, ça marche.';
+  final String googleRefuse =
+      'Google a répondu, mais notre serveur n’a pas accepté. On est prévenus. '
+      'Utilise ton email en attendant.';
+  final String googleInterrompu =
+      'La connexion Google a été interrompue. Réessaie.';
+  final String googleIndisponibleAppareil =
+      'Ce téléphone n’a pas les services Google nécessaires. La connexion par '
+      'email marche quand même.';
+  final String googleAutreCompte =
+      'Ce compte Google n’est pas celui connecté sur le téléphone. Change de '
+      'compte dans les réglages Android, ou passe par ton email.';
+  final String googleInconnu =
+      'La connexion Google n’a pas marché. Passe par ton email.';
 }
 
 class _Inscription {

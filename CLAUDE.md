@@ -155,9 +155,11 @@ Ce qui reste à faire, par ordre de valeur :
    `docs/GUIDE-APK-REVIZ.md` § 3.
 2. **Le paiement réel** — attend `FEDAPAY_SECRET_KEY` et
    `FEDAPAY_WEBHOOK_SECRET`.
-3. **La connexion Google** — attend un ID client OAuth Android et un ID client
-   Web (l'Android est rattaché à `com.reviz.app` et à l'empreinte SHA-1 de la
-   clé de signature : il vient donc après elle).
+3. **La connexion Google** — le code est écrit et testé ; attend les deux
+   identifiants OAuth. L'Android est rattaché à `com.reviz.app` et à une
+   empreinte SHA-1, celle de la clé de release ou — pour essayer tout de
+   suite — celle du magasin de débogage. Le web est l'audience du jeton, donc
+   celui à déclarer côté Supabase. `docs/GUIDE-APK-REVIZ.md` § 3 bis.
 4. **Les assets** — cinq états de la mascotte, 24 avatars en images. Les
    avatars sont contournés par douze couleurs en attendant. Les icônes PWA ne
    sont plus attendues : le manifeste est parti avec la distribution web.

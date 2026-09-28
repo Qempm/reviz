@@ -15,6 +15,7 @@ import 'package:reviz/ecrans/avatar.dart';
 import 'package:reviz/metier/avatars.dart';
 import 'package:reviz/ecrans/boutique.dart';
 import 'package:reviz/ecrans/carte.dart';
+import 'package:reviz/ecrans/connexion.dart';
 import 'package:reviz/ecrans/classement.dart';
 import 'package:reviz/ecrans/correction.dart';
 import 'package:reviz/ecrans/corriger.dart';
@@ -2002,6 +2003,41 @@ void main() {
         remplacements: [
           profilProvider.overrideWith((_) async => profilAu('none')),
         ],
+      );
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+
+  group('connexion', () {
+    testWidgets('propose Google, mais jamais comme une impasse', (tester) async {
+      // En test, aucun `--dart-define` : `GOOGLE_WEB_CLIENT_ID` est vide.
+      // Le bouton doit alors être visible **et** désactivé, avec la raison.
+      // Le masquer ferait croire que l’application ne propose pas Google ;
+      // l’activer donnerait une erreur opaque — c’est ce qu’il faisait avant,
+      // avec « Connexion Google : à brancher (phase 4 bis) » à l’écran.
+      await _poser(tester, const EcranConnexion());
+
+      final google = tester.widget<Bouton>(
+        find.widgetWithText(Bouton, 'Continuer avec Google'),
+      );
+      expect(google.onTap, isNull);
+
+      expect(
+        find.text('La connexion Google n’est pas configurée dans cette version.'),
+        findsOneWidget,
+      );
+
+      // Et la voie qui marche reste là, juste en dessous.
+      expect(find.text('Recevoir mon code'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('ne déborde pas à 320 px', (tester) async {
+      await _poser(
+        tester,
+        const EcranConnexion(),
+        taille: const Size(320, 640),
       );
       expect(tester.takeException(), isNull);
     });

@@ -6,8 +6,10 @@ import '../composants/bouton.dart';
 import '../composants/carte.dart';
 import '../composants/champ.dart';
 import '../donnees/config.dart';
+import '../donnees/google.dart';
 import '../donnees/supabase.dart';
 import '../i18n/fr.dart';
+import '../metier/google.dart';
 import '../metier/otp.dart';
 import '../theme/jetons.dart';
 import '../theme/typographie.dart';
@@ -98,6 +100,53 @@ class _EcranConnexionState extends State<EcranConnexion> {
     }
   }
 
+  /// Connexion Google, sans quitter l'application.
+  ///
+  /// La redirection n'est pas faite ici : le routeur écoute
+  /// `onAuthStateChange`, comme pour le code par e-mail.
+  Future<void> _avecGoogle() async {
+    setState(() {
+      _enCours = true;
+      _erreur = null;
+    });
+
+    final resultat = await const ConnexionGoogle().connecter();
+    if (!mounted) return;
+
+    switch (resultat) {
+      case GoogleConnecte():
+        // Le routeur prend la suite. On laisse `_enCours` à vrai : l'écran
+        // va disparaître, et le rendre actif entre-temps inviterait à
+        // relancer une connexion déjà faite.
+        return;
+
+      case GoogleAnnule():
+        // Rien à dire : l'étudiant a refermé la feuille lui-même.
+        setState(() => _enCours = false);
+
+      case GoogleEchec(:final motif, :final detail):
+        // `detail` reste dans les journaux : « DEVELOPER_ERROR » ne veut
+        // rien dire pour un étudiant, mais tout pour qui cherche la cause.
+        debugPrint('[google] $motif — $detail');
+        setState(() {
+          _enCours = false;
+          _erreur = _messageGoogle(motif);
+        });
+    }
+  }
+
+  static String _messageGoogle(MotifEchecGoogle motif) => switch (motif) {
+    MotifEchecGoogle.configuration => Fr.connexion.googleConfiguration,
+    MotifEchecGoogle.refuseParSupabase => Fr.connexion.googleRefuse,
+    MotifEchecGoogle.interrompu => Fr.connexion.googleInterrompu,
+    MotifEchecGoogle.indisponible =>
+      Fr.connexion.googleIndisponibleAppareil,
+    MotifEchecGoogle.autreCompte => Fr.connexion.googleAutreCompte,
+    // `annule` n'arrive jamais ici : il devient `GoogleAnnule`.
+    MotifEchecGoogle.annule ||
+    MotifEchecGoogle.inconnu => Fr.connexion.googleInconnu,
+  };
+
   Future<void> _verifierCode() async {
     final code = chiffresSeulement(_code.text);
     if (!codePlausible(code)) {
@@ -183,11 +232,9 @@ class _EcranConnexionState extends State<EcranConnexion> {
       libelle: Fr.connexion.avecGoogle,
       icone: Icons.account_circle,
       variante: VarianteBouton.secondaire,
-      onTap: Config.googleWebClientId.isEmpty
+      onTap: Config.googleWebClientId.isEmpty || _enCours
           ? null
-          : () => setState(
-              () => _erreur = 'Connexion Google : à brancher (phase 4 bis).',
-            ),
+          : _avecGoogle,
     ),
     if (Config.googleWebClientId.isEmpty) ...[
       const SizedBox(height: Espaces.x4),

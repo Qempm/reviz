@@ -48,7 +48,7 @@ quand la version installée est trop ancienne ou le serveur en entretien
 | --- | --- |
 | Page d'un chapitre | `Chemins.chapitre(id)` est déclaré et n'a ni route ni appelant. La page de cours suffit pour l'instant. |
 | Paiement Mobile Money | `FEDAPAY_SECRET_KEY` manque. La boutique le dit à l'écran. |
-| Connexion Google | Un ID client OAuth Android et un ID client Web à créer. |
+| Connexion Google | **Le code est en place** (`donnees/google.dart`, `metier/google.dart`) ; le bouton s'active dès que `GOOGLE_WEB_CLIENT_ID` est passé au build. Restent les deux identifiants OAuth à créer — voir `docs/GUIDE-APK-REVIZ.md` § 3 bis. |
 | Aide et contact | Le contenu reste à écrire, et un vrai numéro WhatsApp à fournir. L'ancienne page web en portait un factice. |
 
 ---

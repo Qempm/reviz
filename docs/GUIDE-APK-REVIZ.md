@@ -103,6 +103,70 @@ keytool -list -v -keystore ~/cles/reviz.jks -alias reviz
 
 ---
 
+## 3 bis. La connexion Google
+
+Le code est en place : `apps/mobile/lib/donnees/google.dart` ouvre la feuille
+Google et échange le jeton d'identité contre une session Supabase, **sans
+sortir de l'application** — c'était la demande initiale, et
+`signInWithIdToken` la satisfait sans navigateur ni détour `reviz://auth`. Le
+bouton s'active tout seul dès que `GOOGLE_WEB_CLIENT_ID` est passé au build ;
+sans lui il reste désactivé et l'écran le dit.
+
+Ce qui manque n'est pas du code, ce sont **deux identifiants à créer**, dans
+cet ordre — le premier dépend de la clé de signature du § 3 :
+
+**1. Le client OAuth Android.** Google Cloud Console → APIs & Services →
+Credentials → Create credentials → OAuth client ID → Android.
+
+| Champ | Valeur |
+| --- | --- |
+| Package name | `com.reviz.app` |
+| SHA-1 | l'empreinte du certificat de signature |
+
+```bash
+# Empreinte de la clé de release (§ 3)
+keytool -list -v -keystore ~/cles/reviz.jks -alias reviz
+```
+
+> **Pour essayer avant d'avoir la clé de release**, déclarer en plus
+> l'empreinte de la clé de débogage : un client OAuth accepte plusieurs
+> empreintes, et `flutter build apk --debug` fonctionne déjà. Le magasin de
+> débogage est `~/.android/debug.keystore`, alias `androiddebugkey`, mot de
+> passe `android`. C'est la seule façon de tester Google sans attendre le
+> lot de signature.
+
+**2. Le client OAuth Web.** Même écran, type « Web application ». Il ne sert à
+aucune page web ici : c'est lui que l'application passe en `serverClientId`,
+et c'est donc **son** identifiant qui devient l'audience (`aud`) du jeton
+d'identité rendu par Google. D'où deux conséquences :
+
+- `GOOGLE_WEB_CLIENT_ID` dans `.env.local` reçoit **celui-là**, pas celui du
+  client Android. Mettre le client Android par erreur produit un jeton
+  d'identité absent, et l'application répond alors « pas encore prête de notre
+  côté » plutôt qu'une erreur opaque.
+- Côté Supabase — Authentication → Providers → Google —, c'est **le client web**
+  qu'il faut déclarer (avec son secret), puisque c'est l'audience que Supabase
+  vérifie. Si le tableau de bord propose une liste d'identifiants clients
+  autorisés, le client web y va aussi.
+
+**Rien de tout cela n'a été essayé** : il n'existe encore ni identifiant ni
+appareil de test dans ce projet. Ce qui est vérifié, c'est la logique autour —
+`apps/mobile/test/google_test.dart` couvre le nonce et la traduction des
+échecs.
+
+Un mot sur le nonce, parce que c'est l'inversion qui coûte le plus de temps à
+trouver : **Google reçoit l'empreinte SHA-256, Supabase reçoit le nonce brut**
+(`gotrue` compare l'empreinte du nonce fourni à celle inscrite dans le jeton).
+Les envoyer à l'envers donne un refus dont le message ne dit rien. Deux tests
+tiennent cette règle.
+
+Et un échec à prévoir sur les Android d'entrée de gamme : sans Play Services,
+la connexion Google est simplement indisponible. L'application le détecte
+(`providerConfigurationError`) et renvoie vers la connexion par code e-mail,
+qui reste la voie principale.
+
+---
+
 ## 4. Construire
 
 ```bash

@@ -9,6 +9,7 @@ import '../composants/podium.dart' show AvatarInitiale;
 import '../composants/puce.dart';
 import '../donnees/modeles.dart';
 import '../donnees/reglages.dart';
+import '../donnees/google.dart';
 import '../donnees/supabase.dart';
 import '../etat/fournisseurs.dart';
 import '../i18n/fr.dart';
@@ -108,6 +109,14 @@ class _Contenu extends ConsumerWidget {
     );
 
     if (confirme != true) return;
+
+    // Le compte Google choisi est oublié **avant** la session Reviz. Sans
+    // cela, « me déconnecter » puis « continuer avec Google » reconnecte le
+    // même compte instantanément, sans laisser le choix : sur un téléphone
+    // partagé — courant dans le public visé — la personne suivante se
+    // retrouverait dans le compte de la précédente. Silencieux : une
+    // déconnexion ne doit jamais échouer à cause de Google.
+    await const ConnexionGoogle().oublier();
 
     // Le routeur écoute `onAuthStateChange` : la redirection vers l'écran de
     // connexion se fait d'elle-même, aucun `go` n'est nécessaire ici.
