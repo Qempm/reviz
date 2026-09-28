@@ -186,7 +186,18 @@ embarque est public — et rend à la fin la taille et l'empreinte SHA-256 à
 reporter dans `lib/metier/publication.ts`.
 
 Les valeurs attendues sont dans `.env.example` (`API_BASE`,
-`GOOGLE_WEB_CLIENT_ID`), en plus de l'URL et de la clé anonyme de Supabase.
+`GOOGLE_WEB_CLIENT_ID`, `CONTACT_WHATSAPP`), en plus de l'URL et de la clé
+anonyme de Supabase.
+
+Si `flutter` n'est pas dans le `PATH` — le cas quand il est installé par
+Android Studio —, poser `FLUTTER_BIN` dans `.env.local` :
+
+```properties
+FLUTTER_BIN=C:/src/flutter/bin/flutter.bat
+```
+
+Le script le cherche là d'abord, puis dans le `PATH`, puis aux endroits
+habituels ; il ne lance rien avant de l'avoir trouvé.
 
 La commande brute reste là pour un essai sans configuration :
 

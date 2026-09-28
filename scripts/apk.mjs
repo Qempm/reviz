@@ -29,7 +29,7 @@
 
 import { createHash } from 'node:crypto'
 import { spawnSync } from 'node:child_process'
-import { readFileSync, statSync } from 'node:fs'
+import { existsSync, readFileSync, statSync } from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
 
@@ -129,7 +129,66 @@ if (args.some((a) => /SERVICE_ROLE|DEEPSEEK|FEDAPAY|DASHSCOPE|ZAI_|CRON/i.test(a
 
 args.push(...supplements)
 
-const flutter = process.platform === 'win32' ? 'flutter.bat' : 'flutter'
+/**
+ * Où est Flutter.
+ *
+ * Pas d'hypothèse sur le `PATH` : sur une machine où Flutter est installé par
+ * Android Studio, il n'y est pas, et la compilation échouait alors sur
+ * « 'flutter.bat' n'est pas reconnu » après avoir déjà lu la configuration.
+ * L'ordre : `FLUTTER_BIN` s'il est posé, puis le `PATH`, puis les endroits
+ * habituels.
+ */
+function trouverFlutter() {
+  const nom = process.platform === 'win32' ? 'flutter.bat' : 'flutter'
+
+  if (env.FLUTTER_BIN) {
+    if (!existsSync(env.FLUTTER_BIN)) {
+      echouer(`FLUTTER_BIN ne désigne aucun fichier : ${env.FLUTTER_BIN}`)
+    }
+    return env.FLUTTER_BIN
+  }
+
+  // Sur le PATH ? `--version` est inoffensif et rapide.
+  const essai = spawnSync(nom, ['--version'], {
+    stdio: 'ignore',
+    shell: process.platform === 'win32',
+  })
+  if (essai.status === 0) return nom
+
+  const habituels =
+    process.platform === 'win32'
+      // Barres obliques : Windows les accepte, et elles évitent une famille
+      // de bogues silencieux — en JavaScript, 'C:\src' vaut « C:src », parce
+      // que \s, \f et \b sont des séquences d'échappement.
+      ? [
+          'C:/src/flutter/bin/flutter.bat',
+          path.join(env.LOCALAPPDATA ?? '', 'flutter', 'bin', 'flutter.bat'),
+          path.join(env.USERPROFILE ?? '', 'flutter', 'bin', 'flutter.bat'),
+          'C:/flutter/bin/flutter.bat',
+        ]
+      : [
+          '/opt/flutter/bin/flutter',
+          path.join(env.HOME ?? '', 'flutter', 'bin', 'flutter'),
+          '/usr/local/flutter/bin/flutter',
+        ]
+
+  for (const candidat of habituels) {
+    if (candidat && existsSync(candidat)) return candidat
+  }
+
+  echouer(
+    'Flutter est introuvable.\n\n' +
+      'Ajoute son dossier `bin` au PATH, ou pose FLUTTER_BIN dans ' +
+      '.env.local :\n' +
+      `  FLUTTER_BIN=${
+        process.platform === 'win32'
+          ? 'C:/src/flutter/bin/flutter.bat'
+          : '/opt/flutter/bin/flutter'
+      }`,
+  )
+}
+
+const flutter = trouverFlutter()
 console.log(
   `\n$ ${flutter} ${args
     // Les valeurs sont masquées : ce journal finit souvent collé quelque part.

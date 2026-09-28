@@ -148,19 +148,23 @@ cd apps/mobile && flutter analyze && flutter test
 
 Ce qui reste à faire, par ordre de valeur :
 
-1. **Un APK signé** — attend **une clé de signature**, et rien d'autre.
-   `flutter build apk --debug` passe : les licences que `flutter doctor`
-   déclarait inconnues ne bloquaient pas, le SDK avait déjà ce qu'il fallait.
-   Le gradle lit `android/key.properties` et refuse une release sans clé,
-   plutôt que d'en signer une avec celle de débogage. Voir
-   `docs/GUIDE-APK-REVIZ.md` § 3.
-2. **Le paiement réel** — attend `FEDAPAY_SECRET_KEY` et
+1. **La CI est rouge pour une raison hors du code.** Les trois jobs meurent en
+   une seconde : « The job was not started because your account is locked due
+   to a billing issue. » C'est la facturation du compte GitHub, pas le
+   workflow. Tant que ce n'est pas réglé, aucune vérification automatique ne
+   tourne — seules les commandes locales ci-dessus font foi.
+2. **Publier l'APK.** La clé de signature existe (hors du dépôt, voir
+   `docs/GUIDE-APK-REVIZ.md` § 3) et `npm run apk` rend un APK signé. Reste à
+   le déposer en release GitHub et à renseigner `APK` dans
+   `lib/metier/publication.ts` — la page `/app` affichera alors le bouton, la
+   taille et l'empreinte.
+3. **Le paiement réel** — attend `FEDAPAY_SECRET_KEY` et
    `FEDAPAY_WEBHOOK_SECRET`.
-3. **La connexion Google** — le code est écrit et testé ; attend les deux
+4. **La connexion Google** — le code est écrit et testé ; attend les deux
    identifiants OAuth. L'Android est rattaché à `com.reviz.app` et à une
    empreinte SHA-1, celle de la clé de release ou — pour essayer tout de
    suite — celle du magasin de débogage. Le web est l'audience du jeton, donc
    celui à déclarer côté Supabase. `docs/GUIDE-APK-REVIZ.md` § 3 bis.
-4. **Les assets** — cinq états de la mascotte, 24 avatars en images. Les
+5. **Les assets** — cinq états de la mascotte, 24 avatars en images. Les
    avatars sont contournés par douze couleurs en attendant. Les icônes PWA ne
    sont plus attendues : le manifeste est parti avec la distribution web.
