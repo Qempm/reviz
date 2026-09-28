@@ -37,14 +37,20 @@ export const NOTES =
   'pour les QCM déjà chargés, et la correction de copie fonctionne.'
 
 /** Date de la publication, au format `AAAA-MM-JJ`. */
-export const DATE = '2026-09-28'
+export const DATE = '2026-09-29'
 
 /**
  * Le fichier, quand il existe.
  *
- * `publie: false` tant que la clé de signature n'est pas créée : un APK signé
- * avec la clé de débogage est installable mais impossible à mettre à jour
- * ensuite, et annoncer un lien mort vaut moins que dire où l'on en est.
+ * Publié le 29 septembre 2026, signé par la clé de release (`CN=Reviz`,
+ * empreinte SHA-1 `AF:A1:F6:E8:…:8A:4A`). L'état `publie: false` existait
+ * pour la période sans clé : un APK signé avec celle de débogage est
+ * installable mais impossible à remplacer ensuite, et annoncer un lien mort
+ * vaut moins que dire où l'on en est.
+ *
+ * L'empreinte SHA-256 est celle du fichier, à afficher sur `/app` : un lien
+ * qui se partage de main en main peut être remplacé en route, et c'est ce qui
+ * permet à un étudiant méfiant de vérifier (`sha256sum reviz-2.0.0.apk`).
  *
  * L'APK ne vit **pas** dans `public/` : un binaire versionné alourdit
  * l'historique git définitivement, à chaque reconstruction. Il se publie en
@@ -61,9 +67,22 @@ export type Apk =
       sha256: string
     }
 
-export const APK: Apk = { publie: false }
+export const APK: Apk = {
+  publie: true,
+  url: 'https://github.com/Qempm/reviz/releases/download/v2.0.0/reviz-2.0.0.apk',
+  tailleOctets: 58_507_268,
+  sha256: 'd1e903c0487dac8aacf1beaea3ef614ed77f3762617526a6518e0244688c16b3',
+}
 
-/** « 18,4 Mo », comme on l'écrit en français. */
+/**
+ * « 18,4 Mo », comme on l'écrit en français.
+ *
+ * Mégaoctets **décimaux**, et non mébioctets : c'est ce qu'affichent Android,
+ * l'application Fichiers et le téléchargement de Chrome. Flutter, lui,
+ * annonce la même taille en mébioctets — 58,5 Mo ici valent 55,8 MiB là-bas.
+ * Deux chiffres pour un seul fichier inquiètent quelqu'un qui vérifie ce
+ * qu'il télécharge, donc on s'aligne sur ce que verra l'étudiant.
+ */
 export function tailleLisible(octets: number): string {
   const mo = octets / 1_000_000
   return `${mo.toFixed(1).replace('.', ',')} Mo`

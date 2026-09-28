@@ -101,10 +101,10 @@ RLS activée sur toutes les tables : un utilisateur ne lit et n'écrit que ses p
 
 > **État au 29 septembre 2026.** Les points 1 à 9 sont faits côté Flutter,
 > photo de carte étudiante et écran d'aide compris. Le point 10 — la coquille
-> — est remplacé par un APK Flutter signé : la compilation passe
-> (`app-debug.apk` construit, versionCode 2), il ne manque plus que **la clé
-> de signature**. Ce qui reste à l'écran attend des identifiants, pas du code :
-> paiement (FedaPay) et connexion Google. Voir `docs/SCREENS.md`.
+> — est remplacé par un APK Flutter signé, **publié** en
+> [release v2.0.0](https://github.com/Qempm/reviz/releases/tag/v2.0.0). Ce qui
+> reste à l'écran attend des identifiants, pas du code : paiement (FedaPay) et
+> connexion Google. Voir `docs/SCREENS.md`.
 
 1. Design system : jetons dans `apps/mobile/lib/theme/`, composants dans `apps/mobile/lib/composants/`, et l'écran `/galerie` qui les affiche tous pour valider le rendu avant les écrans métier.
 2. Auth : Google ou email (code à 6 chiffres), université / filière / année, code parrain, téléphone facultatif, photo carte (job `verify_card`), connexion.
@@ -153,11 +153,11 @@ Ce qui reste à faire, par ordre de valeur :
    to a billing issue. » C'est la facturation du compte GitHub, pas le
    workflow. Tant que ce n'est pas réglé, aucune vérification automatique ne
    tourne — seules les commandes locales ci-dessus font foi.
-2. **Publier l'APK.** La clé de signature existe (hors du dépôt, voir
-   `docs/GUIDE-APK-REVIZ.md` § 3) et `npm run apk` rend un APK signé. Reste à
-   le déposer en release GitHub et à renseigner `APK` dans
-   `lib/metier/publication.ts` — la page `/app` affichera alors le bouton, la
-   taille et l'empreinte.
+2. ~~**Publier l'APK.**~~ Fait : clé de signature créée hors du dépôt,
+   `npm run apk` rend un APK signé, et la **2.0.0 est publiée** en release
+   GitHub — la page `/app` affiche le bouton, la taille et l'empreinte. Reste
+   à l'**essayer sur un vrai téléphone** : c'est la seule chose qu'aucune
+   vérification d'ici ne remplace.
 3. **Le paiement réel** — attend `FEDAPAY_SECRET_KEY` et
    `FEDAPAY_WEBHOOK_SECRET`.
 4. **La connexion Google** — le code est écrit et testé ; attend les deux

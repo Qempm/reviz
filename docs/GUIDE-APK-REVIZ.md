@@ -279,10 +279,24 @@ viennent d'installer. `lib/metier/publication.test.ts` le vérifie.
 reconstruction, définitivement ; `.gitignore` couvre désormais `*.apk`. Publier
 l'APK en **release GitHub**, puis renseigner `APK` dans
 `lib/metier/publication.ts` — l'URL de l'asset, sa taille en octets et son
-empreinte SHA-256 (`sha256sum app-release.apk`). La page `/app` affiche alors
-le bouton de téléchargement, et `/version.json` porte le lien ; tant que `APK`
-vaut `{ publie: false }`, la page annonce honnêtement que le fichier n'est pas
-signé plutôt que de proposer un lien mort.
+empreinte SHA-256, que `npm run apk` imprime à la fin. La page `/app` affiche
+alors le bouton, la taille et l'empreinte, et `/version.json` porte le lien ;
+tant que `APK` vaut `{ publie: false }`, la page annonce honnêtement que le
+fichier n'est pas signé plutôt que de proposer un lien mort.
+
+**Fait pour la 2.0.0**, le 29 septembre 2026 :
+
+```bash
+gh release create v2.0.0 reviz-2.0.0.apk --repo Qempm/reviz   --title "Reviz 2.0.0" --notes-file notes.md
+```
+
+<https://github.com/Qempm/reviz/releases/tag/v2.0.0> — 58 507 268 octets,
+SHA-256 `d1e903c0…88c16b3`.
+
+Une précision d'unité qui évite une inquiétude : Flutter annonce la taille en
+**mébioctets** (55,8), la page et Android en **mégaoctets décimaux** (58,5).
+C'est le même fichier ; on affiche partout le second, celui que verra
+l'étudiant.
 
 Le Play Store viendra plus tard. Il demandera un compte développeur, une fiche,
 une politique de confidentialité, et un format `.aab` plutôt qu'`.apk`
