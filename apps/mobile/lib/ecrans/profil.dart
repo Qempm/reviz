@@ -273,6 +273,19 @@ class _Contenu extends ConsumerWidget {
         ),
         const SizedBox(height: Espaces.x12),
 
+        // --- Aide
+        //
+        // `Fr.profil.aide` était une ligne d'i18n sans écran derrière : un
+        // étudiant payait 2 000 F sans pouvoir vérifier nulle part qu'il ne
+        // serait pas prélevé le mois suivant.
+        Bouton(
+          libelle: Fr.profil.aide,
+          icone: Icons.help_outline,
+          variante: VarianteBouton.secondaire,
+          onTap: () => context.go(Chemins.aide),
+        ),
+        const SizedBox(height: Espaces.x12),
+
         // --- Accès
         Bouton(
           libelle: Fr.profil.voirLesPacks,

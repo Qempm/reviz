@@ -157,6 +157,31 @@ appeler systématiquement en cas d'échec, sinon l'empreinte reste prise par
 `unique (owner_id, file_hash)` et le même document ne pourra plus jamais être
 redéposé.
 
+### `GET /api/cours/:id`
+
+L'état d'un cours en préparation, dans la forme de la vue `course_overview` —
+l'application réutilise donc sa fabrique sans rien convertir.
+
+**Et cet appel fait avancer la préparation.** C'est le point de la route, et
+c'était le plus gros défaut fonctionnel restant. La chaîne d'un dépôt est en
+deux temps : `ingest_course` découpe le document, puis `generate_questions`
+traite **un chapitre par passage** et se remet en file — découpage volontaire,
+pour ne pas se faire couper au milieu d'un chapitre. Seul le premier job
+partait tout de suite, depuis `/api/cours/confirmer`. Les suivants attendaient
+le cron, planifié une fois par jour et limité à cinq jobs : un cours de six
+chapitres aurait mis **des jours** à être prêt, pour un produit dont la
+promesse est « la nuit avant le contrôle ».
+
+L'attente de l'étudiant est donc devenue le moteur de la chaîne, exactement
+comme pour `GET /api/corrections/:id`. L'écran interroge la route, la route
+relance un job dû, et chaque tour avance d'un chapitre. C'est aussi pourquoi
+l'écran de cours ne dit plus « tu peux fermer l'application, on te prévient » :
+c'était faux deux fois — il n'y a pas de notification, et fermer renvoie le
+reste au traitement de nuit.
+
+Un job reporté garde son report : on ne relance que si `run_after` est passé,
+sinon un 429 du fournisseur se ferait marteler.
+
 ### `POST /api/session/terminer`
 
 ```json
@@ -366,9 +391,12 @@ n'a aucune raison d'accepter un jeton d'étudiant.
 
 ## 5. Ce qui reste à faire de ce côté
 
-- ~~Convertir `payments/init` et `payments/status`.~~ Fait au lot D. Reste
-  `payments/webhook`, dont seuls les messages sont à harmoniser : elle
-  s'authentifie par signature, pas par session.
+- ~~Convertir `payments/init` et `payments/status`.~~ Fait au lot D.
+  `payments/webhook` reste hors de `authentifier()`, et doit le rester : elle
+  est appelée par le fournisseur, s'authentifie par signature HMAC sur la
+  charge utile brute, et n'a ni session ni jeton. Ses sept messages sont en
+  français et dans l'enveloppe commune — c'était la dernière chose qu'on lui
+  reprochait.
 - ~~Le dépôt de correction par URL signée.~~ Fait : quatre routes, voir plus
   haut.
 - ~~`/api/payments/init` et la Server Action `initiatePayment` font la même
@@ -378,5 +406,11 @@ n'a aucune raison d'accepter un jeton d'étudiant.
   les minutes » : avec `BATCH_SIZE = 5`, cinq jobs par jour au plus. C'est la
   raison pour laquelle le webhook notifie n8n directement au lieu d'enfiler un
   job `notify`.
+
+  Les traitements que l'étudiant attend ne dépendent plus de ce cron :
+  `correct_copy`, `verify_card` et `ingest_course` partent depuis l'invocation
+  du dépôt, et `generate_questions` avance à chaque interrogation de
+  `GET /api/cours/:id`. Le cron n'est plus qu'un filet pour qui a fermé
+  l'application.
 - ~~La suppression de compte échoue pour tout étudiant ayant gagné un point
   d'XP.~~ Tranché : on anonymise (voir `POST /api/profile/delete`).

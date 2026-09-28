@@ -9,6 +9,7 @@ import 'composants/etat_vide.dart';
 import 'donnees/supabase.dart';
 import 'ecrans/accueil.dart';
 import 'ecrans/ajouter_cours.dart';
+import 'ecrans/aide.dart';
 import 'ecrans/avatar.dart';
 import 'ecrans/carte.dart';
 import 'ecrans/boutique.dart';
@@ -48,6 +49,7 @@ abstract final class Chemins {
   static const profil = '/profil';
   static const suppression = '/profil/supprimer-compte';
   static const avatar = '/profil/avatar';
+  static const aide = '/profil/aide';
   static const carte = '/profil/carte-etudiante';
 
   static const corriger = '/corriger';
@@ -55,7 +57,6 @@ abstract final class Chemins {
   static String cours(String id) => '/cours/$id';
   static String session(String id) => '/cours/$id/session';
   static String fiches(String id) => '/cours/$id/fiches';
-  static String chapitre(String id) => '/chapitre/$id';
   static String correction(String id) => '/corrections/$id';
 }
 
@@ -137,6 +138,7 @@ GoRouter creerRouteur(Ref ref) {
         path: Chemins.profil,
         builder: (_, _) => const EcranProfil(),
         routes: [
+          GoRoute(path: 'aide', builder: (_, _) => const EcranAide()),
           GoRoute(path: 'avatar', builder: (_, _) => const EcranAvatar()),
           GoRoute(
             path: 'carte-etudiante',

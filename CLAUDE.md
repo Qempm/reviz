@@ -25,7 +25,7 @@ Distribution : **APK Flutter** partagé par lien et WhatsApp. Le Play Store vien
   - DeepSeek `deepseek-v4-pro` (thinking activé) pour les corrections notées difficiles.
   - Secours automatique : Qwen `qwen3.8-flash` (`https://dashscope-intl.aliyuncs.com/compatible-mode/v1`) puis GLM `glm-5.3-flash` (`https://api.z.ai/api/paas/v4`).
   - Détails d'appel dans `docs/STACK-IA.md`.
-- **File de traitement** : table `jobs` dans Supabase + route `/api/jobs/run` déclenchée par Vercel Cron toutes les minutes. Pas de Redis au MVP.
+- **File de traitement** : table `jobs` dans Supabase + route `/api/jobs/run`. Pas de Redis au MVP. **Le cron ne tourne qu'une fois par jour** (22:00 UTC) : c'est la seule cadence de l'offre Hobby. Les traitements que l'étudiant attend ne l'utilisent donc pas — ils partent de l'invocation déjà authentifiée du dépôt (`lib/jobs/immediat.ts`), et `generate_questions` avance à chaque interrogation de `GET /api/cours/:id`. Le cron est le filet pour qui a fermé l'application.
 - **Paiement Mobile Money** : abstraction `lib/payments/provider.ts` avec une première implémentation FedaPay (Bénin, Togo, Côte d'Ivoire) et un webhook `/api/payments/webhook`. Prévoir Moneroo ou KkiaPay comme seconde implémentation, même interface.
 - **WhatsApp** : notifications via webhook n8n (`N8N_WHATSAPP_WEBHOOK_URL`). Reviz n'appelle jamais l'API WhatsApp directement.
 - **Flutter 3.44 / Dart 3.12** dans `apps/mobile/` : `supabase_flutter`, `dio`, `go_router`, `flutter_riverpod`. Police Nunito Sans **embarquée** et non téléchargée : le public a un forfait data limité.
@@ -99,11 +99,12 @@ RLS activée sur toutes les tables : un utilisateur ne lit et n'écrit que ses p
 
 ## Écrans du MVP (ordre de construction)
 
-> **État au 28 septembre 2026.** Les points 1 à 9 sont faits côté Flutter, la
-> photo de carte étudiante comprise depuis que `verify_card` existe. Le
-> point 10 — la coquille — est remplacé par un APK Flutter signé : la
-> compilation passe (`app-debug.apk` construit, versionCode 2), il ne manque
-> plus que **la clé de signature**. Voir `docs/SCREENS.md`.
+> **État au 29 septembre 2026.** Les points 1 à 9 sont faits côté Flutter,
+> photo de carte étudiante et écran d'aide compris. Le point 10 — la coquille
+> — est remplacé par un APK Flutter signé : la compilation passe
+> (`app-debug.apk` construit, versionCode 2), il ne manque plus que **la clé
+> de signature**. Ce qui reste à l'écran attend des identifiants, pas du code :
+> paiement (FedaPay) et connexion Google. Voir `docs/SCREENS.md`.
 
 1. Design system : jetons dans `apps/mobile/lib/theme/`, composants dans `apps/mobile/lib/composants/`, et l'écran `/galerie` qui les affiche tous pour valider le rendu avant les écrans métier.
 2. Auth : Google ou email (code à 6 chiffres), université / filière / année, code parrain, téléphone facultatif, photo carte (job `verify_card`), connexion.
@@ -112,7 +113,7 @@ RLS activée sur toutes les tables : un utilisateur ne lit et n'écrit que ses p
 5. Boutique → paiement FedaPay → webhook → activation → écran confirmation / échec / pack expiré.
 6. Correction de copie (job `correct_copy`) → résultat.
 7. Portefeuille, parrainage, classement, demande de retrait.
-8. Profil, avatar, réglages, aide, suppression de compte.
+8. Profil, avatar, réglages, aide (sept questions, l'argent en premier), suppression de compte.
 9. États transversaux : hors ligne, vides, chargement, écran « mise à jour requise » lisant `/version.json`.
 10. APK Flutter signé + pages publiques `/` et `/app`.
 

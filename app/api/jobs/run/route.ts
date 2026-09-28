@@ -3,7 +3,16 @@ import { NextResponse } from 'next/server'
 import { createSupabaseJobStore, handlers, runJobs } from '@/lib/jobs'
 
 /**
- * Passage de la file, déclenché par Vercel Cron toutes les minutes.
+ * Passage de la file, déclenché par Vercel Cron **une fois par jour** à 22:00
+ * UTC (`vercel.json`) : c'est la seule cadence que permet l'offre Hobby.
+ *
+ * Le commentaire annonçait « toutes les minutes », ce qui a longtemps masqué
+ * la conséquence : avec `BATCH_SIZE`, cinq jobs par jour au plus. Aucun
+ * traitement que l'étudiant attend ne passe plus par ici — `correct_copy`,
+ * `verify_card` et `ingest_course` partent de l'invocation du dépôt
+ * (`lib/jobs/immediat.ts`), et `generate_questions` avance à chaque
+ * interrogation de `GET /api/cours/:id`. Ce cron est le **filet** : il ramasse
+ * ce qu'a laissé quelqu'un qui a fermé l'application.
  *
  * Protégée par CRON_SECRET : Vercel place le secret dans l'en-tête
  * Authorization des appels planifiés. Sans secret configuré, la route refuse

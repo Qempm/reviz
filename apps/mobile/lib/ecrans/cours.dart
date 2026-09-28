@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -17,13 +19,105 @@ import '../theme/typographie.dart';
 ///
 /// Trois états selon `courses.status`. Un cours qui vient d'être déposé n'a ni
 /// chapitre ni question : montrer une page vide laisserait croire à une panne.
-class EcranCours extends ConsumerWidget {
+///
+/// **Tant que le cours n'est pas prêt, l'écran interroge `/api/cours/:id`**, et
+/// cet appel fait avancer la préparation d'un chapitre. Ce n'est pas un détail
+/// d'affichage : la chaîne `ingest_course` → `generate_questions` traite un
+/// chapitre par passage et se remet en file, et seul le premier job part
+/// depuis l'invocation du dépôt. Les suivants attendaient le cron — une fois
+/// par jour sur l'offre Hobby, cinq jobs par passage. Un cours de six
+/// chapitres aurait mis des jours à être prêt, pour un produit dont la
+/// promesse est « la nuit avant le contrôle ».
+class EcranCours extends ConsumerStatefulWidget {
   const EcranCours({super.key, required this.coursId});
 
   final String coursId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<EcranCours> createState() => _EcranCoursState();
+}
+
+class _EcranCoursState extends ConsumerState<EcranCours> {
+  /// Cadence d'interrogation, puis abandon. Un chapitre demande deux appels
+  /// de modèle, soit une dizaine de secondes : inutile de marteler plus vite.
+  /// La liste s'arrête, pour ne pas interroger sans fin un cours dont la
+  /// chaîne est bloquée — le cron de nuit reste le filet.
+  static const _cadence = [3, 3, 5, 5, 8, 10, 10, 10, 15, 15, 20, 20];
+
+  Timer? _minuteur;
+  int _tour = 0;
+
+  /// Ce que la route a rendu au dernier tour, plus frais que le fournisseur.
+  ApercuCours? _frais;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // L'interrogation démarre quand on **sait** que le cours n'est pas prêt,
+    // et pas avant : lancée depuis `build`, elle serait un effet de bord dans
+    // une construction ; lancée à l'aveugle, elle coûterait un appel inutile
+    // à chaque ouverture d'un cours déjà prêt.
+    ref.listenManual(unCoursProvider(widget.coursId), (_, suivant) {
+      final valeur = suivant.value;
+      if (valeur != null) _programmer(valeur);
+    }, fireImmediately: true);
+  }
+
+  @override
+  void dispose() {
+    _minuteur?.cancel();
+    super.dispose();
+  }
+
+  /// Programme le tour suivant, si le cours n'est pas encore fixé.
+  void _programmer(ApercuCours cours) {
+    if (cours.pret || cours.echoue) return;
+    _reprogrammer();
+  }
+
+  void _reprogrammer() {
+    if (_minuteur?.isActive ?? false) return;
+    if (_tour >= _cadence.length) return;
+
+    _minuteur = Timer(Duration(seconds: _cadence[_tour]), _interroger);
+  }
+
+  Future<void> _interroger() async {
+    final etat = await ref
+        .read(depotCoursProvider)
+        .etat(ref.read(apiProvider), widget.coursId);
+
+    if (!mounted) return;
+
+    setState(() {
+      _tour++;
+      // Un échec de lecture ne vide pas l'écran : on garde le dernier état
+      // connu et on retentera au tour suivant.
+      if (etat != null) _frais = etat;
+    });
+
+    if (etat != null && (etat.pret || etat.echoue)) {
+      // Fixé : les chapitres, la page et la liste doivent se relire.
+      ref.invalidate(unCoursProvider(widget.coursId));
+      ref.invalidate(chapitresProvider(widget.coursId));
+      ref.invalidate(coursProvider);
+      return;
+    }
+
+    _reprogrammer();
+  }
+
+  /// Un appui volontaire relance la cadence depuis le début.
+  void _rafraichirMaintenant() {
+    _minuteur?.cancel();
+    setState(() => _tour = 0);
+    _interroger();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final coursId = widget.coursId;
     final cours = ref.watch(unCoursProvider(coursId));
 
     return Scaffold(
@@ -34,11 +128,10 @@ class EcranCours extends ConsumerWidget {
             constraints: const BoxConstraints(maxWidth: Mesures.largeurApp),
             child: switch (cours) {
               AsyncData(:final value) when value != null => _Contenu(
-                cours: value,
-                onRafraichir: () {
-                  ref.invalidate(unCoursProvider(coursId));
-                  ref.invalidate(chapitresProvider(coursId));
-                },
+                // Le plus frais des deux : la route rend l'avancement en
+                // cours, le fournisseur la dernière lecture directe.
+                cours: _frais ?? value,
+                onRafraichir: _rafraichirMaintenant,
               ),
               AsyncData() => _Absent(),
               AsyncError(:final error) => Padding(
@@ -352,6 +445,20 @@ class _EnTraitement extends StatelessWidget {
             Fr.cours.traitementDetail,
             style: Typo.bodyMd.copyWith(color: Couleurs.attenue),
             textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: Espaces.x16),
+
+          // L'avancement, chiffré. Un sablier immobile pendant deux minutes
+          // se lit comme une panne ; « 3 chapitres · 12 questions » se lit
+          // comme du travail en cours — et c'en est, puisque c'est cet écran
+          // qui le fait avancer.
+          Puce(
+            libelle: Fr.cours.traitementAvance(
+              cours.nbChapitres,
+              cours.nbQuestions,
+            ),
+            ton: TonPuce.orange,
+            icone: Icons.auto_stories_outlined,
           ),
           const SizedBox(height: Espaces.x24),
           Carte(

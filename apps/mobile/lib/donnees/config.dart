@@ -13,6 +13,10 @@
 ///   --dart-define=SUPABASE_ANON_KEY=... \
 ///   --dart-define=API_BASE=https://reviz-eight.vercel.app
 /// ```
+///
+/// `npm run apk` les passe depuis `.env.local` et refuse de compiler s'il en
+/// manque une : un APK sans configuration démarre sur un bandeau rouge, et un
+/// fichier partagé par WhatsApp ne se reprend pas.
 abstract final class Config {
   static const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
   static const supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
@@ -26,6 +30,11 @@ abstract final class Config {
   /// Client OAuth **Web** de Google, exigé par `signInWithIdToken` même sur
   /// Android : c'est l'audience du jeton d'identité que Supabase vérifie.
   static const googleWebClientId = String.fromEnvironment('GOOGLE_WEB_CLIENT_ID');
+
+  /// Numéro WhatsApp du support, au format international sans `+` ni espace
+  /// (ex. `22990000000`). Facultatif : sans lui, l'écran d'aide ne propose
+  /// pas de contact plutôt que d'ouvrir un numéro qui ne répond pas.
+  static const contactWhatsapp = String.fromEnvironment('CONTACT_WHATSAPP');
 
   static bool get estConfiguree =>
       supabaseUrl.isNotEmpty && supabaseAnonKey.isNotEmpty;

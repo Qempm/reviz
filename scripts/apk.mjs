@@ -51,6 +51,9 @@ const DEFINES = [
   },
   { define: 'API_BASE', env: 'API_BASE', requis: true },
   { define: 'GOOGLE_WEB_CLIENT_ID', env: 'GOOGLE_WEB_CLIENT_ID', requis: false },
+  // Facultatif aussi : sans lui, l'écran d'aide ne propose pas de contact
+  // plutôt que d'ouvrir un numéro qui ne répond pas.
+  { define: 'CONTACT_WHATSAPP', env: 'CONTACT_WHATSAPP', requis: false },
 ]
 
 /** Lecture minimale d'un `.env` : `CLE=valeur`, guillemets optionnels. */

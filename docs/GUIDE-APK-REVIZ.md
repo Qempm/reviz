@@ -47,6 +47,7 @@ jamais commitées (`apps/mobile/lib/donnees/config.dart`) :
 | `SUPABASE_ANON_KEY` | la clé **anonyme**, celle que la RLS encadre |
 | `API_BASE` | l'origine des routes Next.js |
 | `GOOGLE_WEB_CLIENT_ID` | la connexion Google ; sans lui le bouton reste désactivé |
+| `CONTACT_WHATSAPP` | le support joignable depuis l'écran d'aide ; sans lui, l'écran n'affiche pas de contact |
 
 **La clé de service n'a rien à faire ici.** Un APK se décompile : tout ce qu'il
 embarque est public. C'est la raison d'être du lot 0 de la migration — refermer

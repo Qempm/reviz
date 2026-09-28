@@ -26,6 +26,7 @@ abstract final class Fr {
   static const miseAJour = _MiseAJour();
   static const avatar = _Avatar();
 static const carte = _Carte();
+static const aide = _Aide();
   static const depot = _Depot();
   static const erreurs = _Erreurs();
 }
@@ -381,6 +382,83 @@ class _MiseAJour {
       'WhatsApp.';
 }
 
+class _Aide {
+  const _Aide();
+
+  final String titre = 'Aide et contact';
+  final String sousTitre =
+      'Les questions qu’on nous pose le plus. Si la tienne n’y est pas, '
+      'écris-nous.';
+
+  /// Les questions, dans l'ordre où elles se posent vraiment : l'argent
+  /// d'abord, parce que c'est ce qui inquiète avant de payer.
+  final List<(String, String)> questions = const [
+    (
+      'Est-ce que je serai prélevé chaque mois ?',
+      'Non. Jamais. Tu paies un pack une fois, il dure le nombre de jours '
+          'annoncé, et il s’arrête. Il n’y a aucun abonnement automatique et '
+          'rien à résilier. À la fin, tes cours et ton historique restent '
+          'lisibles ; pour refaire des QCM, tu reprends un pack.',
+    ),
+    (
+      'Pourquoi vous demandez ma carte étudiante ?',
+      'Pour qu’un compte corresponde à une personne. Sans elle, quelqu’un '
+          'pourrait ouvrir dix comptes, se parrainer lui-même et encaisser la '
+          'commission sur ses propres paiements. La photo sert à lire ton '
+          'numéro d’étudiant, et une carte ne vaut que pour un seul compte.',
+    ),
+    (
+      'Comment marche le parrainage ?',
+      'Tu donnes ton code. Quand ton filleul paie un pack, 25 % du montant '
+          'vont dans ton portefeuille — 35 % si tu es ambassadeur —, et cela '
+          'pendant douze mois à chacun de ses paiements. Un filleul ne compte '
+          'que s’il est vérifié et qu’il a payé au moins une fois. Le retrait '
+          'part en Mobile Money dès 3 000 F.',
+    ),
+    (
+      'Ça marche sans réseau ?',
+      'Les QCM déjà chargés, oui : tu peux réviser dans un endroit sans 3G. '
+          'Il faut du réseau pour déposer un cours, faire corriger une copie '
+          'et enregistrer tes réponses — un bandeau te prévient quand la '
+          'connexion tombe.',
+    ),
+    (
+      'Mon cours reste « en préparation », c’est normal ?',
+      'Reste sur la page du cours : c’est en restant là que la préparation '
+          'avance, chapitre par chapitre. Un document de cent pages demande '
+          'quelques minutes. Si tu fermes l’application, le reste se fera '
+          'plus tard dans la nuit.',
+    ),
+    (
+      'Ma note de correction me paraît fausse.',
+      'Elle est donnée par une IA qui lit ta photo : une écriture serrée ou '
+          'une page mal éclairée peuvent lui faire manquer des lignes. '
+          'Reprends la photo à plat et bien éclairée. Et écris-nous : une '
+          'note clairement à côté nous sert à corriger le barème.',
+    ),
+    (
+      'Je veux supprimer mon compte.',
+      'Profil → Supprimer mon compte. Ton nom, ton numéro et tes cours '
+          'partent ; tes paiements restent en comptabilité, sans ton nom '
+          'dessus, parce qu’un registre financier ne se réécrit pas. '
+          'L’écran te dit exactement ce qui part et ce qui reste.',
+    ),
+  ];
+
+  final String contactTitre = 'Nous écrire';
+  final String contactDetail =
+      'On répond sur WhatsApp, en français, dans la journée.';
+  final String contactBouton = 'Écrire sur WhatsApp';
+  final String contactMessage =
+      'Bonjour, j’ai une question sur Reviz : ';
+  final String contactAbsent =
+      'Le numéro du support n’est pas encore dans cette version de '
+      'l’application. En attendant, passe par la personne qui t’a partagé '
+      'Reviz.';
+
+  final String versionTitre = 'Cette version';
+}
+
 class _Carte {
   const _Carte();
 
@@ -660,8 +738,19 @@ class _Cours {
   final String traitementDetail =
       'Reviz lit ton document, le découpe en chapitres et en tire des '
       'questions.';
+  // L'ancien texte disait « Tu peux fermer l'application : on te prévient
+  // dès que c'est prêt. » — faux deux fois. Il n'y a pas de notification, et
+  // surtout **c'est le fait de rester ici qui fait avancer la préparation** :
+  // chaque interrogation de l'écran traite un chapitre. Fermer l'application
+  // renvoie le reste au traitement de nuit.
   final String traitementAstuce =
-      'Tu peux fermer l’application : on te prévient dès que c’est prêt.';
+      'Reste sur cet écran : la préparation avance pendant que tu attends. Si '
+      'tu fermes, elle reprendra plus tard dans la nuit.';
+
+  String traitementAvance(int chapitres, int questions) => chapitres == 0
+      ? 'Lecture du document…'
+      : '$chapitres ${chapitres == 1 ? 'chapitre' : 'chapitres'} · '
+            '$questions ${questions == 1 ? 'question' : 'questions'}';
   final String echecTitre = 'On n’a pas réussi à lire ce cours';
   final String echecDetail =
       'Le document est peut-être trop flou ou protégé. Réessaie avec un autre '

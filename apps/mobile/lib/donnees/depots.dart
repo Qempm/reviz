@@ -264,6 +264,30 @@ class DepotCours {
     return ApercuCours.depuis(ligne);
   }
 
+  /// L'état d'un cours **par la route**, et non par PostgREST.
+  ///
+  /// La différence n'est pas cosmétique : cet appel **relance le traitement**.
+  /// La chaîne d'un dépôt traite un chapitre par passage et se remet en file ;
+  /// seul le premier job part depuis l'invocation du dépôt, les suivants
+  /// attendaient le cron — planifié une fois par jour sur l'offre Hobby. Un
+  /// cours de six chapitres aurait mis des jours à être prêt.
+  ///
+  /// C'est donc l'attente de l'étudiant qui fait avancer la chaîne, un
+  /// chapitre par interrogation.
+  Future<ApercuCours?> etat(ApiReviz api, String coursId) async {
+    final reponse = await api.obtenir<ApercuCours?>(
+      '/api/cours/$coursId',
+      depuis: ApercuCours.depuis,
+    );
+
+    return switch (reponse) {
+      ReponseSucces(:final data) => data,
+      // Un échec de lecture ne doit pas vider l'écran : l'appelant garde ce
+      // qu'il affichait déjà et réessaiera au tour suivant.
+      ReponseEchec() => null,
+    };
+  }
+
   Future<List<ApercuChapitre>> chapitres(String coursId) async {
     final lignes = await supabase
         .from('chapter_stats')

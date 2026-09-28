@@ -14,6 +14,8 @@ import 'package:reviz/ecrans/ajouter_cours.dart';
 import 'package:reviz/ecrans/avatar.dart';
 import 'package:reviz/metier/avatars.dart';
 import 'package:reviz/ecrans/boutique.dart';
+import 'package:reviz/ecrans/aide.dart';
+import 'package:reviz/i18n/fr.dart';
 import 'package:reviz/ecrans/carte.dart';
 import 'package:reviz/ecrans/connexion.dart';
 import 'package:reviz/ecrans/classement.dart';
@@ -545,7 +547,72 @@ void main() {
       // Un cours déposé n'a ni chapitre ni question : une page vide
       // laisserait croire à une panne.
       expect(find.text('Ton cours est en préparation'), findsOneWidget);
+
+      // Aucun chapitre encore : on dit ce qui se passe, pas « 0 chapitre ».
+      expect(find.text('Lecture du document…'), findsOneWidget);
+
+      // Et surtout, l'écran ne promet plus ce qu'il ne tient pas. L'ancien
+      // texte disait « Tu peux fermer l'application : on te prévient dès que
+      // c'est prêt » — faux deux fois : il n'y a pas de notification, et
+      // c'est le fait de rester ici qui fait avancer la préparation.
+      expect(find.textContaining('Reste sur cet écran'), findsOneWidget);
+      expect(find.textContaining('on te prévient'), findsNothing);
+
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('chiffre l’avancement dès qu’il y en a', (tester) async {
+      // Un sablier immobile pendant deux minutes se lit comme une panne.
+      const avance = ApercuCours(
+        id: 'c3',
+        titre: 'Droit administratif — chapitre en cours',
+        statut: 'processing',
+        demo: false,
+        matiereNom: 'Droit administratif',
+        dateExamen: null,
+        nbChapitres: 3,
+        nbQuestions: 12,
+        nbFiches: 8,
+        nbTentees: 0,
+      );
+
+      await _poser(
+        tester,
+        const EcranCours(coursId: 'c3'),
+        remplacements: [
+          unCoursProvider('c3').overrideWith((_) async => avance),
+          chapitresProvider('c3').overrideWith((_) async => <ApercuChapitre>[]),
+        ],
+      );
+
+      expect(find.text('3 chapitres · 12 questions'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('accorde le singulier', (tester) async {
+      const un = ApercuCours(
+        id: 'c4',
+        titre: 'Un seul chapitre',
+        statut: 'processing',
+        demo: false,
+        matiereNom: 'Droit',
+        dateExamen: null,
+        nbChapitres: 1,
+        nbQuestions: 1,
+        nbFiches: 0,
+        nbTentees: 0,
+      );
+
+      await _poser(
+        tester,
+        const EcranCours(coursId: 'c4'),
+        remplacements: [
+          unCoursProvider('c4').overrideWith((_) async => un),
+          chapitresProvider('c4').overrideWith((_) async => <ApercuChapitre>[]),
+        ],
+      );
+
+      expect(find.text('1 chapitre · 1 question'), findsOneWidget);
     });
   });
 
@@ -2039,6 +2106,63 @@ void main() {
         const EcranConnexion(),
         taille: const Size(320, 640),
       );
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+
+  group('aide', () {
+    testWidgets('répond d’abord à la question du prélèvement', (tester) async {
+      // C'est la crainte qui empêche d'acheter, dans un marché où les
+      // abonnements qu'on n'arrive pas à résilier sont une expérience
+      // courante. La réponse est non, et elle doit venir en premier.
+      await _poser(tester, const EcranAide(), stabiliser: false);
+
+      expect(
+        find.text('Est-ce que je serai prélevé chaque mois ?'),
+        findsOneWidget,
+      );
+
+      // Repliée par défaut : sept réponses ouvertes feraient un mur de texte.
+      expect(find.textContaining('Non. Jamais.'), findsNothing);
+
+      await tester.tap(find.text('Est-ce que je serai prélevé chaque mois ?'));
+      await tester.pump();
+
+      expect(find.textContaining('Non. Jamais.'), findsOneWidget);
+      expect(find.textContaining('aucun abonnement automatique'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('n’offre pas un contact qui ne répondrait pas', (tester) async {
+      // En test, `CONTACT_WHATSAPP` est vide : le bouton doit disparaître et
+      // l'écran doit le dire, comme le bouton Google sans identifiant.
+      await _poser(tester, const EcranAide(), stabiliser: false);
+
+      // Le bloc de contact est sous le pli : une `ListView` construit
+      // paresseusement, donc `find` ne le voit pas avant de l'amener à
+      // l'écran.
+      await tester.scrollUntilVisible(find.text('Nous écrire'), 200);
+      await tester.pump();
+
+      expect(find.text('Écrire sur WhatsApp'), findsNothing);
+      expect(
+        find.textContaining('n’est pas encore dans cette version'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('couvre les sept questions, sans déborder à 320 px', (
+      tester,
+    ) async {
+      await _poser(
+        tester,
+        const EcranAide(),
+        taille: const Size(320, 640),
+        stabiliser: false,
+      );
+
+      expect(Fr.aide.questions, hasLength(7));
       expect(tester.takeException(), isNull);
     });
   });

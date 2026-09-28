@@ -34,6 +34,7 @@ ouvrait le site.
 | `/profil/avatar` | `avatar.dart` | Douze couleurs, initiale dessus. |
 | `/profil/supprimer-compte` | `suppression.dart` | Ce qui part, ce qui reste, confirmation par le prénom. |
 | `/profil/carte-etudiante` | `carte.dart` | Photo de la carte, attente du verdict, issue. La seule barrière « un compte par personne ». |
+| `/profil/aide` | `aide.dart` | Sept questions, l'argent en premier. Le contact WhatsApp n'apparaît que si `CONTACT_WHATSAPP` est passé au build. |
 | `/galerie` | `galerie.dart` | Le kitchen-sink du design system. Public, sans compte. |
 
 Plus un écran sans chemin : `mise_a_jour.dart`, monté par-dessus le routeur
@@ -46,10 +47,8 @@ quand la version installée est trop ancienne ou le serveur en entretien
 
 | Écran | Bloqué par |
 | --- | --- |
-| Page d'un chapitre | `Chemins.chapitre(id)` est déclaré et n'a ni route ni appelant. La page de cours suffit pour l'instant. |
 | Paiement Mobile Money | `FEDAPAY_SECRET_KEY` manque. La boutique le dit à l'écran. |
 | Connexion Google | **Le code est en place** (`donnees/google.dart`, `metier/google.dart`) ; le bouton s'active dès que `GOOGLE_WEB_CLIENT_ID` est passé au build. Restent les deux identifiants OAuth à créer — voir `docs/GUIDE-APK-REVIZ.md` § 3 bis. |
-| Aide et contact | Le contenu reste à écrire, et un vrai numéro WhatsApp à fournir. L'ancienne page web en portait un factice. |
 
 ---
 
