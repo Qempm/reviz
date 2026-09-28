@@ -12,11 +12,12 @@ App mobile-first de révision pour étudiants d'universités d'Afrique francopho
 
 L'utilisateur cible a un Android milieu de gamme, une connexion instable, un forfait data limité, et ouvre l'app la nuit avant un contrôle. Tout doit être léger, rapide, rassurant et en français. Tous les montants en FCFA.
 
-Distribution : web app hébergée + APK Capacitor (coquille WebView) partagé par lien et WhatsApp. Le Play Store viendra plus tard.
+Distribution : **APK Flutter** partagé par lien et WhatsApp. Le Play Store viendra plus tard. La coquille Capacitor et la coquille Kotlin ont été retirées : l'application est un vrai client, plus un site emballé (voir `docs/GUIDE-APK-REVIZ.md`).
 
 ## Stack (ne pas dévier sans en discuter)
 
-- **Next.js 15 (App Router) + TypeScript + Tailwind CSS**, déployé sur Vercel. PWA (manifest + service worker via `next-pwa` ou équivalent) pour le mode hors ligne des QCM déjà chargés.
+- **L'écran est en Flutter** (`apps/mobile/`), **le serveur reste Next.js 15** (App Router, TypeScript) déployé sur Vercel. Next.js ne sert plus d'interface : il garde `app/api/*`, deux pages publiques (`/` et `/app`), et les clés qui ne doivent jamais descendre dans un téléphone. Flutter lit Supabase en direct là où la RLS suffit, et appelle les routes en HTTPS pour tout ce qui exige un privilège — le contrat est dans `docs/API.md`.
+- **Tailwind CSS** reste dans le dépôt pour les deux pages publiques, et `tailwind.config.ts` reste la source de vérité des jetons, que le thème Flutter reprend.
 - **Supabase** : Postgres, Auth (**Google et email**, code à 6 chiffres par email — l'OTP téléphone est abandonné depuis le 9 septembre 2026), Storage (cours, copies, cartes étudiantes, avatars), Edge Functions si besoin, `pgvector` pour les embeddings des chapitres.
 - **IA** : appels directs depuis les routes serveur Next.js, jamais depuis le client. Fournisseurs (format OpenAI Chat Completions) :
   - DeepSeek `deepseek-v4-flash` (base `https://api.deepseek.com`) pour QCM, fiches, questions probables.
@@ -27,7 +28,7 @@ Distribution : web app hébergée + APK Capacitor (coquille WebView) partagé pa
 - **File de traitement** : table `jobs` dans Supabase + route `/api/jobs/run` déclenchée par Vercel Cron toutes les minutes. Pas de Redis au MVP.
 - **Paiement Mobile Money** : abstraction `lib/payments/provider.ts` avec une première implémentation FedaPay (Bénin, Togo, Côte d'Ivoire) et un webhook `/api/payments/webhook`. Prévoir Moneroo ou KkiaPay comme seconde implémentation, même interface.
 - **WhatsApp** : notifications via webhook n8n (`N8N_WHATSAPP_WEBHOOK_URL`). Reviz n'appelle jamais l'API WhatsApp directement.
-- **Capacitor** dans `apps/android/` (coquille, voir `docs/GUIDE-APK-REVIZ.md`).
+- **Flutter 3.44 / Dart 3.12** dans `apps/mobile/` : `supabase_flutter`, `dio`, `go_router`, `flutter_riverpod`. Police Nunito Sans **embarquée** et non téléchargée : le public a un forfait data limité.
 
 Variables d'environnement attendues dans `.env.local` (jamais commitées) : `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `DEEPSEEK_API_KEY`, `DASHSCOPE_API_KEY`, `ZAI_API_KEY`, `FEDAPAY_SECRET_KEY`, `FEDAPAY_WEBHOOK_SECRET`, `N8N_WHATSAPP_WEBHOOK_URL`, `CRON_SECRET`.
 
@@ -87,17 +88,25 @@ RLS activée sur toutes les tables : un utilisateur ne lit et n'écrit que ses p
 
 ## Conventions de code
 
-- Dossiers : `app/(public)`, `app/(auth)`, `app/(app)` pour les écrans connectés, `app/api/*` pour les routes, `components/ui` (design system), `components/reviz` (composants métier), `lib/ai`, `lib/payments`, `lib/supabase`, `lib/jobs`.
+- Dossiers du serveur : `app/api/*` pour les routes, `app/app/` pour la page de téléchargement, `lib/ai`, `lib/metier`, `lib/payments`, `lib/jobs`, `lib/supabase`, `lib/profil`. Dossiers de l'application : `apps/mobile/lib/{ecrans,composants,donnees,metier,etat,theme,i18n}`.
+- Toute logique métier pure va dans `lib/metier` ou `lib/{payments,xp,auth}` côté serveur, et dans `apps/mobile/lib/metier` côté application — les deux avec leurs tests. C'est la seule duplication justifiée du projet : l'écran doit pouvoir dire « 3 corrections restantes » sans aller-retour, mais le serveur reste l'autorité.
 - Toute route API : validation Zod de l'entrée, vérification de session Supabase, réponse `{ ok, data | error }`.
 - Pas de logique métier dans les composants ; les mutations passent par des Server Actions ou des routes API.
-- Tests : Vitest pour `lib/*` (calcul des commissions, expiration des packs, sélection du fournisseur IA, validation JSON) ; ne pas tester l'UI au MVP.
+- Tests : Vitest pour `lib/*` côté serveur ; `flutter test` côté application, avec des tests de rendu qui mesurent le débordement horizontal à 375 px **puis 320 px**. La CI (`.github/workflows/ci.yml`) exécute les deux, plus `typecheck`, `lint` et `build`.
 - Commits en français, un commit par écran ou par fonctionnalité, jamais de clé dans le dépôt.
-- Textes UI en français, centralisés dans `lib/i18n/fr.ts`.
+- Textes d'interface en français, centralisés dans `apps/mobile/lib/i18n/fr.dart`. `lib/i18n/fr.ts` a été retiré avec les écrans web.
 - Quand une décision n'est pas couverte ici, proposer deux options courtes et demander avant de coder.
 
 ## Écrans du MVP (ordre de construction)
 
-1. Design system Tailwind + composants `ui` (Button, Card, ProgressBar, Podium, StreakCard, HeroCard, QuizOption, BottomNav, Toast, EmptyState, MascotState).
+> **État au 28 septembre 2026.** Les points 1 à 9 sont faits côté Flutter, à
+> deux exceptions près : le **dépôt de cours** (point 4) attend les traitements
+> IA `ingest_course` et `generate_questions`, qui n'existent pas, et la **photo
+> de carte étudiante** attend `verify_card`. Le point 10 — la coquille — est
+> remplacé par un APK Flutter signé, qui attend les licences Android et une clé
+> de signature. Voir `docs/SCREENS.md`.
+
+1. Design system : jetons dans `apps/mobile/lib/theme/`, composants dans `apps/mobile/lib/composants/`, et l'écran `/galerie` qui les affiche tous pour valider le rendu avant les écrans métier.
 2. Auth : Google ou email (code à 6 chiffres), université / filière / année, code parrain, téléphone facultatif, photo carte (job `verify_card`), connexion.
 3. Tableau de bord.
 4. Ajout de cours → job `ingest_course` → `generate_questions` → page matière → session QCM → résultat.
@@ -106,27 +115,47 @@ RLS activée sur toutes les tables : un utilisateur ne lit et n'écrit que ses p
 7. Portefeuille, parrainage, classement, demande de retrait.
 8. Profil, avatar, réglages, aide, suppression de compte.
 9. États transversaux : hors ligne, vides, chargement, écran « mise à jour requise » lisant `/version.json`.
-10. Coquille Capacitor + page `/app` de téléchargement.
+10. APK Flutter signé + pages publiques `/` et `/app`.
 
-Liste complète des 55 écrans dans `docs/SCREENS.md`.
+Liste réelle des écrans — ceux qui tournent, ceux qui manquent et ce qui les bloque — dans `docs/SCREENS.md`. Le registre de l'audit de septembre 2026 est dans `docs/AUDIT-2026-09.md`.
 
 ---
 
-## Premier message à envoyer à Claude Code
+## Où en est le projet, et par où reprendre
 
+Le portage est fait. Ce qu'il faut savoir avant de toucher quoi que ce soit :
+
+- **Lire `docs/API.md`** pour le contrat entre l'application et le serveur, et
+  `docs/AUDIT-2026-09.md` pour ce qui a été réparé et ce qui reste. Les deux
+  évitent de refaire des erreurs déjà payées.
+- **Vérifier avant de conclure.** Les défauts les plus coûteux de ce dépôt
+  n'étaient pas visibles à la lecture : une migration qui ne s'appliquait pas,
+  une fonction appelée seulement par ses tests, une comparaison de version
+  auto-référentielle, un webhook qui payait deux fois. Les méthodes qui les ont
+  trouvés sont listées à la fin de `docs/AUDIT-2026-09.md`.
+- **Ne pas régénérer `tailwind.config.ts` ni `docs/DESIGN.md`** : ils portent
+  les jetons figés depuis Stitch, et le thème Flutter les reprend.
+- **Ne jamais mettre de secret dans le dépôt.** `SUPABASE_SERVICE_ROLE_KEY` ne
+  prend jamais le préfixe `NEXT_PUBLIC_` et ne descend jamais dans l'APK : un
+  APK se décompile, tout ce qu'il embarque est public.
+
+Vérification, à chaque changement :
+
+```bash
+npm run typecheck && npm run lint && npm test && npm run build
+cd apps/mobile && flutter analyze && flutter test
 ```
-Lis CLAUDE.md, docs/DESIGN.md et docs/STACK-IA.md en entier avant de faire quoi que ce soit.
 
-Ensuite, dans cet ordre, sans passer à l'étape suivante tant que la précédente ne compile pas :
+Ce qui reste à faire, par ordre de valeur :
 
-1. Initialise le projet Next.js 15 + TypeScript + Tailwind + Supabase (client et serveur) à la racine, avec la structure de dossiers de CLAUDE.md et le fichier .env.example.
-   - `tailwind.config.ts` existe déjà et fait autorité : il porte les tokens Reviz figés depuis Stitch. **Ne pas le régénérer ni l'écraser** — si l'outil d'init en produit un, restaure celui du dépôt et reporte seulement le champ `content` si les chemins ont changé. Même consigne pour `docs/DESIGN.md`.
-   - Charge Nunito Sans via `next/font/google` (poids 500/600/700/800) exposée en `--font-nunito-sans`, plus la feuille Material Symbols Outlined.
-   - Pose les styles de base de docs/DESIGN.md § 8 : fond `#fcf9f8`, `overscroll-behavior: none`, `-webkit-tap-highlight-color: transparent`, utilitaires `.pt-safe` / `.pb-safe`, `viewport-fit=cover`.
-   - Le projet Android est dans `apps/android/` : ne rien y toucher, et vérifier après l'init que `apps/android/gradlew projects` passe toujours.
-2. Écris les migrations SQL Supabase pour tout le modèle de données, avec les politiques RLS, dans supabase/migrations/. Ajoute une migration de seed avec 3 universités béninoises (UAC, UAM, UP), 5 filières chacune, 4 matières par filière, et les 5 packs avec leurs prix.
-3. Construis le design system dans components/ui (liste dans CLAUDE.md) et une page /kitchen-sink qui les affiche tous, pour que je valide le rendu visuel avant les écrans.
-4. Implémente lib/ai : client OpenAI-compatible générique, table de routage DeepSeek → Qwen → GLM avec bascule sur erreur ou JSON invalide, détection des heures pleines DeepSeek, enregistrement dans ai_usage, et les schémas Zod des sorties (questions, fiches, correction, lecture de carte). Tests Vitest sur le routage et la validation.
-
-À la fin de chaque étape, donne-moi en 5 lignes ce qui est fait, ce qui manque, et la commande pour vérifier. Ne crée pas d'écran métier avant que je valide le kitchen-sink.
-```
+1. **Les traitements IA** — `ingest_course` et `generate_questions` n'existent
+   pas, donc un cours déposé ne produirait rien. C'est le plus gros manque :
+   sans eux, l'application ne sait réviser que le cours de démonstration.
+2. **Un APK signé** — attend les licences du SDK Android et une clé de
+   signature (`docs/GUIDE-APK-REVIZ.md`).
+3. **Le paiement réel** — attend `FEDAPAY_SECRET_KEY` et
+   `FEDAPAY_WEBHOOK_SECRET`.
+4. **La connexion Google** — attend un ID client OAuth Android et un ID client
+   Web.
+5. **Les assets** — icônes PWA, cinq états de la mascotte, 24 avatars en
+   images. Les avatars sont contournés par douze couleurs en attendant.

@@ -1,165 +1,107 @@
 import Link from 'next/link'
-import { Button, Card, Icon } from '@/components/ui'
 
 /**
- * Ecran - Telechargement APK.
+ * Page de téléchargement de l'application.
  *
- * Page publique pour telecharger l'APK Android directement.
- * Affiche infos version, compatibilite, et lien de telechargement.
+ * Réécrite sans le design system : `components/ui` a été retiré avec les
+ * écrans web que Flutter remplace, et cette page n'a pas besoin de trois
+ * composants pour montrer un bouton. Les classes viennent directement des
+ * jetons de `tailwind.config.ts`, qui reste la source de vérité partagée avec
+ * `docs/DESIGN.md` et le thème Flutter.
+ *
+ * Au passage, sept apostrophes échappées qui s'affichaient littéralement —
+ * « Telecharger l\'APK », « Guide d\'installation » — et « signataire » pour
+ * « signé ». C'était la première page que voyait un étudiant.
  */
-export default function TelechargerApp() {
-  // Taille réelle de public/reviz-1.0.0.apk. La coquille ne contient aucune
-  // interface native — pas de Compose —, d'où les 2 Mo et non 12 : l'APK doit
-  // pouvoir se partager par WhatsApp sur un forfait limité.
-  const apkSize = '2,6 Mo'
-  const minAndroid = '7.0' // API 24
 
+export const metadata = {
+  title: 'Installer Reviz',
+  description:
+    'Télécharge l’application Reviz pour réviser tes cours et faire corriger tes copies.',
+}
+
+const ETAPES = [
+  'Autorise l’installation depuis ton navigateur, si Android le demande.',
+  'Ouvre le fichier téléchargé depuis tes notifications ou l’application Fichiers.',
+  'Appuie sur « Installer », puis ouvre Reviz.',
+  'Connecte-toi avec ton adresse e-mail : un code à chiffres t’arrive par mail.',
+]
+
+export default function Telechargement() {
   return (
-    <div className="flex flex-col gap-space-20 px-space-20 py-space-24 min-h-screen">
-      {/* Header */}
-      <div className="flex flex-col gap-space-4">
-        <h1 className="text-headline-xl text-reviz-ink">Reviz - Application Android</h1>
+    <main className="mx-auto flex min-h-screen w-full max-w-[440px] flex-col gap-space-20 px-space-16 py-space-32">
+      <header className="flex flex-col gap-space-8">
+        <h1 className="text-headline-xl text-reviz-ink">Installer Reviz</h1>
         <p className="text-body-md text-reviz-muted">
-          Telecharge l'app pour acceder a tes revisions n'importe ou.
+          Reviz transforme tes cours en QCM, te prépare des fiches et corrige
+          tes copies photographiées. L’application s’installe depuis un
+          fichier, sans passer par le Play Store.
         </p>
-      </div>
+      </header>
 
-      {/* Visuels */}
-      <div className="flex justify-center">
-        <div className="flex h-64 w-32 items-center justify-center rounded-2xl bg-gradient-to-b from-reviz-yellow-soft to-reviz-blue-soft">
-          <Icon name="android" size={80} className="text-primary" filled />
-        </div>
-      </div>
-
-      {/* Infos */}
-      <Card>
-        <div className="space-y-space-12">
-          <div className="flex items-center gap-space-12">
-            <Icon name="info" size={24} className="text-primary" />
-            <div>
-              <span className="text-label-lg text-reviz-ink font-600 block">Version 1.0.0</span>
-              <span className="text-label-sm text-reviz-muted">Publiee le 10 septembre 2026</span>
-            </div>
-          </div>
-
-          <div className="space-y-space-8 border-t border-reviz-border pt-space-12">
-            <div className="flex justify-between">
-              <span className="text-label-sm text-reviz-muted">Taille</span>
-              <span className="text-label-sm text-reviz-ink font-600">{apkSize}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-label-sm text-reviz-muted">Android minimum</span>
-              <span className="text-label-sm text-reviz-ink font-600">{minAndroid}+</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-label-sm text-reviz-muted">Architecture</span>
-              <span className="text-label-sm text-reviz-ink font-600">arm64-v8a</span>
-            </div>
-          </div>
-        </div>
-      </Card>
-
-      {/* Caracteristiques */}
-      <Card>
-        <span className="text-label-lg text-reviz-ink font-600 block mb-space-12">
-          Fonctionnalites incluses
-        </span>
-        <ul className="space-y-space-8 text-body-sm text-reviz-ink">
-          <li className="flex items-start gap-space-8">
-            <Icon name="check_circle" size={20} className="text-primary flex-shrink-0 mt-space-2" />
-            <span>Acces complet a tes cours et QCM</span>
-          </li>
-          <li className="flex items-start gap-space-8">
-            <Icon name="check_circle" size={20} className="text-primary flex-shrink-0 mt-space-2" />
-            <span>Correction de copies par IA vision</span>
-          </li>
-          <li className="flex items-start gap-space-8">
-            <Icon name="check_circle" size={20} className="text-primary flex-shrink-0 mt-space-2" />
-            <span>Paiements Mobile Money securises</span>
-          </li>
-          <li className="flex items-start gap-space-8">
-            <Icon name="check_circle" size={20} className="text-primary flex-shrink-0 mt-space-2" />
-            <span>Classement et gains de parrainage</span>
-          </li>
-          <li className="flex items-start gap-space-8">
-            <Icon name="check_circle" size={20} className="text-primary flex-shrink-0 mt-space-2" />
-            <span>Fonctionnement hors ligne (cache local)</span>
-          </li>
+      {/* Ce que l'étudiant obtient, sans promesse que le produit ne tient pas
+          encore : le dépôt de cours attend son traitement (lot IA). */}
+      <section className="rounded-card bg-reviz-card p-space-16 shadow-card">
+        <h2 className="text-headline-md text-reviz-ink">
+          Ce que tu peux faire aujourd’hui
+        </h2>
+        <ul className="mt-space-12 flex flex-col gap-space-8 text-body-md text-reviz-muted">
+          <li>Réviser en QCM, une question par écran, et suivre ta série.</li>
+          <li>Retourner des fiches, chapitre par chapitre.</li>
+          <li>Photographier une copie et recevoir une note détaillée.</li>
+          <li>Voir le classement de ta faculté, et tes gains de parrainage.</li>
         </ul>
-      </Card>
+      </section>
 
-      {/* CTA Telechargement */}
-      <a
-        href="/reviz-1.0.0.apk"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="w-full"
-      >
-        <Button icon="download">
-          Telecharger l\'APK (v1.0.0)
-        </Button>
-      </a>
+      {/* Le fichier n'est pas encore publié : l'APK signé arrive avec le lot
+          C. Annoncer un lien mort serait pire que de dire où l'on en est. */}
+      <section className="rounded-card border-2 border-reviz-border bg-reviz-card p-space-16">
+        <h2 className="text-headline-md text-reviz-ink">
+          Le fichier arrive
+        </h2>
+        <p className="mt-space-8 text-body-md text-reviz-muted">
+          La nouvelle version de l’application est en préparation. Le lien de
+          téléchargement sera partagé ici et par WhatsApp dès qu’elle est
+          signée.
+        </p>
+        {/* Pas de numéro en dur : l'ancienne version de cette page en portait
+            un factice, et un lien mort vaut moins que pas de lien. Le contact
+            réel viendra avec le lot C. */}
+      </section>
 
-      {/* Instructions */}
-      <Card>
-        <span className="text-label-lg text-reviz-ink font-600 block mb-space-12">
-          Guide d\'installation
-        </span>
-        <ol className="space-y-space-8 text-body-sm text-reviz-muted">
-          <li className="flex gap-space-12">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-reviz-yellow text-label-md font-600 text-reviz-on-yellow flex-shrink-0">
-              1
-            </span>
-            <span>Telecharge l\'APK sur ton telephone</span>
-          </li>
-          <li className="flex gap-space-12">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-reviz-yellow text-label-md font-600 text-reviz-on-yellow flex-shrink-0">
-              2
-            </span>
-            <span>Ouvre l\'app \"Fichiers\" et localise le fichier reviz-1.0.0.apk</span>
-          </li>
-          <li className="flex gap-space-12">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-reviz-yellow text-label-md font-600 text-reviz-on-yellow flex-shrink-0">
-              3
-            </span>
-            <span>Appuie sur le fichier pour lancer l\'installation</span>
-          </li>
-          <li className="flex gap-space-12">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-reviz-yellow text-label-md font-600 text-reviz-on-yellow flex-shrink-0">
-              4
-            </span>
-            <span>Approuve les permissions Android et lance l\'app</span>
-          </li>
+      <section className="rounded-card bg-reviz-card p-space-16 shadow-card">
+        <h2 className="text-headline-md text-reviz-ink">
+          Comment l’installer
+        </h2>
+        <ol className="mt-space-12 flex flex-col gap-space-12">
+          {ETAPES.map((etape, i) => (
+            <li key={etape} className="flex gap-space-12">
+              <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-reviz-yellow text-label-md text-reviz-on-yellow">
+                {i + 1}
+              </span>
+              <span className="text-body-md text-reviz-muted">{etape}</span>
+            </li>
+          ))}
         </ol>
-      </Card>
+      </section>
 
-      {/* Note de securite */}
-      <Card size="sm">
-        <div className="flex gap-space-12">
-          <Icon name="shield" size={20} className="text-reviz-ink flex-shrink-0" />
-          <div>
-            <p className="text-label-sm text-reviz-ink font-600 mb-space-4">
-              Securite verifiee
-            </p>
-            <p className="text-label-sm text-reviz-muted">
-              L\'APK est signataire et provient directement du serveur officiel Reviz.
-            </p>
-          </div>
-        </div>
-      </Card>
+      <section className="rounded-card bg-reviz-surface-low p-space-16">
+        <h2 className="text-label-lg text-reviz-ink">
+          Si tu avais déjà une ancienne version
+        </h2>
+        <p className="mt-space-8 text-label-sm text-reviz-muted">
+          Désinstalle-la avant d’installer celle-ci : les deux portent le même
+          nom mais ne sont pas signées avec la même clé, et Android refuse alors
+          de remplacer l’une par l’autre. Tes cours et ta progression sont sur
+          nos serveurs, rien n’est perdu.
+        </p>
+      </section>
 
-      {/* Lien vers web */}
-      <Link href="/" className="w-full">
-        <Button variant="secondary">
-          Retourner a la version web
-        </Button>
-      </Link>
-
-      {/* Footer */}
-      <div className="text-center text-label-sm text-reviz-muted">
-        <p>Version web disponible a <span className="font-600">reviz-eight.vercel.app</span></p>
-        <p className="mt-space-4">© 2026 Reviz. Tous droits reserves.</p>
-      </div>
-    </div>
+      <footer className="text-label-sm text-reviz-muted">
+        <Link href="/" className="underline">
+          Revenir à l’accueil
+        </Link>
+      </footer>
+    </main>
   )
 }

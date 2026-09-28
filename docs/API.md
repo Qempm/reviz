@@ -291,8 +291,30 @@ au lieu d'une couleur, sans migration.
 
 ### Les routes antérieures
 
-`/api/payments/init`, `/api/payments/status`, `/api/payments/webhook` et
-`/api/jobs/run` existaient déjà, et **n'ont pas été converties** : elles construisent leur client
+`/api/payments/init` et `/api/payments/status` sont converties au lot D :
+`authentifier()`, l'enveloppe commune, des messages français. `init` était
+aussi la **deuxième** voie d'initiation de paiement — la Server Action
+`initiatePayment` de l'écran boutique faisait presque la même chose en
+divergeant, et c'était elle que l'interface appelait. Elle est partie avec les
+écrans web ; il ne reste qu'une voie.
+
+Deux routes ne sont **pas** converties, et ne doivent pas l'être :
+
+- `POST /api/payments/webhook` est appelée par le fournisseur, pas par un
+  étudiant. Elle s'authentifie par signature HMAC sur la charge utile brute ;
+  y ajouter `authentifier()` n'aurait aucun sens, puisqu'il n'y a ni session ni
+  jeton. Ses messages restent à harmoniser.
+- `GET /api/jobs/run` s'authentifie par `CRON_SECRET`, que Vercel place dans
+  l'en-tête des appels planifiés. Un jeton d'étudiant n'y a pas sa place.
+
+Note : **`middleware.ts` a été retiré au lot D.** Il renouvelait le cookie de
+session à chaque requête, gardait des routes qui n'existent plus et
+redirigeait vers un `/connexion` supprimé — tout en réveillant Supabase pour
+servir les deux pages publiques. La porte cookie d'`authentifier()` reste
+écrite mais n'a plus d'appelant : si un écran web revient, il faudra remettre
+le renouvellement avec lui.
+
+Ce qui suit décrivait l'état antérieur : elles construisent leur client
 Supabase à partir des cookies uniquement, donc tout appel depuis
 l'application Flutter reçoit 401. Leurs messages d'erreur sont en anglais et
 leur enveloppe n'est pas uniforme.

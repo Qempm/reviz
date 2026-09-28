@@ -71,6 +71,18 @@ export function jetonDeLEnTete(request: Request): string | null {
  * d'authentification**, il ne se contente pas de décoder la charge utile. Un
  * JWT fabriqué ou périmé ne passe donc pas.
  */
+/**
+ * Depuis le lot D, **la porte cookie n'a plus d'appelant** : les écrans web
+ * que Flutter remplace ont été retirés, et `middleware.ts` — qui renouvelait
+ * le cookie à chaque requête — avec eux, puisqu'il gardait des routes qui
+ * n'existent plus et redirigeait vers un `/connexion` supprimé.
+ *
+ * Le repli reste écrit pour deux raisons : il ne coûte rien quand il n'y a pas
+ * de cookie (il rend `null`), et il documente le contrat à deux canaux que
+ * décrit `docs/API.md`. Si un écran web revient un jour, il faudra remettre le
+ * renouvellement du cookie avec lui — sans middleware, une session de
+ * navigateur expire sans se renouveler.
+ */
 export async function authentifier(request: Request): Promise<Appelant | null> {
   const jeton = jetonDeLEnTete(request)
 

@@ -34,7 +34,7 @@ yarn-error.log*
 .DS_Store
 Thumbs.db
 
-# Éditeurs (Android Studio garde ses propres règles dans apps/android/.gitignore)
+# Éditeurs
 /.idea/
 *.iml
 .vscode/*
@@ -53,3 +53,20 @@ supabase/.branches/
 
 # Rapport JSON de Vitest, écrit à chaque exécution.
 .vitest/
+
+# Binaires de l'application.
+#
+# Un APK versionné alourdit l'historique git **définitivement** : chaque
+# reconstruction y ajoute deux mégaoctets et demi que rien ne retire.
+# `public/reviz-1.0.0.apk` est retiré du suivi — ce qui ne le retire pas du
+# passé : la réécriture d'historique a été écartée sur un dépôt dont l'accès
+# en écriture est déjà problématique. L'APK signé du lot C se publiera en
+# release GitHub, pas ici.
+*.apk
+*.aab
+
+# Clés de signature Android. Une clé engagée est une clé à révoquer, et rien
+# ne les couvrait avant le lot C.
+*.jks
+*.keystore
+**/key.properties
