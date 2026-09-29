@@ -130,12 +130,16 @@ class JaugeCirculaire extends StatelessWidget {
     this.taille = 72,
     this.epaisseur = 8,
     this.centre,
+    this.piste = Couleurs.surfaceConteneur,
   });
 
   final double valeur;
   final double taille;
   final double epaisseur;
   final Widget? centre;
+
+  /// Le cercle non rempli. Sur une carte sombre, un blanc translucide.
+  final Color piste;
 
   @override
   Widget build(BuildContext context) {
@@ -149,7 +153,11 @@ class JaugeCirculaire extends StatelessWidget {
         child: _Remplissage(
           valeur: pct,
           construire: (v) => CustomPaint(
-            painter: _PeintreJauge(valeur: v, epaisseur: epaisseur),
+            painter: _PeintreJauge(
+              valeur: v,
+              epaisseur: epaisseur,
+              piste: piste,
+            ),
             child: Center(child: centre),
           ),
         ),
@@ -159,10 +167,15 @@ class JaugeCirculaire extends StatelessWidget {
 }
 
 class _PeintreJauge extends CustomPainter {
-  _PeintreJauge({required this.valeur, required this.epaisseur});
+  _PeintreJauge({
+    required this.valeur,
+    required this.epaisseur,
+    required this.piste,
+  });
 
   final double valeur;
   final double epaisseur;
+  final Color piste;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -170,7 +183,7 @@ class _PeintreJauge extends CustomPainter {
     final centre = Offset(size.width / 2, size.height / 2);
 
     final fond = Paint()
-      ..color = Couleurs.surfaceConteneur
+      ..color = piste
       ..style = PaintingStyle.stroke
       ..strokeWidth = epaisseur;
 
@@ -197,7 +210,9 @@ class _PeintreJauge extends CustomPainter {
 
   @override
   bool shouldRepaint(_PeintreJauge ancien) =>
-      ancien.valeur != valeur || ancien.epaisseur != epaisseur;
+      ancien.valeur != valeur ||
+      ancien.epaisseur != epaisseur ||
+      ancien.piste != piste;
 }
 
 

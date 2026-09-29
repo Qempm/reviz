@@ -216,8 +216,15 @@ Future<void> _photographier(
     ),
   );
 
-  // Les images (avatars) se décodent pour de vrai, hors du temps simulé :
-  // sans cela elles sortent vides.
+  // D'abord laisser les fournisseurs factices se résoudre : une image posée
+  // par un écran encore en chargement n'est pas dans l'arbre, et ne serait
+  // donc pas préchargée.
+  for (var i = 0; i < 3; i++) {
+    await tester.pump();
+  }
+
+  // Les images (avatars, mascotte) se décodent pour de vrai, hors du temps
+  // simulé : sans cela elles sortent vides.
   await tester.runAsync(() async {
     for (final element in find.byType(Image).evaluate()) {
       final image = element.widget as Image;
@@ -243,6 +250,22 @@ void main() {
     semaine: _semaine,
     objectif: 10,
     matieres: _matieres,
+    dernierCours: _cours[1],
+    // Dans cinq jours, quel que soit le jour où l'on rend l'aperçu.
+    prochainExamen: ApercuCours(
+      id: 'c4',
+      titre: 'Droit des obligations',
+      statut: 'ready',
+      demo: false,
+      matiereNom: 'Droit civil',
+      dateExamen: DateTime.now()
+          .add(const Duration(days: 5))
+          .toIso8601String(),
+      nbChapitres: 5,
+      nbQuestions: 30,
+      nbFiches: 20,
+      nbTentees: 4,
+    ),
   );
 
   testWidgets('accueil', (tester) async {

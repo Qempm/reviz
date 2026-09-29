@@ -25,6 +25,7 @@ class CarteSerie extends StatelessWidget {
     required this.questionsFaites,
     required this.objectif,
     this.message,
+    this.afficherObjectif = true,
   });
 
   final EtatSerie etat;
@@ -33,6 +34,11 @@ class CarteSerie extends StatelessWidget {
   final int questionsFaites;
   final int objectif;
   final String? message;
+
+  /// La barre de l'objectif du jour. L'accueil l'éteint : sa carte héros
+  /// porte déjà la jauge, et deux compteurs du même chiffre se contredisent
+  /// le jour où l'un est en retard sur l'autre.
+  final bool afficherObjectif;
 
   static const _lettres = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
 
@@ -115,7 +121,7 @@ class CarteSerie extends StatelessWidget {
 
         // Objectif du jour : sans compteur, « réponds à 10 questions » n'est
         // qu'une phrase.
-        if (questionsFaites < objectif)
+        if (afficherObjectif && questionsFaites < objectif)
           BarreProgression(
             valeur: progressionDuJour(questionsFaites, objectif),
             libelle: Fr.tableauDeBord.objectifDuJour(questionsFaites, objectif),

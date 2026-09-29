@@ -169,7 +169,6 @@ Ce qui reste à faire, par ordre de valeur :
    suite — celle du magasin de débogage. Le web est l'audience du jeton, donc
    celui à déclarer côté Supabase. `docs/GUIDE-APK-REVIZ.md` § 3 bis.
 5. **La mascotte** — faite le 29 septembre 2026 : sept états, branchés
-   (résultats, n° 1, pack expiré, vides). Restent l'accueil (`salut`, avec le
-   nouvel accueil) et les chargements longs (`reflexion`, avec le composant
-   `Chargement`). L'icône et les douze avatars sont dans la 2.0.1 ; les icônes
+   (résultats, n° 1, pack expiré, vides, accueil). Restent les chargements
+   longs (`reflexion`, avec le composant `Chargement`). L'icône et les douze avatars sont dans la 2.0.1 ; les icônes
    PWA ne sont plus attendues.

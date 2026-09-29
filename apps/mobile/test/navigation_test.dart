@@ -150,6 +150,22 @@ void main() {
       expect(aQuitte(), isTrue);
     });
 
+    testWidgets('« Continuer » depuis Accueil y ramène au retour', (
+      tester,
+    ) async {
+      final routeur = await monter(tester);
+
+      // Le bouton de la carte héros ouvre une session d'un cours, qui vit
+      // dans la branche Réviser. Le retour doit ramener là où l'on était.
+      routeur.push('/cours/c1/session');
+      await tester.pumpAndSettle();
+      expect(find.text('page session'), findsOneWidget);
+
+      await retour(tester);
+      expect(find.text('page accueil'), findsOneWidget);
+      expect(aQuitte(), isFalse);
+    });
+
     testWidgets('ne sort jamais depuis la racine d’un autre onglet', (
       tester,
     ) async {

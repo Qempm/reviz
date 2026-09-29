@@ -11,6 +11,7 @@ import '../composants/puce.dart';
 import '../donnees/modeles.dart';
 import '../etat/fournisseurs.dart';
 import '../i18n/fr.dart';
+import '../metier/examen.dart';
 import '../routage.dart';
 import '../theme/jetons.dart';
 import '../theme/typographie.dart';
@@ -177,26 +178,6 @@ class _Absent extends StatelessWidget {
       ),
     );
   }
-}
-
-/// Jours restants avant l'examen, `null` s'il est passé.
-///
-/// Arithmétique de calendrier, pas de millisecondes : « demain » doit rester
-/// « demain » quelle que soit l'heure qu'il est.
-int? joursAvant(String iso) {
-  final p = iso.split('T').first.split('-');
-  if (p.length < 3) return null;
-  final a = int.tryParse(p[0]);
-  final m = int.tryParse(p[1]);
-  final j = int.tryParse(p[2]);
-  if (a == null || m == null || j == null) return null;
-
-  final examen = DateTime(a, m, j);
-  final maintenant = DateTime.now();
-  final aujourdhui = DateTime(maintenant.year, maintenant.month, maintenant.day);
-
-  final jours = examen.difference(aujourdhui).inDays;
-  return jours < 0 ? null : jours;
 }
 
 class _Contenu extends ConsumerWidget {

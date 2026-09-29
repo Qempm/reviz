@@ -721,6 +721,18 @@ class _TableauDeBord {
   String xpAujourdhui(int n) => '+$n XP aujourd’hui';
   String objectifDuJour(int faites, int but) =>
       '$faites / $but questions aujourd’hui';
+
+  // Carte héros
+  final String objectifTitre = 'Objectif du jour';
+  String objectifReste(int n) => n <= 1
+      ? 'Plus qu’une question pour valider ta journée'
+      : 'Encore $n questions pour valider ta journée';
+  final String objectifAtteint = 'Journée validée. Prends de l’avance ?';
+  final String reprendre = 'Reprendre';
+  final String continuer = 'Continuer';
+
+  // Compte à rebours
+  final String prochainExamen = 'Ton prochain examen';
 }
 
 class _Reviser {

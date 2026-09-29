@@ -464,13 +464,123 @@ void main() {
       );
     });
 
+    testWidgets('la carte héros rouvre le dernier cours', (tester) async {
+      await _poser(
+        tester,
+        const EcranAccueil(),
+        remplacements: [
+          accueilProvider.overrideWith(
+            (_) async => DonneesAccueil(
+              profil: _profil,
+              semaine: _semaine,
+              objectif: 10,
+              matieres: _matieres,
+              dernierCours: _coursDemo,
+            ),
+          ),
+          profilProvider.overrideWith((_) async => _profil),
+        ],
+      );
+
+      expect(
+        find.text('Encore 4 questions pour valider ta journée'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Reprendre · Droit constitutionnel — introduction'),
+        findsOneWidget,
+      );
+      expect(find.widgetWithText(Bouton, 'Continuer'), findsOneWidget);
+    });
+
+    testWidgets('sans cours prêt, un seul appel à l’action', (tester) async {
+      await _poser(
+        tester,
+        const EcranAccueil(),
+        remplacements: [
+          accueilProvider.overrideWith(
+            (_) async => DonneesAccueil(
+              profil: _profil,
+              semaine: _semaine,
+              objectif: 10,
+              matieres: const [],
+            ),
+          ),
+          profilProvider.overrideWith((_) async => _profil),
+        ],
+      );
+
+      // La carte héros n'invente pas un « Continuer » vers rien : c'est
+      // l'ajout de cours qui reste le seul bouton principal.
+      expect(find.text('Continuer'), findsNothing);
+      expect(find.byType(Bouton), findsOneWidget);
+      expect(find.text('Ajouter un cours'), findsOneWidget);
+    });
+
+    testWidgets('annonce le prochain examen', (tester) async {
+      final dansTroisJours = DateTime.now().add(const Duration(days: 3));
+      await _poser(
+        tester,
+        const EcranAccueil(),
+        remplacements: [
+          accueilProvider.overrideWith(
+            (_) async => DonneesAccueil(
+              profil: _profil,
+              semaine: _semaine,
+              objectif: 10,
+              matieres: _matieres,
+              prochainExamen: ApercuCours(
+                id: 'c9',
+                titre: 'Droit des obligations',
+                statut: 'ready',
+                demo: false,
+                matiereNom: 'Droit civil',
+                dateExamen: dansTroisJours.toIso8601String(),
+                nbChapitres: 1,
+                nbQuestions: 10,
+                nbFiches: 5,
+                nbTentees: 0,
+              ),
+            ),
+          ),
+          profilProvider.overrideWith((_) async => _profil),
+        ],
+      );
+
+      expect(find.text('Ton prochain examen'), findsOneWidget);
+      expect(find.text('Droit des obligations'), findsOneWidget);
+      expect(find.text('J−3'), findsOneWidget);
+    });
+
     testWidgets('ne déborde pas à 320 px', (tester) async {
       await _poser(
         tester,
         const EcranAccueil(),
         taille: const Size(320, 640),
         remplacements: [
-          accueilProvider.overrideWith((_) async => donnees),
+          accueilProvider.overrideWith(
+            (_) async => DonneesAccueil(
+              profil: _profil,
+              semaine: _semaine,
+              objectif: 10,
+              matieres: _matieres,
+              dernierCours: _coursDemo,
+              prochainExamen: ApercuCours(
+                id: 'c9',
+                titre: 'Un intitulé de cours bien trop long pour tenir',
+                statut: 'ready',
+                demo: false,
+                matiereNom: 'Droit civil',
+                dateExamen: DateTime.now()
+                    .add(const Duration(days: 12))
+                    .toIso8601String(),
+                nbChapitres: 1,
+                nbQuestions: 10,
+                nbFiches: 5,
+                nbTentees: 0,
+              ),
+            ),
+          ),
           profilProvider.overrideWith((_) async => _profil),
         ],
       );

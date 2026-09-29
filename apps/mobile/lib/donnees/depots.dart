@@ -175,12 +175,21 @@ class DonneesAccueil {
     required this.semaine,
     required this.objectif,
     required this.matieres,
+    this.dernierCours,
+    this.prochainExamen,
   });
 
   final Profil profil;
   final List<JourSerie> semaine;
   final int objectif;
   final List<StatMatiere> matieres;
+
+  /// Le cours que « Continuer » rouvre : le dernier prêt, les siens avant la
+  /// démonstration. `null` tant qu'aucun cours n'a de questions.
+  final ApercuCours? dernierCours;
+
+  /// Le cours dont l'examen tombe le plus tôt, aujourd'hui compris.
+  final ApercuCours? prochainExamen;
 
   JourSerie? get aujourdhui {
     for (final j in semaine) {
@@ -217,6 +226,25 @@ class DepotAccueil {
             .order('questions_answered', ascending: false)
             .limit(4),
       ),
+      Future<dynamic>.value(
+        supabase
+            .from('course_overview')
+            .select(_colonnesCours)
+            .eq('status', 'ready')
+            .order('is_demo', ascending: true)
+            .order('created_at', ascending: false)
+            .limit(1)
+            .maybeSingle(),
+      ),
+      Future<dynamic>.value(
+        supabase
+            .from('course_overview')
+            .select(_colonnesCours)
+            .gte('exam_date', _aujourdhuiIso())
+            .order('exam_date', ascending: true)
+            .limit(1)
+            .maybeSingle(),
+      ),
     ]);
 
     return DonneesAccueil(
@@ -224,8 +252,26 @@ class DepotAccueil {
       semaine: _garder(resultats[0] as List? ?? const [], JourSerie.depuis),
       objectif: (resultats[1] as num?)?.toInt() ?? 10,
       matieres: _garder(resultats[2] as List? ?? const [], StatMatiere.depuis),
+      dernierCours: _un(resultats[3], ApercuCours.depuis),
+      prochainExamen: _un(resultats[4], ApercuCours.depuis),
     );
   }
+
+  static const _colonnesCours =
+      'id, title, status, is_demo, subject_name, exam_date, '
+      'nb_chapitres, nb_questions, nb_fiches, nb_tentees';
+
+  /// La date du téléphone, pas celle d'UTC : entre minuit et une heure à
+  /// Cotonou, UTC est encore la veille, et l'examen d'hier compterait encore
+  /// — à l'heure précise où l'étudiant révise.
+  static String _aujourdhuiIso() {
+    final m = DateTime.now();
+    String deux(int n) => n.toString().padLeft(2, '0');
+    return '${m.year}-${deux(m.month)}-${deux(m.day)}';
+  }
+
+  static T? _un<T>(Object? ligne, T? Function(Map<String, dynamic>) lire) =>
+      ligne is Map<String, dynamic> ? lire(ligne) : null;
 }
 
 // ----------------------------------------------------------------- Cours
