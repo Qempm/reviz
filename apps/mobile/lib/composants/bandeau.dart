@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../i18n/fr.dart';
+import 'mascotte.dart';
 import '../theme/jetons.dart';
 import '../theme/typographie.dart';
 
@@ -14,7 +15,7 @@ import '../theme/typographie.dart';
 class Bandeau extends StatelessWidget {
   const Bandeau({
     super.key,
-    required this.icone,
+    required this.mascotte,
     required this.texte,
     required this.fond,
     required this.teinte,
@@ -23,7 +24,9 @@ class Bandeau extends StatelessWidget {
     this.onAction,
   });
 
-  final IconData icone;
+  /// La tête du panthéreau, dans la pose qui dit l'état — plus d'icône par
+  /// défaut, à la demande du propriétaire.
+  final EtatMascotte mascotte;
   final String texte;
   final String? detail;
   final Color fond;
@@ -44,8 +47,8 @@ class Bandeau extends StatelessWidget {
           ),
           child: Row(
             children: [
-              Icon(icone, size: 20, color: teinte),
-              const SizedBox(width: Espaces.x8),
+              TeteMascotte(etat: mascotte, taille: 36),
+              const SizedBox(width: Espaces.x12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -74,9 +77,7 @@ class Bandeau extends StatelessWidget {
                   style: TextButton.styleFrom(
                     foregroundColor: teinte,
                     minimumSize: const Size(0, Mesures.zoneTactile),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: Espaces.x8,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: Espaces.x8),
                   ),
                   child: Text(action!, style: Typo.labelMd),
                 ),
@@ -96,7 +97,7 @@ class BandeauHorsLigne extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Bandeau(
-      icone: Icons.wifi_off,
+      mascotte: EtatMascotte.horsLigne,
       texte: Fr.miseAJour.horsLigne,
       detail: Fr.miseAJour.horsLigneDetail,
       // Orange et non rouge : c'est une gêne, pas une panne. Le rouge est
@@ -117,7 +118,7 @@ class BandeauVersion extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Bandeau(
-      icone: Icons.system_update,
+      mascotte: EtatMascotte.salut,
       texte: Fr.miseAJour.conseillee,
       fond: Couleurs.jauneDoux,
       teinte: Couleurs.surJaune,

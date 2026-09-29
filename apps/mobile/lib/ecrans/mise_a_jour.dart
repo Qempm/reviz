@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../composants/bouton.dart';
 import '../composants/carte.dart';
+import '../composants/mascotte.dart';
 import '../donnees/version.dart';
 import '../etat/fournisseurs.dart';
 import '../i18n/fr.dart';
@@ -60,10 +61,11 @@ class EcranMiseAJour extends ConsumerWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    entretien ? Icons.construction : Icons.system_update,
-                    size: 64,
-                    color: entretien ? Couleurs.orange : Couleurs.jaune,
+                  Mascotte(
+                    etat: entretien
+                        ? EtatMascotte.chantier
+                        : EtatMascotte.salut,
+                    taille: 160,
                   ),
                   const SizedBox(height: Espaces.x20),
                   Text(

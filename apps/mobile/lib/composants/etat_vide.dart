@@ -7,26 +7,25 @@ import '../theme/typographie.dart';
 ///
 /// Toujours accompagné d'une porte de sortie — un seul CTA par écran.
 ///
-/// Avec `mascotte`, le panthéreau remplace la pastille d'icône : c'est ce
-/// qu'on réserve aux vides **normaux** (pas encore de cours, pas encore de
-/// filleul), qui sont une invitation. Une panne garde son icône : le
-/// panthéreau qui sourit au-dessus d'un « chargement impossible » sonnerait
-/// faux.
+/// **Toujours avec le panthéreau**, dans la pose qui dit l'état : `curieux`
+/// pour un vide, `oups` pour une panne, `courage` pour un refus. Le
+/// propriétaire ne voulait plus d'icône par défaut nulle part ; la règle
+/// précédente — « une panne garde son icône » — est levée, et c'est `oups`,
+/// qui ne sourit pas, qui porte désormais les pannes. `mascotte` est donc
+/// obligatoire : un appel oublié ne compile pas.
 class EtatVide extends StatelessWidget {
   const EtatVide({
     super.key,
     required this.titre,
     this.description,
-    this.icone = Icons.inbox_outlined,
     this.action,
-    this.mascotte,
+    required this.mascotte,
   });
 
   final String titre;
   final String? description;
-  final IconData icone;
   final Widget? action;
-  final EtatMascotte? mascotte;
+  final EtatMascotte mascotte;
 
   @override
   Widget build(BuildContext context) {
@@ -38,18 +37,7 @@ class EtatVide extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (mascotte case final etat?)
-            Mascotte(etat: etat, taille: 112)
-          else
-            Container(
-              width: 64,
-              height: 64,
-              decoration: const BoxDecoration(
-                color: Couleurs.surfaceConteneur,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icone, size: 32, color: Couleurs.attenue),
-            ),
+          Mascotte(etat: mascotte, taille: 112),
           const SizedBox(height: Espaces.x16),
           Text(titre, style: Typo.headlineMd, textAlign: TextAlign.center),
           if (description != null) ...[
@@ -63,10 +51,7 @@ class EtatVide extends StatelessWidget {
               ),
             ),
           ],
-          if (action != null) ...[
-            const SizedBox(height: Espaces.x16),
-            action!,
-          ],
+          if (action != null) ...[const SizedBox(height: Espaces.x16), action!],
         ],
       ),
     );

@@ -20,6 +20,7 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:reviz/theme/jetons.dart';
 import 'package:reviz/i18n/fr.dart';
+import 'package:reviz/composants/bandeau.dart';
 import 'package:reviz/composants/bouton.dart';
 import 'package:reviz/composants/carte.dart';
 import 'package:reviz/composants/etat_vide.dart';
@@ -360,6 +361,45 @@ void main() {
             ],
           ),
         ),
+      ),
+    );
+  });
+
+  testWidgets('etats', (tester) async {
+    // Hors ligne, et une page qui n'a pas pu se charger : les deux états
+    // qui portaient encore une icône par défaut.
+    await _photographier(
+      tester,
+      'etats',
+      Scaffold(
+        body: Column(
+          children: [
+            const BandeauHorsLigne(),
+            Expanded(
+              child: Center(
+                child: EtatVide(
+                  mascotte: EtatMascotte.oups,
+                  titre: Fr.erreurs.chargementImpossible,
+                  action: Bouton(
+                    libelle: Fr.commun.reessayer,
+                    icone: Icons.refresh,
+                    onTap: () {},
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  });
+
+  testWidgets('entretien', (tester) async {
+    await _photographier(
+      tester,
+      'entretien',
+      const Scaffold(
+        body: Center(child: Mascotte(etat: EtatMascotte.chantier, taille: 160)),
       ),
     );
   });

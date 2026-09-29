@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../composants/bouton.dart';
 import '../composants/chargement.dart';
 import '../composants/etat_vide.dart';
+import '../composants/mascotte.dart';
 import '../composants/progression.dart';
 import '../donnees/modeles.dart';
 import '../donnees/reglages.dart';
@@ -44,7 +45,7 @@ class EcranFiches extends ConsumerWidget {
                   fiches: value,
                 ),
                 AsyncError(:final error) => EtatVide(
-                  icone: Icons.cloud_off,
+                  mascotte: EtatMascotte.oups,
                   titre: Fr.erreurs.chargementImpossible,
                   description: '$error',
                   action: Bouton(
@@ -72,7 +73,7 @@ class _Vide extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return EtatVide(
-      icone: Icons.style,
+      mascotte: EtatMascotte.curieux,
       titre: Fr.fiches.aucune,
       description: Fr.fiches.aucuneDetail,
       action: Bouton(

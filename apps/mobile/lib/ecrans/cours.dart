@@ -40,11 +40,16 @@ class EcranCours extends ConsumerStatefulWidget {
 }
 
 class _EcranCoursState extends ConsumerState<EcranCours> {
-  /// Cadence d'interrogation, puis abandon. Un chapitre demande deux appels
-  /// de modèle, soit une dizaine de secondes : inutile de marteler plus vite.
-  /// La liste s'arrête, pour ne pas interroger sans fin un cours dont la
-  /// chaîne est bloquée — le cron de nuit reste le filet.
-  static const _cadence = [3, 3, 5, 5, 8, 10, 10, 10, 15, 15, 20, 20];
+  /// Cadence d'interrogation : toutes les 4 s pendant trois minutes, puis
+  /// toutes les 10 s, **sans abandon** tant que l'écran est ouvert.
+  ///
+  /// L'ancienne liste s'arrêtait après douze tours (~2 min) : le cours
+  /// n'avançait plus qu'à la main ou au cron du soir. Depuis que le serveur
+  /// s'enchaîne lui-même (`lancerJobMaintenant`), ce sondage ne fait plus
+  /// avancer le cours — il dit où il en est, et relance au besoin une chaîne
+  /// qui se serait arrêtée.
+  static Duration _delai(int tour) =>
+      Duration(seconds: tour < 45 ? 4 : 10);
 
   Timer? _minuteur;
   int _tour = 0;
@@ -80,9 +85,7 @@ class _EcranCoursState extends ConsumerState<EcranCours> {
 
   void _reprogrammer() {
     if (_minuteur?.isActive ?? false) return;
-    if (_tour >= _cadence.length) return;
-
-    _minuteur = Timer(Duration(seconds: _cadence[_tour]), _interroger);
+    _minuteur = Timer(_delai(_tour), _interroger);
   }
 
   Future<void> _interroger() async {
@@ -139,7 +142,7 @@ class _EcranCoursState extends ConsumerState<EcranCours> {
               AsyncError(:final error) => Padding(
                 padding: const EdgeInsets.all(Espaces.ecran),
                 child: EtatVide(
-                  icone: Icons.cloud_off,
+                  mascotte: EtatMascotte.oups,
                   titre: Fr.erreurs.chargementImpossible,
                   description: '$error',
                   action: Bouton(
@@ -308,7 +311,7 @@ class _Contenu extends ConsumerWidget {
           AsyncData(:final value) when value.isEmpty => Carte(
             enfants: [
               EtatVide(
-                icone: Icons.menu_book,
+                mascotte: EtatMascotte.curieux,
                 titre: Fr.cours.aucunChapitre,
                 description: Fr.cours.aucunChapitreDetail,
               ),
@@ -415,7 +418,8 @@ class _EnTraitement extends StatelessWidget {
         children: [
           _Retour(titre: Fr.reviser.titre),
           const Spacer(),
-          const Icon(Icons.hourglass_top, size: 56, color: Couleurs.orange),
+          // Il lit le cours, et respire tant que la lecture dure.
+          const Mascotte(etat: EtatMascotte.reflexion, taille: 140),
           const SizedBox(height: Espaces.x16),
           Text(
             Fr.cours.traitementTitre,
@@ -478,11 +482,7 @@ class _Echec extends StatelessWidget {
         children: [
           _Retour(titre: Fr.reviser.titre),
           const Spacer(),
-          const Icon(
-            Icons.sentiment_dissatisfied,
-            size: 56,
-            color: Couleurs.danger,
-          ),
+          const Mascotte(etat: EtatMascotte.oups, taille: 140),
           const SizedBox(height: Espaces.x16),
           Text(
             Fr.cours.echecTitre,

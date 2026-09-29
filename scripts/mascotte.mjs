@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Produit les sept états du panthéreau pour l'application.
+ * Produit les états du panthéreau pour l'application.
  *
  *   node scripts/mascotte.mjs [--apercu=chemin.png]
  *
@@ -37,6 +37,9 @@ const ETATS = [
   'reflexion',
   'dodo',
   'curieux',
+  'oups',
+  'horsLigne',
+  'chantier',
 ]
 
 const SOURCES = 'assets-source/mascotte'

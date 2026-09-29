@@ -287,7 +287,7 @@ class _Choix extends StatelessWidget {
                     errorBuilder: (_, _, _) => const ColoredBox(
                       color: Couleurs.surfaceConteneur,
                       child: Center(
-                        child: Icon(Icons.badge_outlined, size: 40),
+                        child: TeteMascotte(etat: EtatMascotte.oups, taille: 48),
                       ),
                     ),
                   ),
@@ -339,11 +339,9 @@ class _Envoi extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
-            Icons.cloud_upload_outlined,
-            size: 56,
-            color: Couleurs.orange,
-          ),
+          // Le panthéreau lit pendant l'envoi ; la barre dit où en est
+          // le fichier.
+          const Mascotte(etat: EtatMascotte.reflexion, taille: 128),
           const SizedBox(height: Espaces.x16),
           Text(
             Fr.carte.envoiPourcent((part * 100).round()),
@@ -397,23 +395,20 @@ class _Issue extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (icone, couleur, titre, detail) = switch (statut) {
+    final (mascotte, titre, detail) = switch (statut) {
       'verified' => (
-        Icons.verified_user,
-        Couleurs.texteAccent,
+        EtatMascotte.bravo,
         Fr.carte.verifie,
         Fr.carte.verifieDetail,
       ),
       'rejected' => (
-        Icons.error_outline,
-        Couleurs.danger,
+        EtatMascotte.courage,
         Fr.carte.refusee,
         Fr.carte.refuseeDetail,
       ),
-      // `pending`, et tout statut qu'on ne connaît pas : on regarde.
+      // `pending`, et tout statut qu'on ne connaît pas : un humain regarde.
       _ => (
-        Icons.hourglass_top,
-        Couleurs.orange,
+        EtatMascotte.reflexion,
         Fr.carte.enAttente,
         Fr.carte.enAttenteDetail,
       ),
@@ -427,7 +422,11 @@ class _Issue extends StatelessWidget {
       children: [
         Carte(
           enfants: [
-            Icon(icone, size: 48, color: couleur),
+            Center(
+              // Sans boucle : l'examen par un humain peut prendre des
+              // heures, le panthéreau n'a pas à respirer tout ce temps.
+              child: Mascotte(etat: mascotte, taille: 120, enBoucle: false),
+            ),
             Text(titre, style: Typo.headlineMd, textAlign: TextAlign.center),
             Text(
               detail,

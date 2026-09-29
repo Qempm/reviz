@@ -648,6 +648,9 @@ void main() {
       await _poser(
         tester,
         const EcranCours(coursId: 'c2'),
+        // Un cours en préparation ne se stabilise jamais : le panthéreau lit
+        // et l'écran interroge tant que la préparation dure.
+        stabiliser: false,
         remplacements: [
           unCoursProvider('c2').overrideWith((_) async => _coursEnCours),
           chapitresProvider('c2').overrideWith((_) async => <ApercuChapitre>[]),
@@ -689,6 +692,9 @@ void main() {
       await _poser(
         tester,
         const EcranCours(coursId: 'c3'),
+        // Un cours en préparation ne se stabilise jamais : le panthéreau lit
+        // et l'écran interroge tant que la préparation dure.
+        stabiliser: false,
         remplacements: [
           unCoursProvider('c3').overrideWith((_) async => avance),
           chapitresProvider('c3').overrideWith((_) async => <ApercuChapitre>[]),
@@ -716,6 +722,9 @@ void main() {
       await _poser(
         tester,
         const EcranCours(coursId: 'c4'),
+        // Un cours en préparation ne se stabilise jamais : le panthéreau lit
+        // et l'écran interroge tant que la préparation dure.
+        stabiliser: false,
         remplacements: [
           unCoursProvider('c4').overrideWith((_) async => un),
           chapitresProvider('c4').overrideWith((_) async => <ApercuChapitre>[]),

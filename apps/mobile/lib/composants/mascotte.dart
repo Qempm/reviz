@@ -28,7 +28,16 @@ enum EtatMascotte {
   dodo,
 
   /// Rien à afficher encore : il cherche à la loupe.
-  curieux;
+  curieux,
+
+  /// Quelque chose n'a pas marché : il se gratte la tête.
+  oups,
+
+  /// Pas de réseau : il tient une prise débranchée.
+  horsLigne,
+
+  /// Reviz en entretien : casque de chantier et clé à molette.
+  chantier;
 
   String get chemin => 'assets/mascotte/$name.webp';
 
@@ -40,6 +49,9 @@ enum EtatMascotte {
     reflexion => Fr.mascotte.reflexion,
     dodo => Fr.mascotte.dodo,
     curieux => Fr.mascotte.curieux,
+    oups => Fr.mascotte.oups,
+    horsLigne => Fr.mascotte.horsLigne,
+    chantier => Fr.mascotte.chantier,
   };
 }
 
@@ -194,6 +206,52 @@ class _MascotteState extends State<Mascotte> with TickerProviderStateMixin {
           child: AnimatedSwitcher(
             duration: Mouvement.doux,
             child: KeyedSubtree(key: ValueKey(widget.etat), child: dessin),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// La tête seule du panthéreau, pour les endroits trop petits pour le corps
+/// entier — un bandeau d'une ligne, par exemple. Immobile : un bandeau reste
+/// affiché longtemps, et une animation y serait une distraction.
+///
+/// Un recadrage du même dessin, et non un second fichier : la tête occupe le
+/// haut de chaque dessin (tous posés au pied du même carré par
+/// `scripts/mascotte.mjs`), on agrandit donc l'image et on n'en montre que le
+/// haut.
+class TeteMascotte extends StatelessWidget {
+  const TeteMascotte({super.key, required this.etat, this.taille = 36});
+
+  final EtatMascotte etat;
+  final double taille;
+
+  /// De combien le dessin est agrandi pour que la tête remplisse le cadre.
+  static const _zoom = 2.2;
+
+  @override
+  Widget build(BuildContext context) {
+    final cote = taille * _zoom;
+    return Semantics(
+      image: true,
+      label: etat.description,
+      child: SizedBox.square(
+        dimension: taille,
+        child: ClipOval(
+          child: OverflowBox(
+            maxWidth: cote,
+            maxHeight: cote,
+            alignment: const Alignment(0, -0.62),
+            child: Image.asset(
+              etat.chemin,
+              width: cote,
+              height: cote,
+              cacheWidth: (cote * MediaQuery.devicePixelRatioOf(context))
+                  .round(),
+              excludeFromSemantics: true,
+              errorBuilder: (_, _, _) => SizedBox.square(dimension: cote),
+            ),
           ),
         ),
       ),

@@ -429,7 +429,7 @@ class _Panne extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.all(Espaces.ecran),
       child: EtatVide(
-        icone: Icons.cloud_off,
+        mascotte: EtatMascotte.oups,
         titre: Fr.erreurs.chargementImpossible,
         description: message,
         action: Bouton(

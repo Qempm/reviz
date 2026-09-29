@@ -8,6 +8,7 @@ import '../composants/carte.dart';
 import '../composants/champ.dart';
 import '../composants/chargement.dart';
 import '../composants/etat_vide.dart';
+import '../composants/mascotte.dart';
 import '../composants/progression.dart';
 import '../donnees/api.dart';
 import '../donnees/modeles.dart';
@@ -301,7 +302,7 @@ class _EcranAjouterCoursState extends ConsumerState<EcranAjouterCours> {
                             Carte(
                               enfants: [
                                 EtatVide(
-                                  icone: Icons.school_outlined,
+                                  mascotte: EtatMascotte.curieux,
                                   titre: Fr.depot.aucuneMatiere,
                                 ),
                               ],
@@ -316,7 +317,7 @@ class _EcranAjouterCoursState extends ConsumerState<EcranAjouterCours> {
                           AsyncError() => Carte(
                             enfants: [
                               EtatVide(
-                                icone: Icons.cloud_off,
+                                mascotte: EtatMascotte.oups,
                                 titre: Fr.erreurs.chargementImpossible,
                                 action: Bouton(
                                   libelle: Fr.commun.reessayer,
@@ -578,11 +579,9 @@ class _Envoi extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
-            Icons.cloud_upload_outlined,
-            size: 56,
-            color: Couleurs.orange,
-          ),
+          // Le panthéreau lit pendant l'envoi ; la barre dit où en est
+          // le fichier.
+          const Mascotte(etat: EtatMascotte.reflexion, taille: 128),
           const SizedBox(height: Espaces.x16),
           Text(
             part <= 0

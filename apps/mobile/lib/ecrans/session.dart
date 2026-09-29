@@ -44,7 +44,7 @@ class EcranSession extends ConsumerWidget {
               AsyncData(:final value) when value.isEmpty => Padding(
                 padding: const EdgeInsets.all(Espaces.ecran),
                 child: EtatVide(
-                  icone: Icons.quiz,
+                  mascotte: EtatMascotte.curieux,
                   titre: Fr.session.aucuneQuestion,
                   description: Fr.session.aucuneQuestionDetail,
                   action: Bouton(
@@ -62,7 +62,7 @@ class EcranSession extends ConsumerWidget {
               AsyncError(:final error) => Padding(
                 padding: const EdgeInsets.all(Espaces.ecran),
                 child: EtatVide(
-                  icone: Icons.cloud_off,
+                  mascotte: EtatMascotte.oups,
                   titre: Fr.erreurs.chargementImpossible,
                   description: '$error',
                   action: Bouton(

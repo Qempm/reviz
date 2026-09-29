@@ -1,19 +1,23 @@
 import 'package:flutter/material.dart';
 import '../i18n/fr.dart';
+import '../theme/typographie.dart';
 import '../theme/jetons.dart';
+import 'mascotte.dart';
 
 /// Ce qu'on voit pendant qu'un écran charge.
 ///
-/// Des **silhouettes** à la forme du contenu, et non une roue au milieu d'un
-/// écran vide : la page se dessine avant d'arriver, et l'arrivée des données
-/// ne fait plus sauter la mise en page. Un reflet les traverse pour dire que
-/// quelque chose se passe ; en mouvement réduit, elles restent immobiles.
+/// **Page entière** (`Chargement.liste()`) : le panthéreau lit, avec
+/// « Un instant… ». Le propriétaire a voulu la mascotte sur chaque page de
+/// chargement ; les silhouettes grises qu'il y avait avant sont parties.
 ///
-/// Pour une attente **longue** — une copie qu'on corrige, une carte qu'on
-/// lit —, c'est le panthéreau en `reflexion` qu'on montre, pas ce composant :
-/// une silhouette qui reste trente secondes ressemble à une panne.
+/// **Morceau de page** (`Chargement.bloc()`) — une liste de matières dans un
+/// formulaire, un historique sous une carte : une silhouette traversée d'un
+/// reflet. Un panthéreau dans une case de 56 px serait illisible, et la page
+/// autour, elle, est déjà là.
+///
+/// En mouvement réduit, rien ne bouge.
 class Chargement extends StatefulWidget {
-  /// Un titre et trois cartes : la forme de presque tous les onglets.
+  /// Une page entière qui charge : le panthéreau lit.
   const Chargement.liste({super.key}) : hauteur = null;
 
   /// Un seul bloc, là où un morceau de page charge dans une page déjà là
@@ -36,7 +40,7 @@ class _ChargementState extends State<Chargement>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (MediaQuery.disableAnimationsOf(context)) {
+    if (widget.hauteur == null || MediaQuery.disableAnimationsOf(context)) {
       _reflet.stop();
       _reflet.value = 0.5;
     } else if (!_reflet.isAnimating) {
@@ -54,36 +58,29 @@ class _ChargementState extends State<Chargement>
   Widget build(BuildContext context) {
     final hauteur = widget.hauteur;
 
-    final silhouettes = hauteur != null
-        ? _Bloc(hauteur: hauteur, rayon: Rayons.normal)
-        : ListView(
-            // Une silhouette ne se fait pas défiler : elle n'a rien à montrer
-            // plus bas.
-            physics: const NeverScrollableScrollPhysics(),
-            padding: const EdgeInsets.symmetric(
-              horizontal: Espaces.ecran,
-              vertical: Espaces.x16,
+    if (hauteur == null) {
+      return Semantics(
+        label: Fr.commun.chargement,
+        liveRegion: true,
+        child: ExcludeSemantics(
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Mascotte(etat: EtatMascotte.reflexion, taille: 132),
+                const SizedBox(height: Espaces.x12),
+                Text(
+                  Fr.commun.chargement,
+                  style: Typo.labelMd.copyWith(color: Couleurs.attenue),
+                ),
+              ],
             ),
-            children: const [
-              FractionallySizedBox(
-                alignment: Alignment.centerLeft,
-                widthFactor: 0.55,
-                child: _Bloc(hauteur: 30, rayon: Rayons.moyen),
-              ),
-              SizedBox(height: Espaces.x8),
-              FractionallySizedBox(
-                alignment: Alignment.centerLeft,
-                widthFactor: 0.8,
-                child: _Bloc(hauteur: 16, rayon: Rayons.petit),
-              ),
-              SizedBox(height: Espaces.x24),
-              _Bloc(hauteur: 148, rayon: Rayons.heros),
-              SizedBox(height: Espaces.x12),
-              _Bloc(hauteur: 96, rayon: Rayons.carte),
-              SizedBox(height: Espaces.x12),
-              _Bloc(hauteur: 96, rayon: Rayons.carte),
-            ],
-          );
+          ),
+        ),
+      );
+    }
+
+    final silhouettes = _Bloc(hauteur: hauteur, rayon: Rayons.normal);
 
     return Semantics(
       label: Fr.commun.chargement,

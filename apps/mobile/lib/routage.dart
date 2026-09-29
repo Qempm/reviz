@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'composants/bouton.dart';
 import 'composants/coquille.dart';
 import 'composants/etat_vide.dart';
+import 'composants/mascotte.dart';
 import 'donnees/supabase.dart';
 import 'ecrans/accueil.dart';
 import 'ecrans/ajouter_cours.dart';
@@ -285,7 +286,7 @@ GoRouter creerRouteur(Ref ref) {
       backgroundColor: Couleurs.fond,
       body: SafeArea(
         child: EtatVide(
-          icone: Icons.explore_off,
+          mascotte: EtatMascotte.curieux,
           titre: 'Écran introuvable',
           description: '${etat.uri}',
           action: Bouton(

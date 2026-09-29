@@ -62,7 +62,7 @@ class EcranClassement extends ConsumerWidget {
               AsyncError(:final error) => Padding(
                 padding: const EdgeInsets.all(Espaces.ecran),
                 child: EtatVide(
-                  icone: Icons.cloud_off,
+                  mascotte: EtatMascotte.oups,
                   titre: Fr.erreurs.chargementImpossible,
                   description: '$error',
                   action: Bouton(

@@ -6,6 +6,7 @@
 // `security_invoker`, donc consommables telles quelles.
 
 import 'package:crypto/crypto.dart';
+import 'package:flutter/foundation.dart' show compute;
 import '../metier/acces.dart';
 import 'api.dart';
 import 'modeles.dart';
@@ -410,7 +411,9 @@ class DepotCours {
     DateTime? dateExamen,
     void Function(double part)? progression,
   }) async {
-    final empreinte = sha256.convert(document.octets).toString();
+    // Sur un isolat : 25 Mo hachés sur le fil de l'interface figeaient
+    // l'écran d'envoi une seconde ou deux sur un téléphone d'entrée de gamme.
+    final empreinte = await compute(_empreinteSha256, document.octets);
 
     final prepare = await api.poster<DepotCoursPrepare>(
       '/api/cours/preparer',
@@ -857,3 +860,7 @@ class DepotCorrections {
     );
   }
 }
+
+/// Hors de toute classe : `compute` n'accepte qu'une fonction de premier
+/// niveau (ou statique), qu'il puisse envoyer à un autre isolat.
+String _empreinteSha256(List<int> octets) => sha256.convert(octets).toString();

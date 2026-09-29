@@ -6,6 +6,7 @@ import '../composants/carte.dart';
 import '../composants/chargement.dart';
 import '../composants/coquille.dart';
 import '../composants/etat_vide.dart';
+import '../composants/mascotte.dart';
 import '../composants/podium.dart' show AvatarInitiale;
 import '../composants/puce.dart';
 import '../donnees/modeles.dart';
@@ -49,7 +50,7 @@ class EcranProfil extends ConsumerWidget {
         AsyncData() => Padding(
           padding: const EdgeInsets.all(Espaces.ecran),
           child: EtatVide(
-            icone: Icons.person_outline,
+            mascotte: EtatMascotte.salut,
             titre: Fr.inscription.titre,
             action: Bouton(
               libelle: Fr.commun.continuer,
@@ -61,7 +62,7 @@ class EcranProfil extends ConsumerWidget {
         AsyncError(:final error) => Padding(
           padding: const EdgeInsets.all(Espaces.ecran),
           child: EtatVide(
-            icone: Icons.cloud_off,
+            mascotte: EtatMascotte.oups,
             titre: Fr.erreurs.chargementImpossible,
             description: '$error',
             action: Bouton(

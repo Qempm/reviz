@@ -182,7 +182,7 @@ class _EcranCorrigerState extends ConsumerState<EcranCorriger> {
                   AsyncError() => Carte(
                     enfants: [
                       EtatVide(
-                        icone: Icons.cloud_off,
+                        mascotte: EtatMascotte.oups,
                         titre: Fr.erreurs.chargementImpossible,
                         action: Bouton(
                           libelle: Fr.commun.reessayer,
@@ -275,10 +275,14 @@ class _Depot extends StatelessWidget {
       return Carte(
         enfants: [
           EtatVide(
-            icone: Icons.lock_outline,
             // Un pack arrivé à terme n'est pas une porte fermée : le
-            // panthéreau dort, il se réveille au prochain pack.
-            mascotte: acces is AccesExpire ? EtatMascotte.dodo : null,
+            // panthéreau dort, il se réveille au prochain pack. Pas encore
+            // de pack : il cherche. Plus de crédit : il encourage.
+            mascotte: switch (acces) {
+              AccesExpire() => EtatMascotte.dodo,
+              AucunAcces() => EtatMascotte.curieux,
+              AccesActif() => EtatMascotte.courage,
+            },
             titre: blocage,
             action: Bouton(
               libelle: Fr.correction.voirLesPacks,
@@ -477,7 +481,9 @@ class _Envoi extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.cloud_upload_outlined, size: 56, color: Couleurs.orange),
+          // Le panthéreau lit pendant l'envoi ; la barre dit où en est
+          // la copie.
+          const Mascotte(etat: EtatMascotte.reflexion, taille: 128),
           const SizedBox(height: Espaces.x16),
           Text(
             Fr.correction.envoiPourcent((part * 100).round()),

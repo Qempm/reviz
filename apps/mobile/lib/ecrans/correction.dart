@@ -114,16 +114,15 @@ class _EcranCorrectionState extends ConsumerState<EcranCorrection> {
               AsyncData(:final value) when value.prete => _Resultat(
                 correction: value,
               ),
+              // Rien n'a planté : l'étudiant n'a qu'à reprendre la photo.
               AsyncData(:final value) when value.illisible => _Message(
-                icone: Icons.image_not_supported_outlined,
-                teinte: Couleurs.orange,
+                mascotte: EtatMascotte.courage,
                 titre: Fr.correction.illisible,
                 description: value.motifIllisible,
                 action: Fr.correction.reprendrePhoto,
               ),
               AsyncData(:final value) when value.echouee => _Message(
-                icone: Icons.error_outline,
-                teinte: Couleurs.danger,
+                mascotte: EtatMascotte.oups,
                 titre: Fr.correction.echec,
                 description: Fr.correction.echecDetail,
                 action: Fr.correction.reprendrePhoto,
@@ -135,7 +134,7 @@ class _EcranCorrectionState extends ConsumerState<EcranCorrection> {
               AsyncError(:final error) => Padding(
                 padding: const EdgeInsets.all(Espaces.ecran),
                 child: EtatVide(
-                  icone: Icons.cloud_off,
+                  mascotte: EtatMascotte.oups,
                   titre: Fr.erreurs.chargementImpossible,
                   description: '$error',
                   action: Bouton(
@@ -173,7 +172,9 @@ class _Attente extends StatelessWidget {
           if (!epuise)
             const Mascotte(etat: EtatMascotte.reflexion, taille: 140)
           else
-            const Icon(Icons.schedule, size: 56, color: Couleurs.orange),
+            // Plus long que prévu : il s'est assoupi en attendant, sans
+            // que rien ne soit perdu.
+            const Mascotte(etat: EtatMascotte.dodo, taille: 140),
           const SizedBox(height: Espaces.x20),
           Text(
             epuise ? Fr.correction.plusLongQuePrevu : Fr.correction.enCours,
@@ -206,15 +207,13 @@ class _Attente extends StatelessWidget {
 /// premier, rien n'a planté — l'étudiant n'a qu'à reprendre la photo.
 class _Message extends StatelessWidget {
   const _Message({
-    required this.icone,
-    required this.teinte,
+    required this.mascotte,
     required this.titre,
     required this.description,
     required this.action,
   });
 
-  final IconData icone;
-  final Color teinte;
+  final EtatMascotte mascotte;
   final String titre;
   final String? description;
   final String action;
@@ -224,7 +223,7 @@ class _Message extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.all(Espaces.ecran),
       child: EtatVide(
-        icone: icone,
+        mascotte: mascotte,
         titre: titre,
         description: description,
         action: Bouton(

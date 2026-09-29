@@ -43,6 +43,9 @@ class _Mascotte {
   final String reflexion = 'Le panthéreau Reviz lit un livre';
   final String dodo = 'Le panthéreau Reviz dort';
   final String curieux = 'Le panthéreau Reviz regarde à la loupe';
+  final String oups = 'Le panthéreau Reviz se gratte la tête';
+  final String horsLigne = 'Le panthéreau Reviz tient une prise débranchée';
+  final String chantier = 'Le panthéreau Reviz porte un casque de chantier';
 }
 
 class _Fiches {
