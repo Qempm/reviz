@@ -248,6 +248,24 @@ L'ancienne coquille et l'application Flutter déclarent **le même**
 donc d'installer l'une par-dessus l'autre : il faut désinstaller l'ancienne
 d'abord, et la page `/app` le dit.
 
+**Entre deux versions Flutter, c'est l'inverse** : elles sont toutes signées de
+la même clé, donc la nouvelle s'installe **par-dessus** l'ancienne, sans rien
+perdre. La 2.0.1 remplace la 2.0.0 en place. La page `/app` distingue les deux
+cas — elle disait à tout le monde de désinstaller, ce qui aurait fait
+désinstaller pour rien chaque utilisateur de la 2.0.0.
+
+Pour publier une nouvelle version, dans l'ordre :
+
+1. monter `version:` dans `pubspec.yaml`, **nom et code** (`2.0.1+3`) — un code
+   inchangé et Android refuse la mise à jour ;
+2. `npm run apk`, puis vérifier avec `apksigner` (le certificat est bien
+   `CN=Reviz`) et `aapt2 dump badging` (le versionCode a bien monté) ;
+3. `gh release create v<version> …` avec l'APK renommé ;
+4. reporter `VERSION`, `DATE`, `NOTES` et `APK` dans
+   `lib/metier/publication.ts`. **Ne toucher `VERSION_MINIMALE` que si l'ancienne
+   version est cassée** : sinon ses utilisateurs doivent voir le bandeau « mise à
+   jour conseillée », pas un écran bloquant.
+
 Le contrôle de version côté application
 (`apps/mobile/lib/metier/version.dart`) lit `/version.json`, désormais **servi
 par une route** (`app/version.json/route.ts`) qui rend

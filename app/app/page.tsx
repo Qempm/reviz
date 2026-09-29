@@ -120,14 +120,25 @@ export default function Telechargement() {
       </section>
 
       <section className="rounded-card bg-reviz-surface-low p-space-16">
+        {/* Deux cas, et ils appellent deux gestes opposés. Depuis la 2.0.0,
+            toutes les versions sont signées avec la même clé : Android les
+            installe par-dessus, sans rien perdre. Seule l'ancienne version 1
+            — une coquille web signée d'une autre clé — doit partir d'abord.
+            Le texte précédent disait à tout le monde de désinstaller, ce
+            qui, une fois la 2.0.1 sortie, aurait fait désinstaller pour rien
+            tous ceux qui avaient la 2.0.0. */}
         <h2 className="text-label-lg text-reviz-ink">
-          Si tu avais déjà une ancienne version
+          Si tu avais déjà Reviz
         </h2>
         <p className="mt-space-8 text-label-sm text-reviz-muted">
-          Désinstalle-la avant d’installer celle-ci : les deux portent le même
-          nom mais ne sont pas signées avec la même clé, et Android refuse alors
-          de remplacer l’une par l’autre. Tes cours et ta progression sont sur
-          nos serveurs, rien n’est perdu.
+          Depuis la version 2, installe simplement par-dessus : la mise à jour
+          remplace l’ancienne sans rien perdre.
+        </p>
+        <p className="mt-space-8 text-label-sm text-reviz-muted">
+          Si tu as encore la toute première version (la 1), désinstalle-la
+          d’abord : elle n’est pas signée avec la même clé, et Android refuse de
+          la remplacer. Tes cours et ta progression sont sur nos serveurs, rien
+          n’est perdu.
         </p>
       </section>
 

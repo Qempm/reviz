@@ -47,7 +47,7 @@ Variables d'environnement attendues dans `.env.local` (jamais commitées) : `NEX
 - Typographie **Nunito Sans** : 800 pour les chiffres héros (44 px, 38 px en mobile) et les titres, 700 pour les labels, 500 pour le corps (15–16 px). Majuscules réservées au seul niveau `caption` (11 px, +0.04em). Icônes Material Symbols Outlined.
 - Composants : podium 2/1/3 (blocs 128/96/80 px, n°3 en pêche `#ffdbcf`), carte streak à 7 carrés arrondis légèrement inclinés, carte héros orange avec avatars, barres de progression 10 px en pilule à remplissage plat, QCM une question par écran avec 4 boutons pleine largeur (fond blanc, sélection par fond `#ffdf9a`, **sans bordure**), barre de navigation basse plate de 80 px à 5 onglets (Accueil / Réviser / Corriger / Gains / Profil) dont l'actif est une pilule jaune — pas de bouton flottant central.
 - CTA principal : 56 px de haut, rayon 12 px, texte `headline-md`, fond `#FFC300` — `h-cta bg-reviz-yellow text-reviz-on-yellow text-headline-md rounded-xl shadow-tactile`.
-- Mascotte (`public/mascotte/*.png`) sur accueil, réussite, échec, chargement, pack expiré. 24 avatars dans `public/avatars/`. **À produire : Stitch n'a livré aucun asset local**, ses écrans pointent vers des images générées.
+- Mascotte : un panthéreau (`assets-source/mascotte/`), prévu sur accueil, réussite, échec, chargement, pack expiré — **pas encore branché**. Avatars : **douze animaux en pochoir** (`apps/mobile/assets/avatars/`, 74 ko), teintés à l'affichage par les couleurs de `metier/avatars.dart` ; produits par `scripts/avatars.mjs`. Icône : une pile de fiches cochée sur le jaune, produite par `scripts/icones.mjs` (`--apercu` pour voir le rendu des lanceurs).
 - Mobile d'abord (390 px), zones tactiles ≥ 48 px, un seul CTA principal par écran, tutoiement, textes courts. Header collant de 64 px, `pb-[96px]` au-dessus de la nav, safe areas via `.pt-safe` / `.pb-safe`.
 - Pas de mode sombre au MVP (Stitch n'en a pas généré).
 - Tokens dans `tailwind.config.ts` : les alias métier `reviz.cream`, `reviz.yellow`, `reviz.orange`, `reviz.blue`, `reviz.ink`, `reviz.muted` (+ `card`, `yellow-soft`, `orange-soft`, `blue-soft`, `on-yellow`, `danger`, `border`, `edge.*`) pour le code qu'on écrit ; les rôles Material 3 (`surface`, `primary-container`, `on-surface`…) sont conservés en parallèle pour coller le markup Stitch sans le réécrire.
@@ -165,6 +165,10 @@ Ce qui reste à faire, par ordre de valeur :
    empreinte SHA-1, celle de la clé de release ou — pour essayer tout de
    suite — celle du magasin de débogage. Le web est l'audience du jeton, donc
    celui à déclarer côté Supabase. `docs/GUIDE-APK-REVIZ.md` § 3 bis.
-5. **Les assets** — cinq états de la mascotte, 24 avatars en images. Les
-   avatars sont contournés par douze couleurs en attendant. Les icônes PWA ne
-   sont plus attendues : le manifeste est parti avec la distribution web.
+5. **La mascotte** — le panthéreau existe (`assets-source/mascotte/`), mais
+   ses cinq états (accueil, réussite, échec, chargement, pack expiré) restent
+   à générer, et **aucun écran ne l'affiche encore** : elle n'a jamais été
+   branchée côté Flutter. Faits : l'icône (pile de fiches, `scripts/icones.mjs`)
+   et les douze avatars animaux (`scripts/avatars.mjs`), tous deux dans la 2.0.1.
+   Les icônes PWA ne sont plus attendues : le manifeste est parti avec la
+   distribution web.
