@@ -4,6 +4,7 @@ import '../composants/bouton.dart';
 import '../composants/carte.dart';
 import '../composants/coquille.dart';
 import '../composants/etat_vide.dart';
+import '../composants/mascotte.dart';
 import '../composants/progression.dart';
 import '../composants/puce.dart';
 import '../donnees/modeles.dart';
@@ -101,7 +102,7 @@ class _Liste extends StatelessWidget {
             Carte(
               enfants: [
                 EtatVide(
-                  icone: Icons.upload_file,
+                  mascotte: EtatMascotte.curieux,
                   titre: Fr.reviser.aucunCours,
                   description: Fr.reviser.aucunCoursDetail,
                   action: Bouton(

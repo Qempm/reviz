@@ -7,6 +7,7 @@ import '../composants/carte.dart';
 import '../composants/champ.dart';
 import '../composants/coquille.dart';
 import '../composants/etat_vide.dart';
+import '../composants/mascotte.dart';
 import '../composants/progression.dart';
 import '../donnees/api.dart';
 import '../donnees/modeles.dart';
@@ -191,7 +192,7 @@ class _Contenu extends ConsumerWidget {
           Carte(
             enfants: [
               EtatVide(
-                icone: Icons.group_add_outlined,
+                mascotte: EtatMascotte.curieux,
                 titre: Fr.gains.aucunFilleul,
                 description: Fr.gains.aucunFilleulDetail,
               ),

@@ -5,6 +5,7 @@ import '../composants/bouton.dart';
 import '../composants/carte.dart';
 import '../composants/coquille.dart';
 import '../composants/etat_vide.dart';
+import '../composants/mascotte.dart';
 import '../composants/progression.dart';
 import '../composants/puce.dart';
 import '../donnees/api.dart';
@@ -201,7 +202,7 @@ class _EcranCorrigerState extends ConsumerState<EcranCorriger> {
                   AsyncData(:final value) when value.isEmpty => Carte(
                     enfants: [
                       EtatVide(
-                        icone: Icons.fact_check_outlined,
+                        mascotte: EtatMascotte.curieux,
                         titre: Fr.correction.aucune,
                         description: Fr.correction.aucuneDetail,
                       ),
@@ -274,6 +275,9 @@ class _Depot extends StatelessWidget {
         enfants: [
           EtatVide(
             icone: Icons.lock_outline,
+            // Un pack arrivé à terme n'est pas une porte fermée : le
+            // panthéreau dort, il se réveille au prochain pack.
+            mascotte: acces is AccesExpire ? EtatMascotte.dodo : null,
             titre: blocage,
             action: Bouton(
               libelle: Fr.correction.voirLesPacks,

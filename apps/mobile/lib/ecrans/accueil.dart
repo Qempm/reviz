@@ -6,6 +6,7 @@ import '../composants/carte.dart';
 import '../composants/carte_serie.dart';
 import '../composants/coquille.dart';
 import '../composants/etat_vide.dart';
+import '../composants/mascotte.dart';
 import '../composants/progression.dart';
 import '../composants/puce.dart';
 import '../donnees/depots.dart';
@@ -139,7 +140,7 @@ class _Contenu extends StatelessWidget {
             Carte(
               enfants: [
                 EtatVide(
-                  icone: Icons.menu_book,
+                  mascotte: EtatMascotte.curieux,
                   titre: Fr.tableauDeBord.aucuneMatiere,
                   description: Fr.tableauDeBord.aucuneMatiereDetail,
                   action: Bouton(

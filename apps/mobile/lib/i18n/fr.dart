@@ -25,10 +25,24 @@ abstract final class Fr {
   static const suppression = _Suppression();
   static const miseAJour = _MiseAJour();
   static const avatar = _Avatar();
-static const carte = _Carte();
-static const aide = _Aide();
+  static const carte = _Carte();
+  static const aide = _Aide();
+  static const mascotte = _Mascotte();
   static const depot = _Depot();
   static const erreurs = _Erreurs();
+}
+
+/// Ce que dit un lecteur d'écran à la place du panthéreau.
+class _Mascotte {
+  const _Mascotte();
+
+  final String salut = 'Le panthéreau Reviz te fait signe';
+  final String bravo = 'Le panthéreau Reviz saute de joie';
+  final String courage = 'Le panthéreau Reviz t’encourage';
+  final String champion = 'Le panthéreau Reviz porte une couronne';
+  final String reflexion = 'Le panthéreau Reviz lit un livre';
+  final String dodo = 'Le panthéreau Reviz dort';
+  final String curieux = 'Le panthéreau Reviz regarde à la loupe';
 }
 
 class _Fiches {
@@ -171,6 +185,8 @@ class _Classement {
   final String toi = 'Toi';
 
   String monRang(int r) => 'Tu es $rᵉ de ta faculté';
+  final String premier =
+      'Tu es n° 1 de ta faculté. Personne ne fait mieux !';
   final String nonClasse = 'Réponds à une question pour entrer au classement';
   final String aucun = 'Personne n’est encore classé';
   final String aucunDetail =

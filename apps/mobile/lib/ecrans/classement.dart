@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../composants/bouton.dart';
 import '../composants/carte.dart';
 import '../composants/etat_vide.dart';
+import '../composants/mascotte.dart';
 import '../composants/podium.dart';
 import '../donnees/depots.dart';
 import '../etat/fournisseurs.dart';
@@ -46,7 +47,7 @@ class EcranClassement extends ConsumerWidget {
               AsyncData(:final value) when value.lignes.isEmpty => Padding(
                 padding: const EdgeInsets.all(Espaces.ecran),
                 child: EtatVide(
-                  icone: Icons.emoji_events_outlined,
+                  mascotte: EtatMascotte.curieux,
                   titre: Fr.classement.aucun,
                   description: Fr.classement.aucunDetail,
                   action: Bouton(
@@ -104,31 +105,46 @@ class _Tableau extends StatelessWidget {
         const SizedBox(height: Espaces.x20),
 
         // Sa propre position, même hors du haut de tableau : un 47ᵉ rang qui
-        // n'apparaît nulle part donne l'impression de ne pas compter.
-        Carte(
-          enfants: [
-            Row(
-              children: [
-                Icon(
-                  donnees.monRang == null
-                      ? Icons.play_circle_outline
-                      : Icons.my_location,
-                  size: 24,
-                  color: Couleurs.texteAccent,
-                ),
-                const SizedBox(width: Espaces.x8),
-                Expanded(
-                  child: Text(
+        // n'apparaît nulle part donne l'impression de ne pas compter. Le
+        // n° 1, lui, a droit à la couronne.
+        if (donnees.monRang == 1)
+          Carte(
+            enfants: [
+              const Center(
+                child: Mascotte(etat: EtatMascotte.champion, taille: 132),
+              ),
+              Text(
+                Fr.classement.premier,
+                style: Typo.headlineMd,
+                textAlign: TextAlign.center,
+              ),
+            ],
+          )
+        else
+          Carte(
+            enfants: [
+              Row(
+                children: [
+                  Icon(
                     donnees.monRang == null
-                        ? Fr.classement.nonClasse
-                        : Fr.classement.monRang(donnees.monRang!),
-                    style: Typo.headlineSm,
+                        ? Icons.play_circle_outline
+                        : Icons.my_location,
+                    size: 24,
+                    color: Couleurs.texteAccent,
                   ),
-                ),
-              ],
-            ),
-          ],
-        ),
+                  const SizedBox(width: Espaces.x8),
+                  Expanded(
+                    child: Text(
+                      donnees.monRang == null
+                          ? Fr.classement.nonClasse
+                          : Fr.classement.monRang(donnees.monRang!),
+                      style: Typo.headlineSm,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
 
         if (suite.isNotEmpty) ...[
           const SizedBox(height: Espaces.x20),

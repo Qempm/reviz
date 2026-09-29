@@ -3,6 +3,7 @@ import '../composants/bandeau.dart';
 import '../composants/bouton.dart';
 import '../composants/carte.dart';
 import '../composants/etat_vide.dart';
+import '../composants/mascotte.dart';
 import '../composants/option_qcm.dart';
 import '../composants/podium.dart';
 import '../composants/progression.dart';
@@ -302,11 +303,40 @@ class _GalerieState extends State<Galerie> {
                 ),
 
                 _Section(
+                  titre: 'Le panthéreau, sept états',
+                  enfant: Carte(
+                    enfants: [
+                      Wrap(
+                        alignment: WrapAlignment.center,
+                        spacing: Espaces.x8,
+                        runSpacing: Espaces.x8,
+                        children: [
+                          for (final etat in EtatMascotte.values)
+                            Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                // En boucle nulle part ici : une galerie
+                                // n'attend rien.
+                                Mascotte(
+                                  etat: etat,
+                                  taille: 88,
+                                  enBoucle: false,
+                                ),
+                                Text(etat.name, style: Typo.labelSm),
+                              ],
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+
+                _Section(
                   titre: 'État vide',
                   enfant: Carte(
                     enfants: [
                       EtatVide(
-                        icone: Icons.upload_file,
+                        mascotte: EtatMascotte.curieux,
                         titre: Fr.reviser.aucunCours,
                         description: Fr.reviser.aucunCoursDetail,
                         action: Bouton(

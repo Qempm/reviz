@@ -48,7 +48,7 @@ choix ; en cas de doute, c'est lui qu'on ouvre, et on ne réinvente pas une vale
 - Typographie **Nunito Sans**, embarquée : 800 pour les chiffres héros et les titres, 700 pour les labels, 500 pour le corps. Chiffres tabulaires dans les compteurs.
 - Barre de navigation basse de 80 px à 5 onglets (Accueil / Réviser / Corriger / Gains / Profil), blanc translucide flouté, **une seule** pilule jaune qui glisse ; construite une fois par le shell de navigation, elle ne change jamais avec la page.
 - CTA principal : 54 px, forme continue, texte noir 17 px, fond jaune — le composant `Bouton`.
-- Mascotte : un panthéreau (`assets-source/mascotte/`), prévu sur accueil, réussite, échec, chargement, pack expiré — **pas encore branché**. Avatars : **douze animaux en pochoir** (`apps/mobile/assets/avatars/`, 74 ko), teintés à l'affichage par les couleurs de `metier/avatars.dart` ; produits par `scripts/avatars.mjs`. Icône : une pile de fiches cochée sur le jaune, produite par `scripts/icones.mjs` (`--apercu` pour voir le rendu des lanceurs).
+- Mascotte : un panthéreau en **sept états** (`EtatMascotte` : salut, bravo, courage, champion, reflexion, dodo, curieux), composant `Mascotte` (entrée sur ressort, respiration qui s'arrête d'elle-même sauf en `reflexion`). Branché sur les résultats de session et de correction, le n° 1 du classement, le pack expiré et les vides normaux (`EtatVide(mascotte:)`) — jamais sur une panne. Sources Flow dans `assets-source/mascotte/`, WebP 512 px produits par `node scripts/mascotte.mjs --apercu=planche.png`. Avatars : **douze animaux en pochoir** (`apps/mobile/assets/avatars/`, 74 ko), teintés à l'affichage par les couleurs de `metier/avatars.dart` ; produits par `scripts/avatars.mjs`. Icône : une pile de fiches cochée sur le jaune, produite par `scripts/icones.mjs` (`--apercu` pour voir le rendu des lanceurs).
 - Mobile d'abord (390 px), zones tactiles ≥ 48 px, un seul CTA principal par écran, tutoiement, textes courts.
 - Pas de mode sombre au MVP.
 - **Voir avant de conclure** : `flutter test test_apercus --update-goldens` rend les écrans en PNG avec des données factices, la vraie police et les vraies icônes, dans `apps/mobile/test_apercus/goldens/` (ignoré par git). C'est ainsi que se juge un changement visuel sans téléphone ni compte.
@@ -168,10 +168,8 @@ Ce qui reste à faire, par ordre de valeur :
    empreinte SHA-1, celle de la clé de release ou — pour essayer tout de
    suite — celle du magasin de débogage. Le web est l'audience du jeton, donc
    celui à déclarer côté Supabase. `docs/GUIDE-APK-REVIZ.md` § 3 bis.
-5. **La mascotte** — le panthéreau existe (`assets-source/mascotte/`), mais
-   ses cinq états (accueil, réussite, échec, chargement, pack expiré) restent
-   à générer, et **aucun écran ne l'affiche encore** : elle n'a jamais été
-   branchée côté Flutter. Faits : l'icône (pile de fiches, `scripts/icones.mjs`)
-   et les douze avatars animaux (`scripts/avatars.mjs`), tous deux dans la 2.0.1.
-   Les icônes PWA ne sont plus attendues : le manifeste est parti avec la
-   distribution web.
+5. **La mascotte** — faite le 29 septembre 2026 : sept états, branchés
+   (résultats, n° 1, pack expiré, vides). Restent l'accueil (`salut`, avec le
+   nouvel accueil) et les chargements longs (`reflexion`, avec le composant
+   `Chargement`). L'icône et les douze avatars sont dans la 2.0.1 ; les icônes
+   PWA ne sont plus attendues.

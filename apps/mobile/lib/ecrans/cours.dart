@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../composants/bouton.dart';
 import '../composants/carte.dart';
 import '../composants/etat_vide.dart';
+import '../composants/mascotte.dart';
 import '../composants/progression.dart';
 import '../composants/puce.dart';
 import '../donnees/modeles.dart';
@@ -162,7 +163,7 @@ class _Absent extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.all(Espaces.ecran),
       child: EtatVide(
-        icone: Icons.search_off,
+        mascotte: EtatMascotte.curieux,
         titre: 'Ce cours est introuvable',
         description:
             'Il a peut-être été supprimé, ou il n’est pas partagé avec ta '

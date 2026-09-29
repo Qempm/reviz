@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../composants/bouton.dart';
 import '../composants/carte.dart';
 import '../composants/etat_vide.dart';
+import '../composants/mascotte.dart';
 import '../composants/puce.dart';
 import '../donnees/api.dart';
 import '../donnees/depots.dart';
@@ -212,12 +213,8 @@ class _CarteAcces extends StatelessWidget {
         enfants: [
           Row(
             children: [
-              const Icon(
-                Icons.hourglass_disabled,
-                size: 24,
-                color: Couleurs.orange,
-              ),
-              const SizedBox(width: Espaces.x8),
+              const Mascotte(etat: EtatMascotte.dodo, taille: 72),
+              const SizedBox(width: Espaces.x12),
               Expanded(
                 child: Text(Fr.boutique.accesExpire, style: Typo.headlineMd),
               ),

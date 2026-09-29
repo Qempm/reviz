@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../composants/bouton.dart';
 import '../composants/carte.dart';
 import '../composants/etat_vide.dart';
+import '../composants/mascotte.dart';
 import '../composants/option_qcm.dart';
 import '../composants/progression.dart';
 import '../composants/puce.dart';
@@ -377,14 +378,17 @@ class _ResultatState extends State<_Resultat> {
             vertical: Espaces.x24,
           ),
           children: [
-            Icon(
-              _pourcentage >= 60
-                  ? Icons.celebration
-                  : Icons.sentiment_dissatisfied,
-              size: 56,
-              color: _pourcentage >= 60 ? Couleurs.jaune : Couleurs.orange,
+            Center(
+              child: Mascotte(
+                etat: _pourcentage == 100
+                    ? EtatMascotte.champion
+                    : _pourcentage >= 60
+                    ? EtatMascotte.bravo
+                    : EtatMascotte.courage,
+                taille: 148,
+              ),
             ),
-            const SizedBox(height: Espaces.x12),
+            const SizedBox(height: Espaces.x8),
             Text(
               Fr.session.resultatTitre,
               style: Typo.headlineLg,

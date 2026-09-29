@@ -89,6 +89,9 @@ flutter:
     # Le logo, dans l'en-tête et à la connexion : la marque doit se voir dans
     # l'application, pas seulement sur l'écran d'accueil du téléphone. 30 ko.
     - assets/marque/logo.png
+    # Le panthéreau, dans ses sept états : 175 ko en tout, en WebP 512 px.
+    # Produits par `node scripts/mascotte.mjs` depuis `assets-source/mascotte/`.
+    - assets/mascotte/
 
   fonts:
     # Nunito Sans embarquée, et non téléchargée par `google_fonts` au premier

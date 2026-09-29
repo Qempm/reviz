@@ -16,6 +16,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:reviz/theme/jetons.dart';
+import 'package:reviz/i18n/fr.dart';
+import 'package:reviz/composants/bouton.dart';
+import 'package:reviz/composants/carte.dart';
+import 'package:reviz/composants/etat_vide.dart';
+import 'package:reviz/composants/mascotte.dart';
 import 'package:reviz/composants/coquille.dart';
 import 'package:reviz/donnees/depots.dart';
 import 'package:reviz/donnees/modeles.dart';
@@ -68,13 +74,55 @@ final _profil = Profil(
 );
 
 const _semaine = [
-  JourSerie(jourSemaine: 1, questions: 12, xp: 120, valide: true, aujourdhui: false),
-  JourSerie(jourSemaine: 2, questions: 10, xp: 100, valide: true, aujourdhui: false),
-  JourSerie(jourSemaine: 3, questions: 11, xp: 110, valide: true, aujourdhui: false),
-  JourSerie(jourSemaine: 4, questions: 10, xp: 100, valide: true, aujourdhui: false),
-  JourSerie(jourSemaine: 5, questions: 6, xp: 60, valide: false, aujourdhui: true),
-  JourSerie(jourSemaine: 6, questions: 0, xp: 0, valide: false, aujourdhui: false),
-  JourSerie(jourSemaine: 7, questions: 0, xp: 0, valide: false, aujourdhui: false),
+  JourSerie(
+    jourSemaine: 1,
+    questions: 12,
+    xp: 120,
+    valide: true,
+    aujourdhui: false,
+  ),
+  JourSerie(
+    jourSemaine: 2,
+    questions: 10,
+    xp: 100,
+    valide: true,
+    aujourdhui: false,
+  ),
+  JourSerie(
+    jourSemaine: 3,
+    questions: 11,
+    xp: 110,
+    valide: true,
+    aujourdhui: false,
+  ),
+  JourSerie(
+    jourSemaine: 4,
+    questions: 10,
+    xp: 100,
+    valide: true,
+    aujourdhui: false,
+  ),
+  JourSerie(
+    jourSemaine: 5,
+    questions: 6,
+    xp: 60,
+    valide: false,
+    aujourdhui: true,
+  ),
+  JourSerie(
+    jourSemaine: 6,
+    questions: 0,
+    xp: 0,
+    valide: false,
+    aujourdhui: false,
+  ),
+  JourSerie(
+    jourSemaine: 7,
+    questions: 0,
+    xp: 0,
+    valide: false,
+    aujourdhui: false,
+  ),
 ];
 
 const _matieres = [
@@ -232,6 +280,50 @@ void main() {
 
   testWidgets('connexion', (tester) async {
     await _photographier(tester, 'connexion', const EcranConnexion());
+  });
+
+  testWidgets('mascotte', (tester) async {
+    await _photographier(
+      tester,
+      'mascotte',
+      Scaffold(
+        body: SafeArea(
+          child: ListView(
+            padding: const EdgeInsets.all(Espaces.ecran),
+            children: [
+              Carte(
+                enfants: [
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: Espaces.x8,
+                    runSpacing: Espaces.x8,
+                    children: [
+                      for (final etat in EtatMascotte.values)
+                        Mascotte(etat: etat, taille: 104),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: Espaces.x16),
+              Carte(
+                enfants: [
+                  EtatVide(
+                    mascotte: EtatMascotte.curieux,
+                    titre: Fr.reviser.aucunCours,
+                    description: Fr.reviser.aucunCoursDetail,
+                    action: Bouton(
+                      libelle: Fr.reviser.ajouterCours,
+                      icone: Icons.add,
+                      onTap: () {},
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   });
 
   testWidgets('galerie', (tester) async {

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../composants/bouton.dart';
 import '../composants/carte.dart';
 import '../composants/etat_vide.dart';
+import '../composants/mascotte.dart';
 import '../composants/progression.dart';
 import '../composants/puce.dart';
 import '../donnees/modeles.dart';
@@ -248,6 +249,9 @@ class _ResultatState extends ConsumerState<_Resultat> {
   /// en dessous on encourage.
   static const _seuil = 0.6;
 
+  /// Au-delà, la copie mérite la couronne : 16/20 et plus.
+  static const _excellence = 0.8;
+
   late final ConfettiController _confettis = ConfettiController(
     duration: const Duration(seconds: 2),
   );
@@ -304,12 +308,17 @@ class _ResultatState extends ConsumerState<_Resultat> {
             vertical: Espaces.x16,
           ),
           children: [
-            Icon(
-              reussi ? Icons.celebration : Icons.sentiment_neutral,
-              size: 56,
-              color: reussi ? Couleurs.jaune : Couleurs.orange,
+            Center(
+              child: Mascotte(
+                etat: c.taux >= _excellence
+                    ? EtatMascotte.champion
+                    : reussi
+                    ? EtatMascotte.bravo
+                    : EtatMascotte.courage,
+                taille: 148,
+              ),
             ),
-            const SizedBox(height: Espaces.x12),
+            const SizedBox(height: Espaces.x8),
             Text(
               reussi
                   ? Fr.correction.bravo
