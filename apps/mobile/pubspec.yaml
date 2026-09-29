@@ -77,6 +77,11 @@ flutter:
 
   assets:
     - assets/polices/OFL.txt
+    # Les douze pochoirs d'avatars, 74 ko en tout. Embarqués et non
+    # téléchargés : le classement et le profil doivent s'afficher hors ligne,
+    # et le public a un forfait data limité. Produits par
+    # `node scripts/avatars.mjs`.
+    - assets/avatars/
 
   fonts:
     # Nunito Sans embarquée, et non téléchargée par `google_fonts` au premier

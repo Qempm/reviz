@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:reviz/metier/avatars.dart';
 import 'package:reviz/theme/jetons.dart';
@@ -30,6 +32,28 @@ void main() {
           'ton-12',
         ],
       );
+    });
+
+    test('porte douze animaux, tous différents', () {
+      // Deux clés sur le même animal ne se distingueraient au classement que
+      // par leur fond — le défaut que les images sont venues corriger.
+      expect(avatars.map((a) => a.animal).toSet().length, avatars.length);
+    });
+
+    test('désigne pour chaque clé le pochoir de son nom', () {
+      for (final a in avatars) {
+        expect(a.pochoir, 'assets/avatars/${a.cle}.png');
+      }
+    });
+
+    test('a un pochoir sur le disque pour chaque clé', () {
+      // Le garde-fou qui compte. Un fichier manquant ne casse rien à
+      // l'écran : `errorBuilder` retombe sur l'initiale, **en silence**. Un
+      // avatar pourrait donc disparaître sans que personne le voie — sauf
+      // ici. Le répertoire courant de `flutter test` est `apps/mobile/`.
+      for (final a in avatars) {
+        expect(File(a.pochoir).existsSync(), isTrue, reason: a.pochoir);
+      }
     });
 
     test('n’a aucune clé en double', () {

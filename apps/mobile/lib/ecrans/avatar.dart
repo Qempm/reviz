@@ -14,12 +14,11 @@ import '../theme/typographie.dart';
 
 /// Choisir son avatar.
 ///
-/// Douze couleurs, l'initiale du prénom dessus. Les 24 dessins prévus par
-/// CLAUDE.md n'existent pas, et le dossier `public/avatars/` non plus :
-/// l'écran web construisait `/avatars/${avatar_key}.png` et récoltait des 404,
-/// tandis que son sélecteur affichait en réalité deux lettres découpées dans
-/// la clé. On n'attend pas les images — les clés sont stables, et le jour où
-/// les PNG arrivent elles désigneront des fichiers sans rien réécrire ici.
+/// Douze animaux, chacun sur le fond de sa clé. L'écran n'a pas changé quand
+/// les images sont arrivées : il montrait déjà `AvatarInitiale`, qui pose
+/// maintenant un pochoir au lieu d'une lettre. C'est ce que promettaient les
+/// clés stables — `ton-03` désigne un fichier là où il désignait une couleur,
+/// sans migration.
 class EcranAvatar extends ConsumerStatefulWidget {
   const EcranAvatar({super.key});
 
@@ -108,7 +107,8 @@ class _EcranAvatarState extends ConsumerState<EcranAvatar> {
                 ),
                 const SizedBox(height: Espaces.x20),
 
-                // L'aperçu en grand : on choisit une tête, pas une pastille.
+                // L'aperçu en grand : à 96 px on voit l'animal, ce qu'une
+                // pastille de 80 px dans la grille ne montre qu'à moitié.
                 Carte(
                   enfants: [
                     Text(
@@ -143,7 +143,7 @@ class _EcranAvatarState extends ConsumerState<EcranAvatar> {
                         for (final a in avatars)
                           _Pastille(
                             // Clé stable : c'est par elle que le test
-                            // désigne une couleur, sans dépendre de sa
+                            // désigne un animal, sans dépendre de sa
                             // position dans la grille.
                             key: ValueKey('avatar-${a.cle}'),
                             avatar: a,

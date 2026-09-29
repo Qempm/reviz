@@ -1,16 +1,27 @@
-// Les douze avatars, et leurs couleurs.
+// Les douze avatars : un animal, un fond, une encre.
 //
-// CLAUDE.md prévoit 24 PNG dans `public/avatars/`. Ils n'existent pas, et le
-// dossier non plus : l'écran web construisait `/avatars/${avatar_key}.png` et
-// récoltait des 404, tandis que son sélecteur affichait en réalité
-// `avatar.substring(7, 9)` — deux lettres découpées dans la clé, avec un
-// commentaire « Placeholder avatar » assumé.
+// **Les images sont arrivées**, et les clés n'ont pas bougé — c'est ce que
+// promettait le commentaire précédent, qui disait « le jour où les PNG
+// arrivent, `ton-03` désigne un fichier au lieu d'une couleur, sans migration
+// ni écran à réécrire ». Aucune ligne de base n'a été touchée.
 //
-// **On n'attend pas les images.** Un avatar est une initiale sur un fond tiré
-// de la palette du design system : aucun asset, et quelque chose à choisir dès
-// maintenant. Les clés sont stables — le jour où les PNG arrivent, `ton-03`
-// désigne un fichier au lieu d'une couleur, sans migration ni écran à
-// réécrire.
+// Ce que porte chaque fichier est un **pochoir** : une silhouette opaque sur
+// du transparent, les yeux évidés. Aucune couleur dedans. Le fond et l'encre
+// restent ici, et l'écran teinte la forme à l'affichage (`BlendMode.srcIn`).
+// Trois raisons :
+//
+//  * aucune couleur n'est dupliquée entre Dart et des pixels, donc aucune ne
+//    peut diverger ;
+//  * un fond sombre reçoit la même forme en crème, sans second jeu d'images ;
+//  * les douze fichiers pèsent 74 ko en tout, ce qui compte pour un APK déjà
+//    lourd et un public au forfait data limité.
+//
+// Les animaux plutôt que des visages, et c'est un choix : générer douze
+// visages « divers » finit en stéréotypes, alors qu'une silhouette d'animal
+// n'a pas ce problème, se reconnaît à 40 px dans une ligne de classement, et
+// va avec le panthéreau de la mascotte.
+//
+// L'initiale reste le repli, pour une clé inconnue ou une image manquante.
 //
 // Aucune couleur n'est inventée ici : les douze combinaisons viennent toutes
 // de `theme/jetons.dart`, et la palette reste strictement chaude, sans vert
@@ -26,13 +37,28 @@ library;
 import 'package:flutter/painting.dart' show Color;
 import '../theme/jetons.dart';
 
-/// Un avatar : une clé stable, un fond, une encre.
+/// Un avatar : une clé stable, un animal, un fond, une encre.
 class Avatar {
-  const Avatar({required this.cle, required this.fond, required this.encre});
+  const Avatar({
+    required this.cle,
+    required this.animal,
+    required this.fond,
+    required this.encre,
+  });
 
   final String cle;
+
+  /// Le nom de l'animal, en français.
+  ///
+  /// Sert d'étiquette d'accessibilité et de libellé dans l'écran de choix :
+  /// un lecteur d'écran doit annoncer « avatar panthère », pas « image ».
+  final String animal;
+
   final Color fond;
   final Color encre;
+
+  /// Le pochoir, produit par `scripts/avatars.mjs`.
+  String get pochoir => 'assets/avatars/$cle.png';
 }
 
 /// Celui qu'on montre à qui n'a rien choisi.
@@ -45,24 +71,84 @@ class Avatar {
 /// `paysParDefaut` dans `metier/telephone.dart`.
 const Avatar avatarParDefaut = Avatar(
   cle: 'ton-02',
+  animal: 'éléphant',
   fond: Couleurs.jauneDoux,
   encre: Couleurs.texteAccent,
 );
 
-/// Les douze, dans l'ordre d'affichage.
+/// Les douze, dans l'ordre d'affichage — le même que la grille découpée par
+/// `scripts/avatars.mjs`.
 const List<Avatar> avatars = [
-  Avatar(cle: 'ton-01', fond: Couleurs.jaune, encre: Couleurs.surJaune),
+  // `encre` et non `surJaune` : `#785A00` sur le jaune convenait à une
+  // lettre, pas à une silhouette pleine, qui ressortait terne. L'aperçu du
+  // script l'a montré.
+  Avatar(
+    cle: 'ton-01',
+    animal: 'panthère',
+    fond: Couleurs.jaune,
+    encre: Couleurs.encre,
+  ),
   avatarParDefaut,
-  Avatar(cle: 'ton-03', fond: Couleurs.orange, encre: Couleurs.carte),
-  Avatar(cle: 'ton-04', fond: Couleurs.orangeDoux, encre: Couleurs.aretePeche),
-  Avatar(cle: 'ton-05', fond: Couleurs.bleu, encre: Couleurs.encre),
-  Avatar(cle: 'ton-06', fond: Couleurs.bleuDoux, encre: Couleurs.texteAccent),
-  Avatar(cle: 'ton-07', fond: Couleurs.areteJaune, encre: Couleurs.carte),
-  Avatar(cle: 'ton-08', fond: Couleurs.areteOrange, encre: Couleurs.carte),
-  Avatar(cle: 'ton-09', fond: Couleurs.dangerDoux, encre: Couleurs.surDangerDoux),
-  Avatar(cle: 'ton-10', fond: Couleurs.bordure, encre: Couleurs.encre),
-  Avatar(cle: 'ton-11', fond: Couleurs.surfaceHaute, encre: Couleurs.attenue),
-  Avatar(cle: 'ton-12', fond: Couleurs.texteAccent, encre: Couleurs.carte),
+  Avatar(
+    cle: 'ton-03',
+    animal: 'perroquet',
+    fond: Couleurs.orange,
+    encre: Couleurs.carte,
+  ),
+  Avatar(
+    cle: 'ton-04',
+    animal: 'tortue',
+    fond: Couleurs.orangeDoux,
+    encre: Couleurs.aretePeche,
+  ),
+  Avatar(
+    cle: 'ton-05',
+    animal: 'singe',
+    fond: Couleurs.bleu,
+    encre: Couleurs.encre,
+  ),
+  Avatar(
+    cle: 'ton-06',
+    animal: 'gazelle',
+    fond: Couleurs.bleuDoux,
+    encre: Couleurs.texteAccent,
+  ),
+  Avatar(
+    cle: 'ton-07',
+    animal: 'coq',
+    fond: Couleurs.areteJaune,
+    encre: Couleurs.carte,
+  ),
+  Avatar(
+    cle: 'ton-08',
+    animal: 'poisson',
+    fond: Couleurs.areteOrange,
+    encre: Couleurs.carte,
+  ),
+  Avatar(
+    cle: 'ton-09',
+    animal: 'lion',
+    fond: Couleurs.dangerDoux,
+    encre: Couleurs.surDangerDoux,
+  ),
+  Avatar(
+    cle: 'ton-10',
+    animal: 'escargot',
+    fond: Couleurs.bordure,
+    encre: Couleurs.encre,
+  ),
+  Avatar(
+    cle: 'ton-11',
+    animal: 'papillon',
+    fond: Couleurs.surfaceHaute,
+    encre: Couleurs.attenue,
+  ),
+  Avatar(
+    cle: 'ton-12',
+    animal: 'hibou',
+    fond: Couleurs.texteAccent,
+    encre: Couleurs.carte,
+  ),
 ];
 
 /// L'avatar d'une clé, ou celui par défaut.

@@ -1692,7 +1692,12 @@ void main() {
       avatar: cle,
     );
 
-    testWidgets('montre les douze couleurs et un aperçu', (tester) async {
+    testWidgets('montre les douze animaux et un aperçu', (tester) async {
+      // L'arbre sémantique n'est construit en test que sur demande : sans
+      // cela, `bySemanticsLabel` ne trouve rien même quand l'étiquette est
+      // bien posée.
+      final semantique = tester.ensureSemantics();
+
       await _poser(
         tester,
         const EcranAvatar(),
@@ -1703,10 +1708,14 @@ void main() {
 
       // Douze pastilles, plus l'aperçu en grand.
       expect(find.byType(AvatarInitiale), findsNWidgets(avatars.length + 1));
-      // L'initiale du prénom, pas un rond vide ni deux lettres découpées
-      // dans la clé comme le faisait l'écran web.
-      expect(find.text('A'), findsWidgets);
+
+      // L'animal de la clé, annoncé par son nom — `ton-05` est le singe. Ce
+      // test cherchait auparavant l'initiale « A » : c'est l'animal qui
+      // l'a remplacée, et l'initiale n'est plus que le repli.
+      expect(find.bySemanticsLabel('Avatar singe'), findsWidgets);
       expect(tester.takeException(), isNull);
+
+      semantique.dispose();
     });
 
     testWidgets('n’enregistre rien tant qu’on n’a rien changé', (tester) async {
@@ -1727,7 +1736,7 @@ void main() {
       expect(tester.widget<Bouton>(bouton).onTap, isNull);
     });
 
-    testWidgets('s’active dès qu’une autre couleur est choisie', (
+    testWidgets('s’active dès qu’un autre animal est choisi', (
       tester,
     ) async {
       await _poser(

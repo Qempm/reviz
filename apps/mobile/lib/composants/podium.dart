@@ -120,12 +120,16 @@ class _Marche extends StatelessWidget {
   }
 }
 
-/// Rond portant l'initiale du prénom, sur la couleur de son avatar.
+/// Rond portant l'animal de son avatar, sur la couleur de sa clé.
 ///
 /// La couleur vient de `avatar_key` — elle était figée sur `jauneDoux`, si
 /// bien que tout le monde avait la même tête et que la colonne ne servait à
-/// rien. Les 24 PNG n'existent toujours pas : quand ils arriveront, ce widget
-/// posera une `Image.asset` sur le même fond, sans changer ses appelants.
+/// rien. Les images, elles, sont arrivées : ce widget pose désormais le
+/// pochoir de l'animal sur le même fond, **sans qu'aucun appelant ait
+/// changé**, comme le prévoyait le commentaire précédent.
+///
+/// Le nom reste `AvatarInitiale` bien que l'initiale soit devenue le repli :
+/// le renommer toucherait huit fichiers pour ne rien apprendre à personne.
 class AvatarInitiale extends StatelessWidget {
   const AvatarInitiale({
     super.key,
@@ -146,6 +150,18 @@ class AvatarInitiale extends StatelessWidget {
   Widget build(BuildContext context) {
     final avatar = avatarDe(cleAvatar);
 
+    // L'initiale, qui sert de repli : clé inconnue déjà ramenée sur l'avatar
+    // par défaut par `avatarDe`, mais aussi image absente ou illisible.
+    final initiale = Text(
+      initialeDe(prenom),
+      // La taille du rond commande celle de la lettre : un rond de 64 px
+      // avec une lettre de 18 semblerait vide.
+      style: Typo.headlineMd.copyWith(
+        color: avatar.encre,
+        fontSize: taille * 0.42,
+      ),
+    );
+
     final rond = Container(
       width: taille,
       height: taille,
@@ -157,13 +173,31 @@ class AvatarInitiale extends StatelessWidget {
             ? Border.all(color: Couleurs.areteJaune, width: 2)
             : null,
       ),
-      child: Text(
-        initialeDe(prenom),
-        // La taille du rond commande celle de la lettre : un rond de 64 px
-        // avec une lettre de 18 semblerait vide.
-        style: Typo.headlineMd.copyWith(
+      // Un nœud d'accessibilité à part entière, marqué comme image. Sans
+      // `container`, l'étiquette se fondait dans celle du parent — la
+      // pastille, la carte — et un lecteur d'écran l'annonçait mêlée au
+      // reste. Le test l'a montré : `bySemanticsLabel` ne la retrouvait pas.
+      child: Semantics(
+        container: true,
+        image: true,
+        label: 'Avatar ${avatar.animal}',
+        // Le pochoir ne porte aucune couleur : `srcIn` remplace ses pixels
+        // opaques par l'encre de la clé et laisse les détails évidés montrer
+        // le fond. Un seul jeu d'images sert donc les douze combinaisons,
+        // fonds sombres compris.
+        child: Image.asset(
+          avatar.pochoir,
+          // L'étiquette est portée par le `Semantics` au-dessus.
+          excludeFromSemantics: true,
+          width: taille,
+          height: taille,
           color: avatar.encre,
-          fontSize: taille * 0.42,
+          colorBlendMode: BlendMode.srcIn,
+          // Le décodage à la taille d'affichage évite de garder en mémoire
+          // douze bitmaps de 256 px pour des ronds de 44.
+          cacheWidth: (taille * 3).round(),
+          filterQuality: FilterQuality.medium,
+          errorBuilder: (_, _, _) => initiale,
         ),
       ),
     );
