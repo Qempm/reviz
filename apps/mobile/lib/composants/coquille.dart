@@ -7,6 +7,7 @@ import '../metier/serie.dart';
 import '../routage.dart';
 import '../theme/jetons.dart';
 import '../theme/typographie.dart';
+import 'chiffre_anime.dart';
 
 /// Page d'un onglet : l'en-tête de l'onglet, puis son contenu.
 ///
@@ -92,7 +93,8 @@ class _EnTete extends StatelessWidget {
           const SizedBox(width: Espaces.x8),
           _Badge(
             icone: Icons.local_fire_department_rounded,
-            texte: '${serie?.jours ?? 0} j',
+            valeur: serie?.jours ?? 0,
+            suffixe: 'j',
             fond: Couleurs.carte,
             teinteIcone: eteinte ? Couleurs.attenue : Couleurs.orange,
             teinteTexte: Couleurs.encre,
@@ -101,7 +103,8 @@ class _EnTete extends StatelessWidget {
           const SizedBox(width: Espaces.x8),
           _Badge(
             icone: Icons.bolt_rounded,
-            texte: '${xpTotal ?? 0} XP',
+            valeur: xpTotal ?? 0,
+            suffixe: 'XP',
             fond: Couleurs.jaune,
             teinteIcone: Couleurs.surJaune,
             teinteTexte: Couleurs.surJaune,
@@ -140,7 +143,8 @@ class LogoReviz extends StatelessWidget {
 class _Badge extends StatelessWidget {
   const _Badge({
     required this.icone,
-    required this.texte,
+    required this.valeur,
+    required this.suffixe,
     required this.fond,
     required this.teinteIcone,
     required this.teinteTexte,
@@ -148,7 +152,8 @@ class _Badge extends StatelessWidget {
   });
 
   final IconData icone;
-  final String texte;
+  final int valeur;
+  final String suffixe;
   final Color fond;
   final Color teinteIcone;
   final Color teinteTexte;
@@ -171,13 +176,17 @@ class _Badge extends StatelessWidget {
         children: [
           Icon(icone, size: 16, color: teinteIcone),
           const SizedBox(width: Espaces.x4),
-          Text(
-            texte,
-            style: Typo.labelMd.copyWith(
-              color: teinteTexte,
-              // Des chiffres de même largeur : le compteur ne danse pas
-              // quand l'XP passe de 999 à 1 000.
-              fontFeatures: const [FontFeature.tabularFigures()],
+          // L'XP gagnée monte sous les yeux, au retour d'une session.
+          ChiffreAnime(
+            valeur: valeur,
+            construire: (n) => Text(
+              '$n $suffixe',
+              style: Typo.labelMd.copyWith(
+                color: teinteTexte,
+                // Des chiffres de même largeur : le compteur ne danse pas
+                // pendant qu'il défile.
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
             ),
           ),
         ],

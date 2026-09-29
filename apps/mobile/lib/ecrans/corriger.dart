@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import '../composants/bouton.dart';
 import '../composants/carte.dart';
+import '../composants/chargement.dart';
 import '../composants/coquille.dart';
 import '../composants/etat_vide.dart';
 import '../composants/mascotte.dart';
@@ -191,7 +192,7 @@ class _EcranCorrigerState extends ConsumerState<EcranCorriger> {
                       ),
                     ],
                   ),
-                  _ => const Center(child: CircularProgressIndicator()),
+                  _ => const Chargement.bloc(hauteur: 180),
                 },
 
                 const SizedBox(height: Espaces.x24),

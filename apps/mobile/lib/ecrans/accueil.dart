@@ -5,6 +5,7 @@ import '../composants/apparition.dart';
 import '../composants/bouton.dart';
 import '../composants/carte.dart';
 import '../composants/carte_serie.dart';
+import '../composants/chargement.dart';
 import '../composants/coquille.dart';
 import '../composants/etat_vide.dart';
 import '../composants/mascotte.dart';
@@ -55,7 +56,7 @@ class EcranAccueil extends ConsumerWidget {
           message: '$error',
           onReessayer: () => ref.invalidate(accueilProvider),
         ),
-        _ => const Center(child: CircularProgressIndicator()),
+        _ => const Chargement.liste(),
       },
     );
   }

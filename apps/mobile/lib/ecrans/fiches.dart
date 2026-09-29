@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../composants/bouton.dart';
+import '../composants/chargement.dart';
 import '../composants/etat_vide.dart';
 import '../composants/progression.dart';
 import '../donnees/modeles.dart';
@@ -53,7 +54,7 @@ class EcranFiches extends ConsumerWidget {
                     onTap: () => context.remonter(Chemins.cours(coursId)),
                   ),
                 ),
-                _ => const Center(child: CircularProgressIndicator()),
+                _ => const Chargement.liste(),
               },
             ),
           ),

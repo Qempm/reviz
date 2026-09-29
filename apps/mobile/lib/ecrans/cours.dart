@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../composants/bouton.dart';
 import '../composants/carte.dart';
+import '../composants/chargement.dart';
 import '../composants/etat_vide.dart';
 import '../composants/mascotte.dart';
 import '../composants/progression.dart';
@@ -149,7 +150,7 @@ class _EcranCoursState extends ConsumerState<EcranCours> {
                   ),
                 ),
               ),
-              _ => const Center(child: CircularProgressIndicator()),
+              _ => const Chargement.liste(),
             },
           ),
         ),
@@ -325,7 +326,7 @@ class _Contenu extends ConsumerWidget {
             Fr.erreurs.chargementImpossible,
             style: Typo.labelSm.copyWith(color: Couleurs.danger),
           ),
-          _ => const Center(child: CircularProgressIndicator()),
+          _ => const Chargement.bloc(hauteur: 160),
         },
 
         const SizedBox(height: Espaces.x32),

@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../composants/bouton.dart';
 import '../composants/carte.dart';
 import '../composants/champ.dart';
+import '../composants/chargement.dart';
 import '../composants/coquille.dart';
 import '../composants/etat_vide.dart';
 import '../composants/mascotte.dart';
@@ -61,7 +62,7 @@ class EcranGains extends ConsumerWidget {
             ),
           ),
         ),
-        _ => const Center(child: CircularProgressIndicator()),
+        _ => const Chargement.liste(),
       },
     );
   }

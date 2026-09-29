@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../composants/bouton.dart';
 import '../composants/carte.dart';
+import '../composants/chargement.dart';
 import '../composants/etat_vide.dart';
 import '../composants/mascotte.dart';
 import '../composants/puce.dart';
@@ -62,7 +63,7 @@ class EcranBoutique extends ConsumerWidget {
                   ),
                 ),
               ),
-              _ => const Center(child: CircularProgressIndicator()),
+              _ => const Chargement.liste(),
             },
           ),
         ),

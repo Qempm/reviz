@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../composants/bouton.dart';
 import '../composants/carte.dart';
+import '../composants/chargement.dart';
 import '../composants/etat_vide.dart';
 import '../composants/mascotte.dart';
 import '../composants/podium.dart';
@@ -71,7 +72,7 @@ class EcranClassement extends ConsumerWidget {
                   ),
                 ),
               ),
-              _ => const Center(child: CircularProgressIndicator()),
+              _ => const Chargement.liste(),
             },
           ),
         ),

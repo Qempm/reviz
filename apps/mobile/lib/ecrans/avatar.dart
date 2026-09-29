@@ -115,10 +115,13 @@ class _EcranAvatarState extends ConsumerState<EcranAvatar> {
                       style: Typo.labelSm.copyWith(color: Couleurs.attenue),
                     ),
                     Center(
-                      child: AvatarInitiale(
-                        prenom: prenom,
-                        cleAvatar: courante,
-                        taille: 96,
+                      child: Hero(
+                        tag: 'avatar-profil',
+                        child: AvatarInitiale(
+                          prenom: prenom,
+                          cleAvatar: courante,
+                          taille: 96,
+                        ),
                       ),
                     ),
                   ],

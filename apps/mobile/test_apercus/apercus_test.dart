@@ -9,6 +9,8 @@
 //
 // Hors de `test/` exprès : `flutter test` ne le lance pas.
 
+import 'dart:async';
+
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -275,6 +277,19 @@ void main() {
       _surOnglet(const EcranAccueil(), 0),
       remplacements: [
         accueilProvider.overrideWith((_) async => accueil),
+        profilProvider.overrideWith((_) async => _profil),
+      ],
+    );
+  });
+
+  testWidgets('chargement', (tester) async {
+    // Des données qui n'arrivent jamais : on photographie l'attente.
+    await _photographier(
+      tester,
+      'chargement',
+      _surOnglet(const EcranAccueil(), 0),
+      remplacements: [
+        accueilProvider.overrideWith((_) => Completer<DonneesAccueil?>().future),
         profilProvider.overrideWith((_) async => _profil),
       ],
     );

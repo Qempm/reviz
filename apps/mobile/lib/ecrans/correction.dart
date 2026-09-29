@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../composants/bouton.dart';
 import '../composants/carte.dart';
+import '../composants/chargement.dart';
 import '../composants/etat_vide.dart';
 import '../composants/mascotte.dart';
 import '../composants/progression.dart';
@@ -144,7 +145,7 @@ class _EcranCorrectionState extends ConsumerState<EcranCorrection> {
                   ),
                 ),
               ),
-              _ => const Center(child: CircularProgressIndicator()),
+              _ => const Chargement.liste(),
             },
           ),
         ),
@@ -167,8 +168,10 @@ class _Attente extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          // Le panthéreau lit la copie. Il respire tant que l'attente dure :
+          // une roue qui tourne trente secondes ressemble à une panne.
           if (!epuise)
-            const CircularProgressIndicator(color: Couleurs.orange)
+            const Mascotte(etat: EtatMascotte.reflexion, taille: 140)
           else
             const Icon(Icons.schedule, size: 56, color: Couleurs.orange),
           const SizedBox(height: Espaces.x20),

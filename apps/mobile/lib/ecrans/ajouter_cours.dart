@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import '../composants/bouton.dart';
 import '../composants/carte.dart';
 import '../composants/champ.dart';
+import '../composants/chargement.dart';
 import '../composants/etat_vide.dart';
 import '../composants/progression.dart';
 import '../donnees/api.dart';
@@ -327,9 +328,7 @@ class _EcranAjouterCoursState extends ConsumerState<EcranAjouterCours> {
                               ),
                             ],
                           ),
-                          _ => const Center(
-                            child: CircularProgressIndicator(),
-                          ),
+                          _ => const Chargement.bloc(),
                         },
 
                         const SizedBox(height: Espaces.x16),

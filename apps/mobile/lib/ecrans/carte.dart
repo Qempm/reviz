@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import '../composants/bouton.dart';
 import '../composants/carte.dart';
+import '../composants/mascotte.dart';
 import '../composants/progression.dart';
 import '../donnees/api.dart';
 import '../etat/fournisseurs.dart';
@@ -367,7 +368,8 @@ class _Attente extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const CircularProgressIndicator(color: Couleurs.jaune),
+          // Le panthéreau lit la carte, et respire tant que l'attente dure.
+          const Mascotte(etat: EtatMascotte.reflexion, taille: 140),
           const SizedBox(height: Espaces.x20),
           Text(Fr.carte.lecture, style: Typo.headlineMd, textAlign: TextAlign.center),
           const SizedBox(height: Espaces.x8),

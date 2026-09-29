@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../composants/bouton.dart';
 import '../composants/carte.dart';
+import '../composants/chargement.dart';
+import '../composants/chiffre_anime.dart';
 import '../composants/etat_vide.dart';
 import '../composants/mascotte.dart';
 import '../composants/option_qcm.dart';
@@ -71,7 +73,7 @@ class EcranSession extends ConsumerWidget {
                   ),
                 ),
               ),
-              _ => const Center(child: CircularProgressIndicator()),
+              _ => const Chargement.liste(),
             },
           ),
         ),
@@ -343,10 +345,22 @@ class _ResultatState extends State<_Resultat> {
     Couleurs.orangeDoux,
   ];
 
+  bool _confettisLances = false;
+
+  /// Dans `didChangeDependencies` et non `initState` : on y lit `MediaQuery`.
+  ///
+  /// Les confettis partaient ici sans condition, en ignorant le mouvement
+  /// réduit — le seul écran à le faire. `MediaQuery` porte désormais aussi le
+  /// réglage du profil (`MouvementReduit`, à la racine).
   @override
-  void initState() {
-    super.initState();
-    if (_pourcentage >= 60) _confettis.play();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_confettisLances) return;
+    _confettisLances = true;
+
+    if (_pourcentage >= 60 && !MediaQuery.disableAnimationsOf(context)) {
+      _confettis.play();
+    }
   }
 
   @override
@@ -398,10 +412,16 @@ class _ResultatState extends State<_Resultat> {
 
             Carte(
               enfants: [
-                Text(
-                  Fr.session.score(_bonnes, widget.total),
-                  style: Typo.displayHerosMobile,
-                  textAlign: TextAlign.center,
+                ChiffreAnime(
+                  valeur: _bonnes,
+                  depuisZero: true,
+                  construire: (n) => Text(
+                    Fr.session.score(n, widget.total),
+                    style: Typo.displayHerosMobile.copyWith(
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
                 ),
                 Text(
                   Fr.session.precision(_pourcentage),

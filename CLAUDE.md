@@ -44,6 +44,7 @@ choix ; en cas de doute, c'est lui qu'on ouvre, et on ne réinvente pas une vale
 - **Le jaune `#FFC300` reste la marque** (CTA, progression, série, pilule de navigation), avec du **noir** dessus. Orange `#FE6A2B` pour l'urgence, bleu doux `#BCCDEB` pour le n° 2 et les badges.
 - **Toujours aucun vert.** Une bonne réponse se célèbre en jaune (`#FFC300` / `#FFEDB0`), une mauvaise en `#D92D20` sur `#FEE4E2`.
 - **Relief doux, plus d'arête tactile** : ombres en deux couches (`Ombres.carte`), halo teinté de jaune sous le bouton principal, **coins continus** (`formeContinue`, superellipse) — 14 px dominant, 22 px cartes, 28 px héros.
+- **Mouvement réduit : un seul point.** `MouvementReduit`, à la racine, verse le réglage du profil dans `MediaQuery.disableAnimations` ; un composant animé ne lit que `MediaQuery.disableAnimationsOf(context)`. Pas de roue de chargement : `Chargement.liste()` / `.bloc()` (silhouettes à reflet), et le panthéreau `reflexion` pour une attente longue.
 - **Mouvement**, et il sert : le bouton se contracte à l'appui puis revient sur un ressort à léger dépassement (`CourbeRessort`, `Mouvement.courbeGlisse`) ; la pilule de navigation glisse d'onglet en onglet ; les barres et jauges se remplissent ; une mauvaise réponse secoue l'option ; les pages s'ouvrent en glissant depuis la droite. Tout respecte le mouvement réduit.
 - Typographie **Nunito Sans**, embarquée : 800 pour les chiffres héros et les titres, 700 pour les labels, 500 pour le corps. Chiffres tabulaires dans les compteurs.
 - Barre de navigation basse de 80 px à 5 onglets (Accueil / Réviser / Corriger / Gains / Profil), blanc translucide flouté, **une seule** pilule jaune qui glisse ; construite une fois par le shell de navigation, elle ne change jamais avec la page.
@@ -169,6 +170,5 @@ Ce qui reste à faire, par ordre de valeur :
    suite — celle du magasin de débogage. Le web est l'audience du jeton, donc
    celui à déclarer côté Supabase. `docs/GUIDE-APK-REVIZ.md` § 3 bis.
 5. **La mascotte** — faite le 29 septembre 2026 : sept états, branchés
-   (résultats, n° 1, pack expiré, vides, accueil). Restent les chargements
-   longs (`reflexion`, avec le composant `Chargement`). L'icône et les douze avatars sont dans la 2.0.1 ; les icônes
+   (résultats, n° 1, pack expiré, vides, accueil, attentes longues). L'icône et les douze avatars sont dans la 2.0.1 ; les icônes
    PWA ne sont plus attendues.

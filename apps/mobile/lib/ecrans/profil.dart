@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../composants/bouton.dart';
 import '../composants/carte.dart';
+import '../composants/chargement.dart';
 import '../composants/coquille.dart';
 import '../composants/etat_vide.dart';
 import '../composants/podium.dart' show AvatarInitiale;
@@ -70,7 +71,7 @@ class EcranProfil extends ConsumerWidget {
             ),
           ),
         ),
-        _ => const Center(child: CircularProgressIndicator()),
+        _ => const Chargement.liste(),
       },
     );
   }
@@ -137,10 +138,14 @@ class _Contenu extends ConsumerWidget {
           enfants: [
             Row(
               children: [
-                AvatarInitiale(
-                  prenom: profil.prenom,
-                  cleAvatar: profil.avatar,
-                  taille: 64,
+                // Le même avatar s'envole vers l'écran de choix, et en revient.
+                Hero(
+                  tag: 'avatar-profil',
+                  child: AvatarInitiale(
+                    prenom: profil.prenom,
+                    cleAvatar: profil.avatar,
+                    taille: 64,
+                  ),
                 ),
                 const SizedBox(width: Espaces.x16),
                 Expanded(
