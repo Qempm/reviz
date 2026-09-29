@@ -164,11 +164,13 @@ Ce qui reste à faire, par ordre de valeur :
    vérification d'ici ne remplace.
 3. **Le paiement réel** — attend `FEDAPAY_SECRET_KEY` et
    `FEDAPAY_WEBHOOK_SECRET`.
-4. **La connexion Google** — le code est écrit et testé ; attend les deux
-   identifiants OAuth. L'Android est rattaché à `com.reviz.app` et à une
-   empreinte SHA-1, celle de la clé de release ou — pour essayer tout de
-   suite — celle du magasin de débogage. Le web est l'audience du jeton, donc
-   celui à déclarer côté Supabase. `docs/GUIDE-APK-REVIZ.md` § 3 bis.
+4. **La connexion Google** — configurée le 29 septembre 2026 : ID client
+   **Web** dans `.env.local` (`GOOGLE_WEB_CLIENT_ID`, compilé dans l'APK depuis
+   la 2.1.1), client **Android** créé côté Google Cloud (paquet
+   `com.reviz.app`, SHA-1 de la clé de release `AF:A1:F6:E8:…:8A:4A`). Reste à
+   l'**essayer sur un téléphone** : un `DEVELOPER_ERROR` voudrait dire que le
+   SHA-1 ou le paquet déclaré ne correspond pas. `docs/GUIDE-APK-REVIZ.md`
+   § 3 bis.
 5. **La mascotte** — faite le 29 septembre 2026 : sept états, branchés
    (résultats, n° 1, pack expiré, vides, accueil, attentes longues). L'icône et les douze avatars sont dans la 2.0.1 ; les icônes
    PWA ne sont plus attendues.
