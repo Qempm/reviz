@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Icône adaptative (Android 8+). Deux couches, que le lanceur recadre en
+     cercle, en carré arrondi ou en goutte selon l'appareil : d'où la zone
+     sûre de 72 dp sur 108 respectée par scripts/icones.mjs. Sans ce fichier,
+     Android pose l'icône héritée dans une pastille blanche. -->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@color/ic_launcher_background" />
+    <foreground android:drawable="@mipmap/ic_launcher_foreground" />
+</adaptive-icon>

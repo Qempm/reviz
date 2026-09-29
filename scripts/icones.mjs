@@ -109,11 +109,19 @@ if (!meta.hasAlpha) {
   )
 }
 
-/** La tête, réduite à `part` d'une toile de `cote`, centrée. */
+/**
+ * La tête, réduite à `part` d'une toile de `cote`, centrée.
+ *
+ * Le `trim()` n'est pas décoratif : sans lui, `part` s'appliquerait à la
+ * marge transparente que porte déjà le dessin d'origine, et la tête sortirait
+ * bien plus petite que voulu — deux réductions au lieu d'une. On recadre donc
+ * sur la tête, puis on calcule.
+ */
 async function poser(cote, part, fond) {
   const interne = Math.round(cote * part)
 
   const tete = await sharp(source)
+    .trim()
     .resize(interne, interne, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
     .png()
     .toBuffer()

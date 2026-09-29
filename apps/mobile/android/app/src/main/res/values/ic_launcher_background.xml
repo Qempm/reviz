@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Le jaune du design system (docs/DESIGN.md § 2). Écrit par
+     scripts/icones.mjs : ne pas le modifier ici. -->
+<resources>
+    <color name="ic_launcher_background">#FFC300</color>
+</resources>
