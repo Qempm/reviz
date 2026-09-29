@@ -792,6 +792,24 @@ export const generateQuestionsHandler = async (
 
   const resultats = await Promise.all(textes.map(genererChapitre))
 
+  // **Tous** les chapitres du lot en échec : ce n'est pas un chapitre
+  // difficile, c'est le fournisseur (clé révoquée, quota, panne). Leur mettre
+  // une question de secours rendait le cours « prêt » rempli de questions
+  // vides, sans que personne ne le voie — constaté en production le
+  // 29 septembre 2026. On échoue au contraire : le job est retenté plus tard,
+  // et la raison reste lisible dans `jobs.last_error`.
+  const echecs = resultats.filter((r) => r.q.status === 'rejected')
+  if (echecs.length === resultats.length) {
+    const premier = echecs[0].q as PromiseRejectedResult
+    const detail =
+      premier.reason instanceof AiError
+        ? premier.reason.attempts
+            .map((a) => `${a.model}:${a.outcome}${a.error ? ` (${a.error.slice(0, 120)})` : ''}`)
+            .join(' ; ')
+        : String(premier.reason)
+    throw new Error(`Aucun fournisseur IA n’a répondu pour ce lot — ${detail}`)
+  }
+
   // Les écritures, elles, restent en ordre : le plafond porte sur le cours
   // entier, et on n'insère que ce qui rentre.
   let place = PLAFOND_QUESTIONS - dejaGenerees

@@ -119,6 +119,22 @@ export type RunOptions<T> = {
 /** 30 s : un chapitre se génère d'ordinaire en 8 à 20 s. */
 export const DELAI_APPEL_MS = 30_000
 
+/**
+ * Le signal de l'appelant, doublé d'un délai. `AbortSignal.any` n'existe que
+ * depuis Node 20.3 : sans lui, on garde le signal de l'appelant plutôt que
+ * de lever — l'appel perd son délai, pas sa raison d'être.
+ */
+function signalAvecDelai(
+  signal: AbortSignal | undefined,
+  delaiMs: number,
+): AbortSignal | undefined {
+  const delai = AbortSignal.timeout(delaiMs)
+  if (!signal) return delai
+  return typeof AbortSignal.any === 'function'
+    ? AbortSignal.any([signal, delai])
+    : signal
+}
+
 export type RunResult<T> = {
   data: T
   provider: string
@@ -193,12 +209,10 @@ export async function runAiTask<T = unknown>(
           maxTokens: opts.maxTokens ?? params.maxTokens,
           jsonMode: true,
           userId: opts.userId,
-          signal: opts.signal
-            ? AbortSignal.any([
-                opts.signal,
-                AbortSignal.timeout(opts.delaiAppelMs ?? DELAI_APPEL_MS),
-              ])
-            : AbortSignal.timeout(opts.delaiAppelMs ?? DELAI_APPEL_MS),
+          signal: signalAvecDelai(
+            opts.signal,
+            opts.delaiAppelMs ?? DELAI_APPEL_MS,
+          ),
           fetchImpl: opts.fetchImpl,
         })
 
