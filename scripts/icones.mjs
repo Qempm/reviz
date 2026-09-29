@@ -22,11 +22,12 @@
  *    inachevé.
  *
  * Le calcul qui compte est celui de la zone sûre : sur les 108 dp du premier
- * plan, seuls les **72 dp** centraux sont garantis visibles — le reste sert
- * au recadrage en cercle, en carré arrondi ou en goutte selon le lanceur. La
- * tête est donc réduite à 62 % de la toile, un peu en dedans des 66,7 %
- * théoriques, parce qu'une oreille qui touche le bord se fait couper sur les
- * lanceurs les plus agressifs.
+ * plan, seuls les **72 dp** centraux sont affichés — les 18 dp de chaque côté
+ * sont la réserve de parallaxe. Et le lanceur inscrit ensuite sa forme dans
+ * ces 72 dp : cercle, carré arrondi ou goutte selon l'appareil. Un objet
+ * compact doit donc y entrer **par sa diagonale**, pas par son côté. Voir
+ * `PART_ADAPTATIVE` plus bas : ce détail-là a été réglé en simulant le rendu,
+ * après avoir constaté que le premier réglage coupait le dessin.
  */
 
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
@@ -59,9 +60,25 @@ const DENSITES = [
   { nom: 'xxxhdpi', facteur: 4 },
 ]
 
-/** Part de la toile occupée par la tête, par couche. */
-const PART_HERITEE = 0.82
-const PART_ADAPTATIVE = 0.62
+/**
+ * Part de la toile occupée par le dessin, par couche.
+ *
+ * Ces deux nombres ont été réglés en simulant le vrai rendu, pas déduits.
+ *
+ * `PART_ADAPTATIVE` a d'abord été posée à 0,62 — un peu en dedans des 66,7 %
+ * de la zone sûre — et c'était **faux**. La zone sûre de 66,7 % est le côté du
+ * carré visible ; un lanceur rond y inscrit un cercle, et les coins d'un
+ * objet carré sortent alors de ce cercle. Pour qu'un objet compact tienne
+ * entier, c'est sa **diagonale** qui doit entrer dans les 72 dp : côté ≤
+ * 72/√2, soit 47 % de la couche. La simulation montrait les fiches coupées
+ * net en bas ; elle ne les montre plus.
+ *
+ * `PART_HERITEE` peut être plus généreuse : l'icône héritée n'est masquée par
+ * rien. On garde tout de même une marge, un dessin qui touche le bord d'un
+ * carré paraissant toujours à l'étroit.
+ */
+const PART_HERITEE = 0.76
+const PART_ADAPTATIVE = 0.47
 
 const source = process.argv[2]
   ? path.resolve(process.argv[2])
@@ -199,9 +216,126 @@ ecrits.push(
   path.relative(RACINE, path.join(valeurs, 'ic_launcher_background.xml')),
 )
 
+/** Masque d'une forme, rastérisé à la taille exacte. */
+async function masque(cote, svg) {
+  return sharp(Buffer.from(svg)).resize(cote, cote).png().toBuffer()
+}
+
+/**
+ * Applique un masque. **Deux passes, et non une chaîne** : sharp exécute
+ * `resize` avant `composite`, donc enchaîner les deux réduirait la toile
+ * avant l'arrivée du masque, et échouerait sur « must have same dimensions ».
+ */
+async function masquer(image, m) {
+  return sharp(image)
+    .composite([{ input: m, blend: 'dest-in' }])
+    .png()
+    .toBuffer()
+}
+
+const arrondi = (c) =>
+  `<svg width="${c}" height="${c}"><rect width="${c}" height="${c}" rx="${Math.round(c * 0.235)}" ry="${Math.round(c * 0.235)}" fill="#fff"/></svg>`
+
+const disque = (c) =>
+  `<svg width="${c}" height="${c}"><circle cx="${c / 2}" cy="${c / 2}" r="${c / 2}" fill="#fff"/></svg>`
+
+// L'icône de la boutique et du web : un squircle complet, fond compris.
+//
+// Ni le Play Store ni une page web ne la masquent, donc le dessin peut y être
+// plus généreux que dans la couche adaptative — 62 % au lieu de 47 %.
+const COTE_BOUTIQUE = 512
+
+const boutique = await masquer(
+  await poser(COTE_BOUTIQUE, 0.62, JAUNE),
+  await masque(COTE_BOUTIQUE, arrondi(COTE_BOUTIQUE)),
+)
+
+const cheminBoutique = path.join(
+  RACINE, 'assets-source', 'icone', 'reviz-icone-512.png',
+)
+writeFileSync(cheminBoutique, boutique)
+ecrits.push(`${path.relative(RACINE, cheminBoutique)} (512x512, squircle)`)
+
+// --- Aperçu de vérification, sur demande -----------------------------------
+//
+// `--apercu=chemin.png` écrit une planche de trois vignettes : ce que montre
+// un lanceur à carré arrondi, un lanceur rond, et le rendu réel à 48 px.
+//
+// Ce n'est pas un gadget. Le réglage de `PART_ADAPTATIVE` a été corrigé grâce
+// à cette planche : la première version coupait les fiches en bas, ce
+// qu'aucune lecture du code ne montrait.
+const apercu = process.argv.find((a) => a.startsWith('--apercu='))
+
+if (apercu) {
+  const chemin = apercu.split('=')[1]
+  const C = 432
+
+  const compose = await sharp({
+    create: { width: C, height: C, channels: 4, background: JAUNE },
+  })
+    .composite([
+      { input: await poser(C, PART_ADAPTATIVE, null), top: 0, left: 0 },
+    ])
+    .png()
+    .toBuffer()
+
+  // La zone réellement affichée : 72 dp sur 108, soit 66,7 %. Le reste est la
+  // réserve de parallaxe, que le lanceur n'affiche pas.
+  const visible = Math.round((C * 72) / 108)
+  const bord = Math.round((C - visible) / 2)
+
+  const vu = await sharp(compose)
+    .extract({ left: bord, top: bord, width: visible, height: visible })
+    .png()
+    .toBuffer()
+
+  const vignette = (image) => sharp(image).resize(260, 260).png().toBuffer()
+
+  const planche = await sharp({
+    create: {
+      width: 840,
+      height: 300,
+      channels: 4,
+      background: { r: 240, g: 237, b: 237, alpha: 1 },
+    },
+  })
+    .composite([
+      {
+        input: await vignette(
+          await masquer(vu, await masque(visible, arrondi(visible))),
+        ),
+        left: 20,
+        top: 20,
+      },
+      {
+        input: await vignette(
+          await masquer(vu, await masque(visible, disque(visible))),
+        ),
+        left: 290,
+        top: 20,
+      },
+      {
+        // Agrandi au plus proche voisin : on veut voir les pixels réels du
+        // 48 px, pas une interpolation qui les flatte.
+        input: await sharp(path.join(RES, 'mipmap-mdpi', 'ic_launcher.png'))
+          .resize(260, 260, { kernel: 'nearest' })
+          .png()
+          .toBuffer(),
+        left: 560,
+        top: 20,
+      },
+    ])
+    .png()
+    .toBuffer()
+
+  writeFileSync(chemin, planche)
+  ecrits.push(`${chemin} (aperçu : carré arrondi, rond, 48 px réel)`)
+}
+
 console.log(`Icône fabriquée depuis ${path.relative(RACINE, source)} :\n`)
 for (const f of ecrits) console.log('  ' + f)
 console.log(
-  '\nÀ vérifier ensuite sur un appareil ou un émulateur : la tête ne doit ' +
-    'pas\nêtre coupée par le recadrage en cercle.',
+  '\nRelancer avec --apercu=chemin.png pour voir ce qu’en font un lanceur ' +
+    'rond\net un lanceur à carré arrondi, avant de committer. C’est ce ' +
+    'contrôle qui a\nmontré que le premier réglage coupait le dessin.',
 )
