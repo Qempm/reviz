@@ -34,23 +34,25 @@ Variables d'environnement attendues dans `.env.local` (jamais commitées) : `NEX
 
 ## Design system
 
-**Source de vérité : `docs/DESIGN.md`**, extrait des écrans Stitch réellement générés
-(projet `4246361917454252874`) et aligné sur les arbitrages du 8 septembre 2026
-(`docs/DESIGN.md` § 11). Le résumé ci-dessous en découle ; en cas de doute, ouvrir
-`docs/DESIGN.md`, ne jamais réinventer une valeur.
+**Deuxième version, arbitrée le 29 septembre 2026** (`docs/DESIGN.md` § 11 bis,
+qui prime sur le reste de ce fichier). La première, figée depuis Stitch, donnait
+un air de « vieux papier » que le propriétaire a jugé amateur. Les valeurs de
+référence vivent dans `apps/mobile/lib/theme/jetons.dart`, qui commente chaque
+choix ; en cas de doute, c'est lui qu'on ouvre, et on ne réinvente pas une valeur.
 
-- Fond `#fcf9f8` (blanc cassé chaud, **pas** un crème), cartes blanches `#ffffff`, ombre douce `0 4px 20px rgba(26,26,26,.06)`. Rayon dominant **12 px** (`rounded-xl`) ; 20 px réservé aux grandes cartes, 24 px à la carte héros, 28 px aux feuilles modales.
-- Accent principal jaune `#FFC300` (CTA, progression, podium n°1, streak). Orange `#fe6a2b` pour l'urgence et les compte à rebours. Bleu doux `#bccdeb` pour le n°2 et les badges. Encre `#1c1b1b`, texte secondaire `#4f4632` (brun chaud, jamais un gris froid).
-- ⚠️ Le jaune est le token `primary-container`. `primary` vaut `#785a00` et sert **au texte**, jamais à un fond de CTA.
-- **Palette strictement chaude : aucun vert de succès.** Une bonne réponse se célèbre en jaune (`#FFC300` / `#ffdf9a`), une mauvaise en `#ba1a1a` sur `#ffdad6`. Ne pas introduire `#22C55E` ni `#EF4444`.
-- Signature tactile : ombre pleine sans flou sous les éléments actionnables, réduite à l'appui — `shadow-[0_4px_0_#d9a400] active:translate-y-[2px] active:shadow-[0_2px_0_#d9a400]`. Arêtes : `#d9a400` sur jaune, `#d94e15` sur orange, `#d3c5ab` sur neutre, `#93000a` sur rouge.
-- Typographie **Nunito Sans** : 800 pour les chiffres héros (44 px, 38 px en mobile) et les titres, 700 pour les labels, 500 pour le corps (15–16 px). Majuscules réservées au seul niveau `caption` (11 px, +0.04em). Icônes Material Symbols Outlined.
-- Composants : podium 2/1/3 (blocs 128/96/80 px, n°3 en pêche `#ffdbcf`), carte streak à 7 carrés arrondis légèrement inclinés, carte héros orange avec avatars, barres de progression 10 px en pilule à remplissage plat, QCM une question par écran avec 4 boutons pleine largeur (fond blanc, sélection par fond `#ffdf9a`, **sans bordure**), barre de navigation basse plate de 80 px à 5 onglets (Accueil / Réviser / Corriger / Gains / Profil) dont l'actif est une pilule jaune — pas de bouton flottant central.
-- CTA principal : 56 px de haut, rayon 12 px, texte `headline-md`, fond `#FFC300` — `h-cta bg-reviz-yellow text-reviz-on-yellow text-headline-md rounded-xl shadow-tactile`.
+- **Neutres clairs, géométrie inspirée d'Apple** (la forme et le rendu, pas la texture) : fond `#F5F5F7`, cartes blanches `#FFFFFF`, texte `#1D1D1F`, secondaire gris neutre `#6E6E73`, séparateurs `#D1D1D6`. Le brun et le blanc cassé ont disparu.
+- **Le jaune `#FFC300` reste la marque** (CTA, progression, série, pilule de navigation), avec du **noir** dessus. Orange `#FE6A2B` pour l'urgence, bleu doux `#BCCDEB` pour le n° 2 et les badges.
+- **Toujours aucun vert.** Une bonne réponse se célèbre en jaune (`#FFC300` / `#FFEDB0`), une mauvaise en `#D92D20` sur `#FEE4E2`.
+- **Relief doux, plus d'arête tactile** : ombres en deux couches (`Ombres.carte`), halo teinté de jaune sous le bouton principal, **coins continus** (`formeContinue`, superellipse) — 14 px dominant, 22 px cartes, 28 px héros.
+- **Mouvement**, et il sert : le bouton se contracte à l'appui puis revient sur un ressort à léger dépassement (`CourbeRessort`, `Mouvement.courbeGlisse`) ; la pilule de navigation glisse d'onglet en onglet ; les barres et jauges se remplissent ; une mauvaise réponse secoue l'option ; les pages s'ouvrent en glissant depuis la droite. Tout respecte le mouvement réduit.
+- Typographie **Nunito Sans**, embarquée : 800 pour les chiffres héros et les titres, 700 pour les labels, 500 pour le corps. Chiffres tabulaires dans les compteurs.
+- Barre de navigation basse de 80 px à 5 onglets (Accueil / Réviser / Corriger / Gains / Profil), blanc translucide flouté, **une seule** pilule jaune qui glisse ; construite une fois par le shell de navigation, elle ne change jamais avec la page.
+- CTA principal : 54 px, forme continue, texte noir 17 px, fond jaune — le composant `Bouton`.
 - Mascotte : un panthéreau (`assets-source/mascotte/`), prévu sur accueil, réussite, échec, chargement, pack expiré — **pas encore branché**. Avatars : **douze animaux en pochoir** (`apps/mobile/assets/avatars/`, 74 ko), teintés à l'affichage par les couleurs de `metier/avatars.dart` ; produits par `scripts/avatars.mjs`. Icône : une pile de fiches cochée sur le jaune, produite par `scripts/icones.mjs` (`--apercu` pour voir le rendu des lanceurs).
-- Mobile d'abord (390 px), zones tactiles ≥ 48 px, un seul CTA principal par écran, tutoiement, textes courts. Header collant de 64 px, `pb-[96px]` au-dessus de la nav, safe areas via `.pt-safe` / `.pb-safe`.
-- Pas de mode sombre au MVP (Stitch n'en a pas généré).
-- Tokens dans `tailwind.config.ts` : les alias métier `reviz.cream`, `reviz.yellow`, `reviz.orange`, `reviz.blue`, `reviz.ink`, `reviz.muted` (+ `card`, `yellow-soft`, `orange-soft`, `blue-soft`, `on-yellow`, `danger`, `border`, `edge.*`) pour le code qu'on écrit ; les rôles Material 3 (`surface`, `primary-container`, `on-surface`…) sont conservés en parallèle pour coller le markup Stitch sans le réécrire.
+- Mobile d'abord (390 px), zones tactiles ≥ 48 px, un seul CTA principal par écran, tutoiement, textes courts.
+- Pas de mode sombre au MVP.
+- **Voir avant de conclure** : `flutter test test_apercus --update-goldens` rend les écrans en PNG avec des données factices, la vraie police et les vraies icônes, dans `apps/mobile/test_apercus/goldens/` (ignoré par git). C'est ainsi que se juge un changement visuel sans téléphone ni compte.
+- Web : `tailwind.config.ts` porte les mêmes valeurs pour les deux pages publiques (`/` et `/app`).
 
 ## Modèle de données (Supabase, schéma `public`)
 

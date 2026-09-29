@@ -102,7 +102,7 @@ class BandeauHorsLigne extends StatelessWidget {
       // Orange et non rouge : c'est une gêne, pas une panne. Le rouge est
       // réservé à ce qui a échoué.
       fond: Couleurs.orangeDoux,
-      teinte: Couleurs.aretePeche,
+      teinte: Couleurs.orangeProfond,
     );
   }
 }

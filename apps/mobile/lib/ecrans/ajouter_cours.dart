@@ -249,9 +249,9 @@ class _EcranAjouterCoursState extends ConsumerState<EcranAjouterCours> {
     final matieres = ref.watch(matieresProvider);
 
     return Scaffold(
-      backgroundColor: Couleurs.cream,
+      backgroundColor: Couleurs.fond,
       appBar: AppBar(
-        backgroundColor: Couleurs.cream,
+        backgroundColor: Couleurs.fond,
         surfaceTintColor: Colors.transparent,
         title: Text(Fr.depot.titre, style: Typo.headlineLg),
         leading: IconButton(

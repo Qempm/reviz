@@ -99,7 +99,7 @@ const List<Avatar> avatars = [
     cle: 'ton-04',
     animal: 'tortue',
     fond: Couleurs.orangeDoux,
-    encre: Couleurs.aretePeche,
+    encre: Couleurs.pecheProfond,
   ),
   Avatar(
     cle: 'ton-05',
@@ -116,13 +116,13 @@ const List<Avatar> avatars = [
   Avatar(
     cle: 'ton-07',
     animal: 'coq',
-    fond: Couleurs.areteJaune,
+    fond: Couleurs.jauneProfond,
     encre: Couleurs.carte,
   ),
   Avatar(
     cle: 'ton-08',
     animal: 'poisson',
-    fond: Couleurs.areteOrange,
+    fond: Couleurs.orangeProfond,
     encre: Couleurs.carte,
   ),
   Avatar(

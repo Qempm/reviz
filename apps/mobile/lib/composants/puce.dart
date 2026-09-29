@@ -17,7 +17,7 @@ class Puce extends StatelessWidget {
     final (fond, texte) = switch (ton) {
       TonPuce.neutre => (Couleurs.surfaceConteneur, Couleurs.attenue),
       TonPuce.jaune => (Couleurs.jaune, Couleurs.surJaune),
-      TonPuce.orange => (Couleurs.orangeDoux, Couleurs.aretePeche),
+      TonPuce.orange => (Couleurs.orangeDoux, Couleurs.orangeProfond),
       TonPuce.bleu => (Couleurs.bleu, Couleurs.encre),
       TonPuce.danger => (Couleurs.dangerDoux, Couleurs.surDangerDoux),
     };

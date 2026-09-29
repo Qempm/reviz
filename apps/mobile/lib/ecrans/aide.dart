@@ -45,9 +45,9 @@ class EcranAide extends ConsumerWidget {
     final version = ref.watch(miseAJourProvider);
 
     return Scaffold(
-      backgroundColor: Couleurs.cream,
+      backgroundColor: Couleurs.fond,
       appBar: AppBar(
-        backgroundColor: Couleurs.cream,
+        backgroundColor: Couleurs.fond,
         surfaceTintColor: Colors.transparent,
         title: Text(Fr.aide.titre, style: Typo.headlineLg),
         leading: IconButton(

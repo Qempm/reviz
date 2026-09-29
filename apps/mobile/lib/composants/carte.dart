@@ -3,9 +3,9 @@ import '../theme/jetons.dart';
 
 /// Carte blanche du design system.
 ///
-/// Sans bordure : la séparation d'avec le fond vient de l'ombre douce.
-/// `petite` sert aux encarts internes — rayon 12 px et 12 px de gouttière,
-/// contre 20 et 20.
+/// Sans bordure : la séparation d'avec le fond vient de l'ombre, **en deux
+/// couches** (`Ombres.carte`), et d'une forme à **coins continus**. `petite`
+/// sert aux encarts internes.
 class Carte extends StatelessWidget {
   const Carte({super.key, required this.enfants, this.petite = false});
 
@@ -16,12 +16,10 @@ class Carte extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.all(petite ? Espaces.x12 : Espaces.x20),
-      decoration: BoxDecoration(
+      decoration: ShapeDecoration(
         color: Couleurs.carte,
-        borderRadius: BorderRadius.circular(
-          petite ? Rayons.normal : Rayons.carte,
-        ),
-        boxShadow: petite ? Ombres.cartePetite : Ombres.carte,
+        shape: formeContinue(petite ? Rayons.normal : Rayons.carte),
+        shadows: petite ? Ombres.cartePetite : Ombres.carte,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

@@ -170,7 +170,7 @@ class AvatarInitiale extends StatelessWidget {
         shape: BoxShape.circle,
         color: avatar.fond,
         border: couronne
-            ? Border.all(color: Couleurs.areteJaune, width: 2)
+            ? Border.all(color: Couleurs.jauneProfond, width: 2)
             : null,
       ),
       // Un nœud d'accessibilité à part entière, marqué comme image. Sans

@@ -50,7 +50,7 @@ class EcranMiseAJour extends ConsumerWidget {
     final entretien = etat.exigence == ExigenceVersion.maintenance;
 
     return Scaffold(
-      backgroundColor: Couleurs.cream,
+      backgroundColor: Couleurs.fond,
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(

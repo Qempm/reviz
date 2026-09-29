@@ -189,9 +189,9 @@ class _EcranCarteState extends ConsumerState<EcranCarte> {
         statut != 'none';
 
     return Scaffold(
-      backgroundColor: Couleurs.cream,
+      backgroundColor: Couleurs.fond,
       appBar: AppBar(
-        backgroundColor: Couleurs.cream,
+        backgroundColor: Couleurs.fond,
         surfaceTintColor: Colors.transparent,
         title: Text(Fr.carte.titre, style: Typo.headlineLg),
         leading: IconButton(

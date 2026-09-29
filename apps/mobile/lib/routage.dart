@@ -253,7 +253,7 @@ GoRouter creerRouteur(Ref ref) {
       ),
     ],
     errorBuilder: (context, etat) => Scaffold(
-      backgroundColor: Couleurs.cream,
+      backgroundColor: Couleurs.fond,
       body: SafeArea(
         child: EtatVide(
           icone: Icons.explore_off,

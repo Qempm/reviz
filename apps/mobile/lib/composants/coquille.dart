@@ -1,3 +1,5 @@
+import 'dart:ui' show ImageFilter;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -34,7 +36,7 @@ class Coquille extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Couleurs.cream,
+      backgroundColor: Couleurs.fond,
       body: SafeArea(
         bottom: false,
         child: Center(
@@ -63,13 +65,13 @@ class _EnTete extends StatelessWidget {
   Widget build(BuildContext context) {
     final eteinte = serie == null || serie!.rompue;
 
+    // Posé sur le fond, sans ombre : c'est le grand titre d'iOS, qui
+    // appartient à la page. Une ombre sous l'en-tête le décollait du contenu
+    // et le faisait lire comme une barre d'outils.
     return Container(
       height: Mesures.hauteurEnTete,
       padding: const EdgeInsets.symmetric(horizontal: Espaces.ecran),
-      decoration: const BoxDecoration(
-        color: Couleurs.cream,
-        boxShadow: Ombres.cartePetite,
-      ),
+      color: Couleurs.fond,
       child: Row(
         children: [
           // `Expanded` et non `Text` + `Spacer` : à 320 px, les deux badges
@@ -78,27 +80,28 @@ class _EnTete extends StatelessWidget {
           Expanded(
             child: Text(
               'Reviz',
-              style: Typo.headlineLg,
+              style: Typo.headlineXl.copyWith(fontSize: 26),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
           ),
           const SizedBox(width: Espaces.x8),
           _Badge(
-            icone: Icons.local_fire_department,
+            icone: Icons.local_fire_department_rounded,
             texte: '${serie?.jours ?? 0} j',
-            fond: Couleurs.surfaceConteneur,
+            fond: Couleurs.carte,
             teinteIcone: eteinte ? Couleurs.attenue : Couleurs.orange,
             teinteTexte: Couleurs.encre,
+            ombre: Ombres.cartePetite,
           ),
           const SizedBox(width: Espaces.x8),
           _Badge(
-            icone: Icons.stars,
+            icone: Icons.bolt_rounded,
             texte: '${xpTotal ?? 0} XP',
             fond: Couleurs.jaune,
             teinteIcone: Couleurs.surJaune,
             teinteTexte: Couleurs.surJaune,
-            arete: Couleurs.areteJaune,
+            ombre: Ombres.lueurJauneEnfoncee,
           ),
         ],
       ),
@@ -113,7 +116,7 @@ class _Badge extends StatelessWidget {
     required this.fond,
     required this.teinteIcone,
     required this.teinteTexte,
-    this.arete,
+    this.ombre = const [],
   });
 
   final IconData icone;
@@ -121,28 +124,34 @@ class _Badge extends StatelessWidget {
   final Color fond;
   final Color teinteIcone;
   final Color teinteTexte;
-  final Color? arete;
+  final List<BoxShadow> ombre;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: Espaces.x8,
-        vertical: Espaces.x4,
+        horizontal: Espaces.x12,
+        vertical: 6,
       ),
       decoration: BoxDecoration(
         color: fond,
         borderRadius: BorderRadius.circular(999),
-        boxShadow: arete == null
-            ? null
-            : [BoxShadow(color: arete!, offset: const Offset(0, 2))],
+        boxShadow: ombre,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icone, size: 16, color: teinteIcone),
           const SizedBox(width: Espaces.x4),
-          Text(texte, style: Typo.labelSm.copyWith(color: teinteTexte)),
+          Text(
+            texte,
+            style: Typo.labelMd.copyWith(
+              color: teinteTexte,
+              // Des chiffres de même largeur : le compteur ne danse pas
+              // quand l'XP passe de 999 à 1 000.
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
         ],
       ),
     );
@@ -195,7 +204,7 @@ class CoquilleOnglets extends StatelessWidget {
         if (!aDepile) _choisir(0);
       },
       child: Scaffold(
-        backgroundColor: Couleurs.cream,
+        backgroundColor: Couleurs.fond,
         body: coquille,
         bottomNavigationBar: NavBasse(
           indexActif: coquille.currentIndex,
@@ -277,12 +286,21 @@ class NavBasse extends StatelessWidget {
   Widget build(BuildContext context) {
     final reduit = MediaQuery.disableAnimationsOf(context);
 
-    return DecoratedBox(
-      decoration: const BoxDecoration(
-        color: Couleurs.carte,
-        boxShadow: Ombres.cartePetite,
-      ),
-      child: SafeArea(
+    // Blanc translucide sur un flou, et un filet d'un demi-pixel en haut :
+    // la barre d'onglets d'iOS, sans rien lui emprunter d'autre que sa
+    // géométrie. Une ombre portée la détachait comme un objet posé ; le filet
+    // la raccorde au bas de l'écran, où elle appartient.
+    return ClipRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+        child: DecoratedBox(
+          decoration: const BoxDecoration(
+            color: Color(0xE6FFFFFF),
+            border: Border(
+              top: BorderSide(color: Couleurs.bordure, width: 0.5),
+            ),
+          ),
+          child: SafeArea(
         top: false,
         // `SizedBox` **avant** le `Center`, et non après : `Align` — donc
         // `Center` — s'étend pour remplir ses contraintes quand elles sont
@@ -338,6 +356,8 @@ class NavBasse extends StatelessWidget {
           ),
         ),
       ),
+        ),
+      ),
     );
   }
 }
@@ -355,7 +375,7 @@ class _OngletNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final couleur = actif ? Couleurs.surJaune : Couleurs.attenue;
+    final couleur = actif ? Couleurs.encre : Couleurs.attenue;
 
     return Semantics(
       button: true,
@@ -393,7 +413,11 @@ class _OngletNav extends StatelessWidget {
             AnimatedDefaultTextStyle(
               duration: Mouvement.doux,
               curve: Mouvement.courbeDouce,
-              style: Typo.caption.copyWith(
+              // `labelSm` et non `caption` : `caption` est espacé pour les
+              // étiquettes en capitales, et ces lettres écartées rendaient les
+              // libellés d'onglet plus larges que leur colonne à 320 px.
+              style: Typo.labelSm.copyWith(
+                fontSize: 11,
                 color: actif ? Couleurs.encre : Couleurs.attenue,
               ),
               child: Text(

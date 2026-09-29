@@ -34,7 +34,7 @@ class _GalerieState extends State<Galerie> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Couleurs.cream,
+      backgroundColor: Couleurs.fond,
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
@@ -60,7 +60,7 @@ class _GalerieState extends State<Galerie> {
                     spacing: Espaces.x8,
                     runSpacing: Espaces.x8,
                     children: const [
-                      _Pastille('cream', Couleurs.cream),
+                      _Pastille('fond', Couleurs.fond),
                       _Pastille('jaune', Couleurs.jaune),
                       _Pastille('jaune doux', Couleurs.jauneDoux),
                       _Pastille('orange', Couleurs.orange),
@@ -125,7 +125,8 @@ class _GalerieState extends State<Galerie> {
                       const SizedBox(height: Espaces.x4),
                       Text(
                         'Le troisième est désactivé : appuie sur les deux '
-                        'premiers pour voir l’arête tactile se réduire.',
+                        'premiers pour les voir se contracter, puis revenir '
+                        'sur le ressort.',
                         style: Typo.labelSm.copyWith(color: Couleurs.attenue),
                         textAlign: TextAlign.center,
                       ),

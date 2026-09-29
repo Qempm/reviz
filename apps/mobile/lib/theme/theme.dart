@@ -6,10 +6,10 @@ import 'typographie.dart';
 /// `ThemeData` de Reviz, assemblé depuis les jetons.
 final ThemeData themeReviz = ThemeData(
   useMaterial3: true,
-  scaffoldBackgroundColor: Couleurs.cream,
+  scaffoldBackgroundColor: Couleurs.fond,
   fontFamily: 'Nunito Sans',
   colorScheme: const ColorScheme.light(
-    surface: Couleurs.cream,
+    surface: Couleurs.fond,
     onSurface: Couleurs.encre,
     // Le jaune est `primaryContainer`, pas `primary` : `primary` sert au
     // texte. Confondre les deux donne un CTA brun.
@@ -34,6 +34,45 @@ final ThemeData themeReviz = ThemeData(
     labelLarge: Typo.labelLg,
     labelMedium: Typo.labelMd,
     labelSmall: Typo.labelSm,
+  ),
+  // Les barres d'application se posent sur le fond, sans ombre ni teinte au
+  // défilement — Material 3 les assombrit par défaut dès qu'une liste passe
+  // dessous, ce qui salit le gris clair.
+  appBarTheme: AppBarTheme(
+    backgroundColor: Couleurs.fond,
+    foregroundColor: Couleurs.encre,
+    surfaceTintColor: Colors.transparent,
+    elevation: 0,
+    scrolledUnderElevation: 0,
+    centerTitle: true,
+    titleTextStyle: Typo.headlineSm.copyWith(fontSize: 17),
+  ),
+  // Le jaune de marque partout où Material mettrait sa couleur primaire, qui
+  // est ici un gris d'encre réservé au texte.
+  progressIndicatorTheme: const ProgressIndicatorThemeData(
+    color: Couleurs.jaune,
+    circularTrackColor: Couleurs.surfaceConteneur,
+    linearTrackColor: Couleurs.surfaceConteneur,
+  ),
+  switchTheme: SwitchThemeData(
+    thumbColor: const WidgetStatePropertyAll(Colors.white),
+    trackColor: WidgetStateProperty.resolveWith(
+      (etats) => etats.contains(WidgetState.selected)
+          ? Couleurs.jaune
+          : Couleurs.surfaceHaute,
+    ),
+    trackOutlineColor: const WidgetStatePropertyAll(Colors.transparent),
+  ),
+  snackBarTheme: SnackBarThemeData(
+    backgroundColor: Couleurs.encre,
+    contentTextStyle: Typo.labelMd.copyWith(color: Colors.white),
+    behavior: SnackBarBehavior.floating,
+    shape: formeContinue(Rayons.normal),
+  ),
+  textSelectionTheme: const TextSelectionThemeData(
+    cursorColor: Couleurs.encre,
+    selectionColor: Couleurs.jauneDoux,
+    selectionHandleColor: Couleurs.jaune,
   ),
   // Une page qu'on ouvre glisse depuis la droite, et repart vers la droite
   // au retour — le geste d'iOS, sur Android aussi. La transition par défaut

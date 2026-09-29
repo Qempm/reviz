@@ -77,7 +77,10 @@ void main() {
     });
 
     test('ne tire ses couleurs que des jetons du design system', () {
-      final jetons = {
+      // Une liste, puis un ensemble : depuis le design system du 29 septembre,
+      // `surJaune` et `encre` ont la même valeur — du noir sur le jaune —, et
+      // un ensemble littéral refuse deux éléments égaux.
+      final jetons = [
         Couleurs.jaune,
         Couleurs.jauneDoux,
         Couleurs.surJaune,
@@ -93,10 +96,10 @@ void main() {
         Couleurs.bordure,
         Couleurs.surfaceHaute,
         Couleurs.texteAccent,
-        Couleurs.areteJaune,
-        Couleurs.areteOrange,
-        Couleurs.aretePeche,
-      }.map((c) => c.toARGB32()).toSet();
+        Couleurs.jauneProfond,
+        Couleurs.orangeProfond,
+        Couleurs.pecheProfond,
+      ].map((c) => c.toARGB32()).toSet();
 
       for (final a in avatars) {
         expect(jetons, contains(a.fond.toARGB32()), reason: '${a.cle} — fond');

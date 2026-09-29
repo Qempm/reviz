@@ -84,7 +84,7 @@ class _EcranInscriptionState extends ConsumerState<EcranInscription> {
     final universites = ref.watch(universitesProvider);
 
     return Scaffold(
-      backgroundColor: Couleurs.cream,
+      backgroundColor: Couleurs.fond,
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(

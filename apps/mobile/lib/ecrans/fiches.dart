@@ -27,7 +27,7 @@ class EcranFiches extends ConsumerWidget {
     final fiches = ref.watch(fichesProvider(coursId));
 
     return Scaffold(
-      backgroundColor: Couleurs.cream,
+      backgroundColor: Couleurs.fond,
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(

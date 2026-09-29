@@ -92,9 +92,9 @@ class _EcranCorrectionState extends ConsumerState<EcranCorrection> {
     }
 
     return Scaffold(
-      backgroundColor: Couleurs.cream,
+      backgroundColor: Couleurs.fond,
       appBar: AppBar(
-        backgroundColor: Couleurs.cream,
+        backgroundColor: Couleurs.fond,
         surfaceTintColor: Colors.transparent,
         title: Text(Fr.correction.titre, style: Typo.headlineLg),
         leading: IconButton(

@@ -1,11 +1,13 @@
 import type { Config } from 'tailwindcss'
 
 /**
- * Design system Reviz — figé depuis le projet Stitch 4246361917454252874.
+ * Design system Reviz — deuxième version, 29 septembre 2026.
  *
- * Source de vérité : docs/DESIGN.md. Les valeurs ci-dessous sont celles que
- * Stitch compile réellement dans ses écrans, pas celles recopiées dans
- * CLAUDE.md (voir docs/DESIGN.md § 10 pour la liste des écarts).
+ * Les neutres ont été revus (docs/DESIGN.md § 11 bis) : fond gris très clair,
+ * texte presque noir, secondaire gris neutre, plus de brun ni d'arête tactile.
+ * La référence est `apps/mobile/lib/theme/jetons.dart` ; ce fichier en reprend
+ * les valeurs pour les deux pages publiques (`/` et `/app`). Les rôles
+ * Material 3 hérités de Stitch gardent leurs noms, leurs valeurs ont suivi.
  *
  * Deux jeux de tokens cohabitent volontairement :
  *
@@ -18,29 +20,29 @@ import type { Config } from 'tailwindcss'
 /** Palette brute, partagée par les deux jeux de tokens. */
 const stitch = {
   // Surfaces
-  surface: '#fcf9f8',
-  surfaceDim: '#dcd9d9',
-  surfaceBright: '#fcf9f8',
+  surface: '#f5f5f7',
+  surfaceDim: '#d1d1d6',
+  surfaceBright: '#f5f5f7',
   surfaceContainerLowest: '#ffffff',
-  surfaceContainerLow: '#f6f3f2',
-  surfaceContainer: '#f0eded',
-  surfaceContainerHigh: '#eae7e7',
-  surfaceContainerHighest: '#e5e2e1',
-  surfaceVariant: '#e5e2e1',
-  surfaceTint: '#785a00',
-  onSurface: '#1c1b1b',
-  onSurfaceVariant: '#4f4632',
+  surfaceContainerLow: '#f2f2f7',
+  surfaceContainer: '#ebebf0',
+  surfaceContainerHigh: '#e5e5ea',
+  surfaceContainerHighest: '#e5e5ea',
+  surfaceVariant: '#e5e5ea',
+  surfaceTint: '#2c2c2e',
+  onSurface: '#1d1d1f',
+  onSurfaceVariant: '#6e6e73',
   inverseSurface: '#313030',
   inverseOnSurface: '#f3f0ef',
-  outline: '#81765f',
-  outlineVariant: '#d3c5ab',
+  outline: '#8e8e93',
+  outlineVariant: '#d1d1d6',
 
   // Jaune
-  primary: '#785a00',
+  primary: '#2c2c2e',
   onPrimary: '#ffffff',
   primaryContainer: '#ffc300',
-  onPrimaryContainer: '#6d5200',
-  primaryFixed: '#ffdf9a',
+  onPrimaryContainer: '#1d1d1f',
+  primaryFixed: '#ffedb0',
   primaryFixedDim: '#f8be00',
   onPrimaryFixed: '#251a00',
   onPrimaryFixedVariant: '#5a4300',
@@ -51,7 +53,7 @@ const stitch = {
   onSecondary: '#ffffff',
   secondaryContainer: '#fe6a2b',
   onSecondaryContainer: '#5b1b00',
-  secondaryFixed: '#ffdbcf',
+  secondaryFixed: '#ffe2d5',
   secondaryFixedDim: '#ffb59a',
   onSecondaryFixed: '#380d00',
   onSecondaryFixedVariant: '#802900',
@@ -61,16 +63,16 @@ const stitch = {
   onTertiary: '#ffffff',
   tertiaryContainer: '#bccdeb',
   onTertiaryContainer: '#475771',
-  tertiaryFixed: '#d4e3ff',
+  tertiaryFixed: '#e3ecff',
   tertiaryFixedDim: '#b6c7e6',
   onTertiaryFixed: '#0a1c33',
   onTertiaryFixedVariant: '#374760',
 
   // Erreur
-  error: '#ba1a1a',
+  error: '#d92d20',
   onError: '#ffffff',
-  errorContainer: '#ffdad6',
-  onErrorContainer: '#93000a',
+  errorContainer: '#fee4e2',
+  onErrorContainer: '#b42318',
 
   // Arêtes tactiles (ombres pleines sans flou)
   edgeYellow: '#d9a400',
@@ -280,8 +282,10 @@ const config: Config = {
       boxShadow: {
         // Ombres d'ambiance
         header: '0 4px 20px rgba(26,26,26,0.04)',
-        card: '0 4px 20px rgba(26,26,26,0.06)',
-        'card-sm': '0 4px 16px rgba(26,26,26,0.05)',
+        // Deux couches, comme dans l'application : une courte au contact,
+        // une longue et diffuse autour.
+        card: '0 1px 2px rgba(0,0,0,0.03), 0 8px 24px rgba(0,0,0,0.05)',
+        'card-sm': '0 1px 1px rgba(0,0,0,0.03), 0 4px 12px rgba(0,0,0,0.04)',
         float: '0 8px 24px rgba(26,26,26,0.06)',
         hero: '0 8px 24px rgba(254,106,43,0.22)',
         'glow-yellow': '0 8px 24px rgba(255,195,0,0.15)',
@@ -290,8 +294,13 @@ const config: Config = {
         'card-danger': '0 4px 14px rgba(186,26,26,0.08)',
 
         // Arêtes tactiles — état au repos puis état pressé
-        tactile: `0 4px 0 ${stitch.edgeYellow}`,
-        'tactile-pressed': `0 2px 0 ${stitch.edgeYellow}`,
+        // L'arête pleine est abandonnée (docs/DESIGN.md § 11 bis). Le nom
+        // `tactile` reste pour ne pas toucher les pages : il porte désormais
+        // la lueur jaune du bouton principal de l'application.
+        tactile:
+          '0 1px 2px rgba(217,164,0,0.2), 0 10px 20px -6px rgba(255,184,0,0.35)',
+        'tactile-pressed':
+          '0 1px 1px rgba(217,164,0,0.2), 0 4px 10px -4px rgba(255,184,0,0.25)',
         'tactile-sm': `0 2px 0 ${stitch.edgeYellow}`,
         'tactile-orange': `0 4px 0 ${stitch.edgeOrange}`,
         'tactile-orange-pressed': `0 2px 0 ${stitch.edgeOrange}`,

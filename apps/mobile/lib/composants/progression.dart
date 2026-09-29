@@ -3,10 +3,12 @@ import 'package:flutter/material.dart';
 import '../theme/jetons.dart';
 import '../theme/typographie.dart';
 
-/// Barre de progression : 10 px en pilule, **remplissage plat**.
+/// Barre de progression : 10 px en pilule, remplissage plat.
 ///
-/// Le dégradé décrit par la prose de Stitch n'a jamais été produit dans ses
-/// écrans : on s'en tient au remplissage uni.
+/// **Elle se remplit**, au lieu d'apparaître déjà pleine : à l'arrivée sur
+/// l'écran elle part de zéro, et quand la valeur change elle glisse jusqu'à
+/// la nouvelle. Une progression qu'on voit avancer se lit comme un progrès ;
+/// une barre figée, comme un chiffre.
 class BarreProgression extends StatelessWidget {
   const BarreProgression({super.key, required this.valeur, this.libelle});
 
@@ -47,10 +49,18 @@ class BarreProgression extends StatelessWidget {
             child: Container(
               height: 10,
               color: Couleurs.surfaceConteneur,
-              child: FractionallySizedBox(
-                alignment: Alignment.centerLeft,
-                widthFactor: valeur.clamp(0.0, 1.0),
-                child: Container(color: Couleurs.jaune),
+              child: _Remplissage(
+                valeur: valeur.clamp(0.0, 1.0),
+                construire: (v) => FractionallySizedBox(
+                  alignment: Alignment.centerLeft,
+                  widthFactor: v,
+                  child: const DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: Couleurs.jaune,
+                      borderRadius: BorderRadius.all(Radius.circular(999)),
+                    ),
+                  ),
+                ),
               ),
             ),
           ),
@@ -86,7 +96,11 @@ class BarreSegmentee extends StatelessWidget {
           for (var i = 0; i < segments.length; i++) ...[
             if (i > 0) const SizedBox(width: Espaces.x4),
             Expanded(
-              child: Container(
+              // Un segment qui change d'état glisse vers sa couleur : on voit
+              // la réponse s'inscrire dans la barre.
+              child: AnimatedContainer(
+                duration: Mouvement.doux,
+                curve: Mouvement.courbeDouce,
                 decoration: BoxDecoration(
                   color: switch (segments[i]) {
                     EtatSegment.juste => Couleurs.jaune,
@@ -132,9 +146,12 @@ class JaugeCirculaire extends StatelessWidget {
       child: SizedBox(
         width: taille,
         height: taille,
-        child: CustomPaint(
-          painter: _PeintreJauge(valeur: pct, epaisseur: epaisseur),
-          child: Center(child: centre),
+        child: _Remplissage(
+          valeur: pct,
+          construire: (v) => CustomPaint(
+            painter: _PeintreJauge(valeur: v, epaisseur: epaisseur),
+            child: Center(child: centre),
+          ),
         ),
       ),
     );
@@ -181,4 +198,28 @@ class _PeintreJauge extends CustomPainter {
   @override
   bool shouldRepaint(_PeintreJauge ancien) =>
       ancien.valeur != valeur || ancien.epaisseur != epaisseur;
+}
+
+
+/// Anime une valeur de progression, de zéro à l'arrivée puis d'une valeur à
+/// l'autre. Mis en commun pour que la barre et la jauge bougent pareil.
+///
+/// Respecte le mouvement réduit : la valeur est alors posée d'emblée.
+class _Remplissage extends StatelessWidget {
+  const _Remplissage({required this.valeur, required this.construire});
+
+  final double valeur;
+  final Widget Function(double) construire;
+
+  @override
+  Widget build(BuildContext context) {
+    final reduit = MediaQuery.disableAnimationsOf(context);
+
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: valeur),
+      duration: reduit ? Duration.zero : const Duration(milliseconds: 700),
+      curve: Mouvement.courbeDouce,
+      builder: (_, v, _) => construire(v),
+    );
+  }
 }

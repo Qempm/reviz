@@ -78,9 +78,9 @@ class _EcranAvatarState extends ConsumerState<EcranAvatar> {
     final courante = _choisie ?? avatarDe(actuelle).cle;
 
     return Scaffold(
-      backgroundColor: Couleurs.cream,
+      backgroundColor: Couleurs.fond,
       appBar: AppBar(
-        backgroundColor: Couleurs.cream,
+        backgroundColor: Couleurs.fond,
         surfaceTintColor: Colors.transparent,
         title: Text(Fr.avatar.titre, style: Typo.headlineLg),
         leading: IconButton(
@@ -236,7 +236,7 @@ class _Pastille extends StatelessWidget {
             // une coche cacherait la couleur qu'on est en train de juger.
             border: Border.all(
               width: choisie ? 3 : 1,
-              color: choisie ? Couleurs.areteJaune : Couleurs.bordure,
+              color: choisie ? Couleurs.jauneProfond : Couleurs.bordure,
             ),
           ),
           child: AvatarInitiale(

@@ -70,3 +70,7 @@ supabase/.branches/
 *.jks
 *.keystore
 **/key.properties
+
+# Banc d aperçu Flutter : des photos à regarder, pas des références.
+# Le rendu des polices varie d une machine à l autre.
+apps/mobile/test_apercus/goldens/

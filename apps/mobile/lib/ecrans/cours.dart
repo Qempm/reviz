@@ -120,7 +120,7 @@ class _EcranCoursState extends ConsumerState<EcranCours> {
     final cours = ref.watch(unCoursProvider(coursId));
 
     return Scaffold(
-      backgroundColor: Couleurs.cream,
+      backgroundColor: Couleurs.fond,
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(

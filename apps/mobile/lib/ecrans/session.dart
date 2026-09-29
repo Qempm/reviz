@@ -32,7 +32,7 @@ class EcranSession extends ConsumerWidget {
     final questions = ref.watch(questionsProvider(coursId));
 
     return Scaffold(
-      backgroundColor: Couleurs.cream,
+      backgroundColor: Couleurs.fond,
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(

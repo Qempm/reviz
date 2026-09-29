@@ -1,5 +1,16 @@
 # DESIGN.md — Système de design Reviz
 
+> ## ⚠️ Deuxième version — 29 septembre 2026
+>
+> **Le design system a été revu, et le § 11 bis ci-dessous prime sur tout le
+> reste de ce fichier.** Le propriétaire a jugé la première version
+> amateur — un air de « vieux papier » — et a tranché pour des neutres clairs
+> et une géométrie inspirée d'Apple. Les valeurs de référence vivent
+> désormais dans `apps/mobile/lib/theme/jetons.dart`, qui en commente chaque
+> choix. Ce qui suit le § 11 bis décrit la **première** version, extraite de
+> Stitch : c'est un historique, pas une consigne.
+
+
 > **Source de vérité.** Ce fichier est extrait du projet Stitch
 > `projects/4246361917454252874` — « Reviz Gamified Design System » (design system
 > `assets/38b8635e22484d04bdeb0a6b1c355c59`), le 8 septembre 2026.
@@ -410,6 +421,42 @@ Vérifié par recherche littérale sur les 8 écrans exportés.
 | 20 | Un seul CTA principal par écran, tutoiement, textes courts, mobile 390px | Respectés | 🟢 |
 
 ---
+
+## 11 bis. Arbitrage du 29 septembre 2026 — la deuxième version
+
+Rendu par le propriétaire, après avoir vu l'application : **« l'application a
+l'air amateur. […] pas de design vieux papier »**, avec pour référence la
+géométrie d'Apple — « la forme, la géométrie des choses, le rendu final », sans
+en copier la texture. Ces décisions **remplacent** les points correspondants du
+§ 11 et du reste de ce fichier.
+
+| Sujet | Première version (8 sept.) | Deuxième version (29 sept.) |
+| --- | --- | --- |
+| Fond | blanc cassé chaud `#fcf9f8` | gris très clair **`#F5F5F7`** |
+| Cartes | blanc, ombre simple | blanc, **ombre en deux couches**, coins continus |
+| Texte principal | `#1c1b1b` | **`#1D1D1F`** |
+| Texte secondaire | brun chaud `#4f4632` — « jamais un gris froid » | gris neutre **`#6E6E73`** — la règle est **levée** |
+| Texte sur jaune | brun `#6d5200` | **noir `#1D1D1F`** |
+| Séparateurs | `#d3c5ab` | **`#D1D1D6`** |
+| Erreur | `#ba1a1a` | **`#D92D20`** (AA sur blanc, 4,9:1) |
+| Relief des boutons | **arête tactile** : ombre pleine sans flou, l'élément y descend | **abandonnée** : halo teinté sous le jaune, contraction à l'appui (0,97) puis retour sur ressort |
+| Coins | rayon de cercle, 12 px dominant | **coins continus** (superellipse), 14 px dominant, 22 px cartes |
+| Option de QCM choisie | fond `#FFDF9A` + arête | fond `#FFEDB0` + **anneau** jaune de 2 px |
+| Barre de navigation | blanche, ombre portée | **blanc translucide flouté**, filet d'un demi-pixel, **une seule** pilule qui glisse sur ressort |
+| Mouvement | jetons définis, **jamais utilisés** | ressort à léger dépassement (`CourbeRessort`), remplissages animés, secousse sur mauvaise réponse, transitions glissées façon iOS |
+
+**Ce qui ne change pas :**
+
+- **Le jaune `#FFC300` reste la marque** — CTA, progression, série, pilule de
+  navigation. L'orange `#FE6A2B` reste l'urgence.
+- **Toujours aucun vert.** Une bonne réponse se fête en jaune, une mauvaise en
+  rouge. La raison du 8 septembre tient toujours.
+- **Nunito Sans**, embarquée, reste la seule famille.
+- Mobile d'abord, zones tactiles de 48 px, un seul CTA principal par écran.
+
+**Mouvement réduit.** Toute animation respecte `MediaQuery.disableAnimations`
+et le réglage « Réduire les animations » du profil : la valeur est alors posée
+d'emblée, sans transition.
 
 ## 11. Arbitrages tranchés (8 septembre 2026)
 

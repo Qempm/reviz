@@ -26,9 +26,9 @@ class EcranClassement extends ConsumerWidget {
     final classement = ref.watch(classementProvider);
 
     return Scaffold(
-      backgroundColor: Couleurs.cream,
+      backgroundColor: Couleurs.fond,
       appBar: AppBar(
-        backgroundColor: Couleurs.cream,
+        backgroundColor: Couleurs.fond,
         surfaceTintColor: Colors.transparent,
         title: Text(Fr.classement.titre, style: Typo.headlineLg),
         leading: IconButton(

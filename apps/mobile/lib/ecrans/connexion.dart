@@ -180,7 +180,7 @@ class _EcranConnexionState extends State<EcranConnexion> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Couleurs.cream,
+      backgroundColor: Couleurs.fond,
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(

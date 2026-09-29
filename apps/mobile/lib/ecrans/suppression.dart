@@ -100,9 +100,9 @@ class _EcranSuppressionState extends ConsumerState<EcranSuppression> {
     };
 
     return Scaffold(
-      backgroundColor: Couleurs.cream,
+      backgroundColor: Couleurs.fond,
       appBar: AppBar(
-        backgroundColor: Couleurs.cream,
+        backgroundColor: Couleurs.fond,
         surfaceTintColor: Colors.transparent,
         title: Text(Fr.suppression.titre, style: Typo.headlineLg),
         leading: IconButton(

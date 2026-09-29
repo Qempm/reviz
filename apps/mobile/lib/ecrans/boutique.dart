@@ -27,9 +27,9 @@ class EcranBoutique extends ConsumerWidget {
     final boutique = ref.watch(boutiqueProvider);
 
     return Scaffold(
-      backgroundColor: Couleurs.cream,
+      backgroundColor: Couleurs.fond,
       appBar: AppBar(
-        backgroundColor: Couleurs.cream,
+        backgroundColor: Couleurs.fond,
         surfaceTintColor: Colors.transparent,
         title: Text(Fr.boutique.titre, style: Typo.headlineLg),
         leading: IconButton(
