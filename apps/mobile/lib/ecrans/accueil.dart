@@ -36,7 +36,6 @@ class EcranAccueil extends ConsumerWidget {
     };
 
     return Coquille(
-      ongletActif: Chemins.accueil,
       serie: serie,
       xpTotal: switch (accueil) {
         AsyncData(:final value) when value != null => value.profil.xpTotal,

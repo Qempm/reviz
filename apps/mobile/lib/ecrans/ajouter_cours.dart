@@ -206,7 +206,7 @@ class _EcranAjouterCoursState extends ConsumerState<EcranAjouterCours> {
         // La liste des cours et l'accès ont changé.
         ref.invalidate(coursProvider);
         ref.invalidate(boutiqueProvider);
-        context.go(Chemins.cours(data));
+        context.pushReplacement(Chemins.cours(data));
       case ReponseEchec(:final erreur, :final motif):
         setState(() {
           _envoi = false;
@@ -255,7 +255,7 @@ class _EcranAjouterCoursState extends ConsumerState<EcranAjouterCours> {
         surfaceTintColor: Colors.transparent,
         title: Text(Fr.depot.titre, style: Typo.headlineLg),
         leading: IconButton(
-          onPressed: _envoi ? null : () => context.go(Chemins.reviser),
+          onPressed: _envoi ? null : () => context.remonter(Chemins.reviser),
           icon: const Icon(Icons.arrow_back, color: Couleurs.encre),
           tooltip: Fr.commun.retour,
         ),
@@ -549,7 +549,7 @@ class _Refus extends StatelessWidget {
             Bouton(
               libelle: Fr.depot.voirLesPacks,
               icone: Icons.shopping_bag_outlined,
-              onTap: () => context.go(Chemins.boutique),
+              onTap: () => context.descendre(Chemins.boutique),
             ),
           ],
           if (deja && coursExistant != null) ...[
@@ -557,7 +557,7 @@ class _Refus extends StatelessWidget {
             Bouton(
               libelle: Fr.depot.voirLeCours,
               icone: Icons.arrow_forward,
-              onTap: () => context.go(Chemins.cours(coursExistant!)),
+              onTap: () => context.pushReplacement(Chemins.cours(coursExistant!)),
             ),
           ],
         ],

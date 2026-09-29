@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../composants/bouton.dart';
 import '../composants/carte.dart';
@@ -35,7 +34,6 @@ class EcranGains extends ConsumerWidget {
     final profil = ref.watch(profilProvider);
 
     return Coquille(
-      ongletActif: Chemins.gains,
       serie: switch (profil) {
         AsyncData(:final value) when value != null => etatSerie(
           current: value.serieCourante,
@@ -238,7 +236,7 @@ class _Contenu extends ConsumerWidget {
           libelle: Fr.gains.voirClassement,
           icone: Icons.emoji_events,
           variante: VarianteBouton.secondaire,
-          onTap: () => context.go(Chemins.classement),
+          onTap: () => context.descendre(Chemins.classement),
         ),
         const SizedBox(height: Espaces.x32),
       ],

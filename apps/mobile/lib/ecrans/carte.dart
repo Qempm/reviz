@@ -3,7 +3,6 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import '../composants/bouton.dart';
 import '../composants/carte.dart';
@@ -196,7 +195,7 @@ class _EcranCarteState extends ConsumerState<EcranCarte> {
         surfaceTintColor: Colors.transparent,
         title: Text(Fr.carte.titre, style: Typo.headlineLg),
         leading: IconButton(
-          onPressed: () => context.go(Chemins.profil),
+          onPressed: () => context.remonter(Chemins.profil),
           icon: const Icon(Icons.arrow_back, color: Couleurs.encre),
           tooltip: Fr.commun.retour,
         ),
@@ -448,7 +447,7 @@ class _Issue extends StatelessWidget {
               libelle: Fr.carte.retour,
               icone: Icons.arrow_back,
               variante: VarianteBouton.secondaire,
-              onTap: () => context.go(Chemins.profil),
+              onTap: () => context.remonter(Chemins.profil),
             ),
           ],
         ),

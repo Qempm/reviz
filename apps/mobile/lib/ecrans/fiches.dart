@@ -1,7 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../composants/bouton.dart';
 import '../composants/etat_vide.dart';
 import '../composants/progression.dart';
@@ -51,7 +50,7 @@ class EcranFiches extends ConsumerWidget {
                     libelle: Fr.session.retourCours,
                     icone: Icons.arrow_back,
                     variante: VarianteBouton.secondaire,
-                    onTap: () => context.go(Chemins.cours(coursId)),
+                    onTap: () => context.remonter(Chemins.cours(coursId)),
                   ),
                 ),
                 _ => const Center(child: CircularProgressIndicator()),
@@ -79,7 +78,7 @@ class _Vide extends StatelessWidget {
         libelle: Fr.session.retourCours,
         icone: Icons.arrow_back,
         variante: VarianteBouton.secondaire,
-        onTap: () => context.go(Chemins.cours(coursId)),
+        onTap: () => context.remonter(Chemins.cours(coursId)),
       ),
     );
   }
@@ -155,7 +154,7 @@ class _PaquetState extends ConsumerState<_Paquet>
         Align(
           alignment: Alignment.centerLeft,
           child: TextButton.icon(
-            onPressed: () => context.go(Chemins.cours(widget.coursId)),
+            onPressed: () => context.remonter(Chemins.cours(widget.coursId)),
             icon: const Icon(Icons.arrow_back, size: 20),
             label: Text(Fr.session.retourCours),
             style: TextButton.styleFrom(

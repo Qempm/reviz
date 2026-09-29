@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../composants/bouton.dart';
 import '../composants/carte.dart';
 import '../composants/etat_vide.dart';
@@ -99,7 +98,7 @@ class _EcranCorrectionState extends ConsumerState<EcranCorrection> {
         surfaceTintColor: Colors.transparent,
         title: Text(Fr.correction.titre, style: Typo.headlineLg),
         leading: IconButton(
-          onPressed: () => context.go(Chemins.corriger),
+          onPressed: () => context.remonter(Chemins.corriger),
           icon: const Icon(Icons.arrow_back, color: Couleurs.encre),
           tooltip: Fr.commun.retour,
         ),
@@ -227,7 +226,7 @@ class _Message extends StatelessWidget {
         action: Bouton(
           libelle: action,
           icone: Icons.photo_camera,
-          onTap: () => context.go(Chemins.corriger),
+          onTap: () => context.remonter(Chemins.corriger),
         ),
       ),
     );
@@ -406,7 +405,7 @@ class _ResultatState extends ConsumerState<_Resultat> {
               libelle: Fr.correction.titre,
               icone: Icons.photo_camera,
               variante: VarianteBouton.secondaire,
-              onTap: () => context.go(Chemins.corriger),
+              onTap: () => context.remonter(Chemins.corriger),
             ),
             const SizedBox(height: Espaces.x32),
           ],

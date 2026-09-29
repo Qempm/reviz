@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../composants/bouton.dart';
 import '../composants/carte.dart';
 import '../composants/etat_vide.dart';
@@ -34,7 +33,7 @@ class EcranBoutique extends ConsumerWidget {
         surfaceTintColor: Colors.transparent,
         title: Text(Fr.boutique.titre, style: Typo.headlineLg),
         leading: IconButton(
-          onPressed: () => context.go(Chemins.profil),
+          onPressed: () => context.remonter(Chemins.profil),
           icon: const Icon(Icons.arrow_back, color: Couleurs.encre),
           tooltip: Fr.commun.retour,
         ),

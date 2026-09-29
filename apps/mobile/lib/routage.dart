@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' show AuthState;
 import 'package:go_router/go_router.dart';
 import 'composants/bouton.dart';
+import 'composants/coquille.dart';
 import 'composants/etat_vide.dart';
 import 'donnees/supabase.dart';
 import 'ecrans/accueil.dart';
@@ -60,6 +61,27 @@ abstract final class Chemins {
   static String correction(String id) => '/corrections/$id';
 }
 
+/// Les deux gestes de navigation de l'application.
+///
+/// Avant, il n'y avait que `context.go` — une quarantaine d'appels. `go`
+/// **remplace** la pile par la destination : on n'y empilait donc jamais
+/// rien, et le bouton retour d'Android, ne trouvant aucune page sous la
+/// courante, sortait de l'application depuis n'importe quel écran.
+///
+/// Deux verbes, parce qu'il y a deux intentions, et qu'un nom qui les dit
+/// évite de reconfondre les deux :
+extension NavigationReviz on BuildContext {
+  /// Aller plus loin : de la liste au détail, du profil à l'avatar, du cours
+  /// à la session. La page d'où l'on vient reste dessous, et le retour y
+  /// ramène.
+  void descendre(String chemin) => push(chemin);
+
+  /// Revenir d'où l'on vient. S'il n'y a rien dessous — l'écran a été ouvert
+  /// par un lien direct —, on va au `repli`, qui est le parent logique : le
+  /// retour ne doit jamais faire sortir de l'application depuis le fond.
+  void remonter(String repli) => canPop() ? pop() : go(repli);
+}
+
 /// Chemins accessibles sans session.
 const _publics = {Chemins.connexion, Chemins.galerie};
 
@@ -69,7 +91,13 @@ const _publics = {Chemins.connexion, Chemins.galerie};
 /// choses — une session, **et** un profil. Un compte sans profil doit finir
 /// son inscription avant de voir quoi que ce soit, exactement comme côté web.
 GoRouter creerRouteur(Ref ref) {
+  // Le navigateur qui porte tout, onglets compris. Une route qui le désigne
+  // comme parent se pose **par-dessus** la barre du bas au lieu de s'ouvrir
+  // dans l'onglet.
+  final racine = GlobalKey<NavigatorState>(debugLabel: 'racine');
+
   return GoRouter(
+    navigatorKey: racine,
     initialLocation: Chemins.accueil,
     refreshListenable: _EcouteAuth(ref),
     redirect: (context, etat) {
@@ -93,69 +121,135 @@ GoRouter creerRouteur(Ref ref) {
       return null;
     },
     routes: [
+      // --- Hors des onglets : pas de barre du bas -------------------------
       GoRoute(path: Chemins.connexion, builder: (_, _) => const EcranConnexion()),
       GoRoute(
         path: Chemins.inscription,
         builder: (_, _) => const EcranInscription(),
       ),
-      GoRoute(path: Chemins.accueil, builder: (_, _) => const EcranAccueil()),
-      GoRoute(
-        path: Chemins.reviser,
-        builder: (_, _) => const EcranReviser(),
-        routes: [
-          GoRoute(
-            path: 'ajouter',
-            builder: (_, _) => const EcranAjouterCours(),
-          ),
-        ],
-      ),
       GoRoute(path: Chemins.galerie, builder: (_, _) => const Galerie()),
+
+      // Ouverte depuis trois endroits (profil, dépôt de cours, correction) :
+      // elle se pose par-dessus les onglets, et le retour ramène là d'où
+      // l'on venait — plus au profil, codé en dur, quel que soit le départ.
       GoRoute(
-        path: '/cours/:id',
-        builder: (_, etat) =>
-            EcranCours(coursId: etat.pathParameters['id'] ?? ''),
-        routes: [
-          GoRoute(
-            path: 'session',
-            builder: (_, etat) =>
-                EcranSession(coursId: etat.pathParameters['id'] ?? ''),
-          ),
-          GoRoute(
-            path: 'fiches',
-            builder: (_, etat) =>
-                EcranFiches(coursId: etat.pathParameters['id'] ?? ''),
-          ),
-        ],
+        path: Chemins.boutique,
+        parentNavigatorKey: racine,
+        builder: (_, _) => const EcranBoutique(),
       ),
 
-      GoRoute(path: Chemins.boutique, builder: (_, _) => const EcranBoutique()),
-      GoRoute(path: Chemins.gains, builder: (_, _) => const EcranGains()),
-      GoRoute(
-        path: Chemins.classement,
-        builder: (_, _) => const EcranClassement(),
-      ),
-      GoRoute(
-        path: Chemins.profil,
-        builder: (_, _) => const EcranProfil(),
-        routes: [
-          GoRoute(path: 'aide', builder: (_, _) => const EcranAide()),
-          GoRoute(path: 'avatar', builder: (_, _) => const EcranAvatar()),
-          GoRoute(
-            path: 'carte-etudiante',
-            builder: (_, _) => const EcranCarte(),
+      // --- Les cinq onglets ------------------------------------------------
+      //
+      // `StatefulShellRoute.indexedStack` : un navigateur par onglet, gardés
+      // en vie côte à côte. Changer d'onglet ne détruit ni la barre du bas
+      // ni la page qu'on quitte — on retrouve sa liste à l'endroit où on
+      // l'avait laissée. L'ordre des branches est celui de `onglets` dans
+      // `composants/coquille.dart`.
+      StatefulShellRoute.indexedStack(
+        builder: (_, _, coquille) => CoquilleOnglets(coquille: coquille),
+        branches: [
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: Chemins.accueil,
+                builder: (_, _) => const EcranAccueil(),
+              ),
+            ],
           ),
-          GoRoute(
-            path: 'supprimer-compte',
-            builder: (_, _) => const EcranSuppression(),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: Chemins.reviser,
+                builder: (_, _) => const EcranReviser(),
+                routes: [
+                  // Un formulaire de dépôt se remplit en plein écran : la
+                  // barre du bas y serait une porte de sortie au milieu d'un
+                  // envoi.
+                  GoRoute(
+                    path: 'ajouter',
+                    parentNavigatorKey: racine,
+                    builder: (_, _) => const EcranAjouterCours(),
+                  ),
+                ],
+              ),
+              GoRoute(
+                path: '/cours/:id',
+                builder: (_, etat) =>
+                    EcranCours(coursId: etat.pathParameters['id'] ?? ''),
+                routes: [
+                  // Une session de QCM et les fiches prennent tout l'écran :
+                  // une question à la fois, sans rien autour.
+                  GoRoute(
+                    path: 'session',
+                    parentNavigatorKey: racine,
+                    builder: (_, etat) =>
+                        EcranSession(coursId: etat.pathParameters['id'] ?? ''),
+                  ),
+                  GoRoute(
+                    path: 'fiches',
+                    parentNavigatorKey: racine,
+                    builder: (_, etat) =>
+                        EcranFiches(coursId: etat.pathParameters['id'] ?? ''),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: Chemins.corriger,
+                builder: (_, _) => const EcranCorriger(),
+              ),
+              GoRoute(
+                path: '/corrections/:id',
+                builder: (_, etat) => EcranCorrection(
+                  correctionId: etat.pathParameters['id'] ?? '',
+                ),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: Chemins.gains,
+                builder: (_, _) => const EcranGains(),
+              ),
+              GoRoute(
+                path: Chemins.classement,
+                builder: (_, _) => const EcranClassement(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: Chemins.profil,
+                builder: (_, _) => const EcranProfil(),
+                routes: [
+                  GoRoute(path: 'aide', builder: (_, _) => const EcranAide()),
+                  GoRoute(
+                    path: 'avatar',
+                    builder: (_, _) => const EcranAvatar(),
+                  ),
+                  // La photo de carte et la suppression de compte sont des
+                  // parcours où l'on ne doit pas se retrouver ailleurs par
+                  // un effleurement : plein écran.
+                  GoRoute(
+                    path: 'carte-etudiante',
+                    parentNavigatorKey: racine,
+                    builder: (_, _) => const EcranCarte(),
+                  ),
+                  GoRoute(
+                    path: 'supprimer-compte',
+                    parentNavigatorKey: racine,
+                    builder: (_, _) => const EcranSuppression(),
+                  ),
+                ],
+              ),
+            ],
           ),
         ],
-      ),
-
-      GoRoute(path: Chemins.corriger, builder: (_, _) => const EcranCorriger()),
-      GoRoute(
-        path: '/corrections/:id',
-        builder: (_, etat) =>
-            EcranCorrection(correctionId: etat.pathParameters['id'] ?? ''),
       ),
     ],
     errorBuilder: (context, etat) => Scaffold(

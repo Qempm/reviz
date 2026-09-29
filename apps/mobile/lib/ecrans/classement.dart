@@ -32,7 +32,7 @@ class EcranClassement extends ConsumerWidget {
         surfaceTintColor: Colors.transparent,
         title: Text(Fr.classement.titre, style: Typo.headlineLg),
         leading: IconButton(
-          onPressed: () => context.go(Chemins.gains),
+          onPressed: () => context.remonter(Chemins.gains),
           icon: const Icon(Icons.arrow_back, color: Couleurs.encre),
           tooltip: Fr.commun.retour,
         ),

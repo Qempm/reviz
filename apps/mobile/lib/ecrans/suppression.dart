@@ -106,7 +106,7 @@ class _EcranSuppressionState extends ConsumerState<EcranSuppression> {
         surfaceTintColor: Colors.transparent,
         title: Text(Fr.suppression.titre, style: Typo.headlineLg),
         leading: IconButton(
-          onPressed: () => context.go(Chemins.profil),
+          onPressed: () => context.remonter(Chemins.profil),
           icon: const Icon(Icons.arrow_back, color: Couleurs.encre),
           tooltip: Fr.commun.retour,
         ),
@@ -225,7 +225,7 @@ class _EcranSuppressionState extends ConsumerState<EcranSuppression> {
                 const SizedBox(height: Espaces.x12),
 
                 TextButton(
-                  onPressed: _enCours ? null : () => context.go(Chemins.profil),
+                  onPressed: _enCours ? null : () => context.remonter(Chemins.profil),
                   child: Text(Fr.commun.annuler),
                 ),
                 const SizedBox(height: Espaces.x32),

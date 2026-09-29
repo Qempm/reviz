@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import '../composants/bouton.dart';
 import '../composants/carte.dart';
@@ -125,7 +124,7 @@ class _EcranCorrigerState extends ConsumerState<EcranCorriger> {
         // L'historique a changé, et le crédit aussi.
         ref.invalidate(correctionsProvider);
         ref.invalidate(boutiqueProvider);
-        context.go(Chemins.correction(data));
+        context.descendre(Chemins.correction(data));
       case ReponseEchec(:final erreur):
         setState(() {
           _envoi = false;
@@ -141,7 +140,6 @@ class _EcranCorrigerState extends ConsumerState<EcranCorriger> {
     final historique = ref.watch(correctionsProvider);
 
     return Coquille(
-      ongletActif: Chemins.corriger,
       serie: switch (profil) {
         AsyncData(:final value) when value != null => etatSerie(
           current: value.serieCourante,
@@ -280,7 +278,7 @@ class _Depot extends StatelessWidget {
             action: Bouton(
               libelle: Fr.correction.voirLesPacks,
               icone: Icons.shopping_bag_outlined,
-              onTap: () => context.go(Chemins.boutique),
+              onTap: () => context.descendre(Chemins.boutique),
             ),
           ),
         ],
@@ -501,7 +499,7 @@ class _LigneHistorique extends StatelessWidget {
     final bareme = correction.bareme;
 
     return GestureDetector(
-      onTap: () => context.go(Chemins.correction(correction.id)),
+      onTap: () => context.descendre(Chemins.correction(correction.id)),
       child: Container(
         padding: const EdgeInsets.all(Espaces.x12),
         decoration: BoxDecoration(

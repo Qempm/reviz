@@ -32,7 +32,6 @@ class EcranProfil extends ConsumerWidget {
     final profil = ref.watch(profilProvider);
 
     return Coquille(
-      ongletActif: Chemins.profil,
       serie: switch (profil) {
         AsyncData(:final value) when value != null => etatSerie(
           current: value.serieCourante,
@@ -234,7 +233,7 @@ class _Contenu extends ConsumerWidget {
                 libelle: Fr.profil.ajouterCarte,
                 icone: Icons.photo_camera,
                 variante: VarianteBouton.secondaire,
-                onTap: () => context.go(Chemins.carte),
+                onTap: () => context.descendre(Chemins.carte),
               ),
           ],
         ),
@@ -269,7 +268,7 @@ class _Contenu extends ConsumerWidget {
           libelle: Fr.profil.changerAvatar,
           icone: Icons.face_retouching_natural,
           variante: VarianteBouton.secondaire,
-          onTap: () => context.go(Chemins.avatar),
+          onTap: () => context.descendre(Chemins.avatar),
         ),
         const SizedBox(height: Espaces.x12),
 
@@ -282,7 +281,7 @@ class _Contenu extends ConsumerWidget {
           libelle: Fr.profil.aide,
           icone: Icons.help_outline,
           variante: VarianteBouton.secondaire,
-          onTap: () => context.go(Chemins.aide),
+          onTap: () => context.descendre(Chemins.aide),
         ),
         const SizedBox(height: Espaces.x12),
 
@@ -291,7 +290,7 @@ class _Contenu extends ConsumerWidget {
           libelle: Fr.profil.voirLesPacks,
           icone: Icons.shopping_bag_outlined,
           variante: VarianteBouton.secondaire,
-          onTap: () => context.go(Chemins.boutique),
+          onTap: () => context.descendre(Chemins.boutique),
         ),
         const SizedBox(height: Espaces.x16),
 
@@ -343,7 +342,7 @@ class _Contenu extends ConsumerWidget {
         // En dernier, et en rouge : c'est la seule action irréversible de
         // l'application. L'écran qui suit dit ce qui part et ce qui reste.
         TextButton.icon(
-          onPressed: () => context.go(Chemins.suppression),
+          onPressed: () => context.descendre(Chemins.suppression),
           icon: const Icon(Icons.delete_outline, size: 20),
           label: Text(Fr.suppression.entree),
           style: TextButton.styleFrom(

@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../composants/bouton.dart';
 import '../composants/carte.dart';
 import '../composants/etat_vide.dart';
@@ -144,7 +143,7 @@ class _EcranCoursState extends ConsumerState<EcranCours> {
                     libelle: Fr.commun.retour,
                     icone: Icons.arrow_back,
                     variante: VarianteBouton.secondaire,
-                    onTap: () => context.go(Chemins.reviser),
+                    onTap: () => context.remonter(Chemins.reviser),
                   ),
                 ),
               ),
@@ -172,7 +171,7 @@ class _Absent extends StatelessWidget {
           libelle: Fr.commun.retour,
           icone: Icons.arrow_back,
           variante: VarianteBouton.secondaire,
-          onTap: () => context.go(Chemins.reviser),
+          onTap: () => context.remonter(Chemins.reviser),
         ),
       ),
     );
@@ -303,7 +302,7 @@ class _Contenu extends ConsumerWidget {
               icone: Icons.bolt,
               onTap: cours.nbQuestions == 0
                   ? null
-                  : () => context.go(Chemins.session(cours.id)),
+                  : () => context.descendre(Chemins.session(cours.id)),
             ),
 
             // Les fiches en second : le QCM est le cœur du produit, et un
@@ -313,7 +312,7 @@ class _Contenu extends ConsumerWidget {
                 libelle: Fr.fiches.voirFiches,
                 icone: Icons.style,
                 variante: VarianteBouton.secondaire,
-                onTap: () => context.go(Chemins.fiches(cours.id)),
+                onTap: () => context.descendre(Chemins.fiches(cours.id)),
               ),
           ],
         ),
@@ -518,7 +517,7 @@ class _Echec extends StatelessWidget {
             libelle: Fr.commun.retour,
             icone: Icons.arrow_back,
             variante: VarianteBouton.secondaire,
-            onTap: () => context.go(Chemins.reviser),
+            onTap: () => context.remonter(Chemins.reviser),
           ),
         ],
       ),
@@ -536,7 +535,7 @@ class _Retour extends StatelessWidget {
     return Align(
       alignment: Alignment.centerLeft,
       child: TextButton.icon(
-        onPressed: () => context.go(Chemins.reviser),
+        onPressed: () => context.remonter(Chemins.reviser),
         icon: const Icon(Icons.arrow_back, size: 20),
         label: Text(titre),
         style: TextButton.styleFrom(

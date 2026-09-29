@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../composants/bouton.dart';
 import '../composants/carte.dart';
 import '../composants/coquille.dart';
@@ -29,7 +28,6 @@ class EcranReviser extends ConsumerWidget {
     final profil = ref.watch(profilProvider);
 
     return Coquille(
-      ongletActif: Chemins.reviser,
       serie: switch (profil) {
         AsyncData(:final value) when value != null => etatSerie(
           current: value.serieCourante,
@@ -95,7 +93,7 @@ class _Liste extends StatelessWidget {
           Bouton(
             libelle: Fr.reviser.ajouterCours,
             icone: Icons.add,
-            onTap: () => context.go(Chemins.ajouterCours),
+            onTap: () => context.descendre(Chemins.ajouterCours),
           ),
           const SizedBox(height: Espaces.x20),
 
@@ -109,7 +107,7 @@ class _Liste extends StatelessWidget {
                   action: Bouton(
                     libelle: Fr.reviser.ajouterCours,
                     icone: Icons.add,
-                    onTap: () => context.go(Chemins.ajouterCours),
+                    onTap: () => context.descendre(Chemins.ajouterCours),
                   ),
                 ),
               ],
@@ -145,7 +143,7 @@ class CarteCours extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => context.go(Chemins.cours(cours.id)),
+      onTap: () => context.descendre(Chemins.cours(cours.id)),
       child: Carte(
         enfants: [
           Row(

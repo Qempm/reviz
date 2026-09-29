@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/physics.dart';
 
 // Jetons du design system Reviz.
 //
@@ -163,4 +164,48 @@ abstract final class Mouvement {
 
   /// Ressort du web : raideur 420, amortissement 32, masse 0,7.
   static const ressort = SpringDescription(mass: 0.7, stiffness: 420, damping: 32);
+
+  /// Ressort « vif » : amortissement réduit d'un quart sous le critique
+  /// (ζ ≈ 0,75), donc un **léger dépassement** avant de se poser. C'est ce
+  /// qui fait qu'un objet semble avoir une masse plutôt que glisser sur un
+  /// rail — la différence entre une interface qui répond et une qui s'anime.
+  static const ressortVif = SpringDescription(
+    mass: 1,
+    stiffness: 380,
+    damping: 29,
+  );
+
+  /// Durée de la glisse de la pilule de navigation. Le ressort vif est posé
+  /// à ~1 % en 0,3 s ; 380 ms lui laissent le temps de finir sans traîner.
+  static const glisse = Duration(milliseconds: 380);
+
+  /// La courbe de la glisse, tirée du ressort vif.
+  static const courbeGlisse = CourbeRessort(ressortVif, glisse);
+}
+
+/// Une courbe tirée d'un ressort physique.
+///
+/// Les animations implicites de Flutter (`AnimatedPositioned`,
+/// `AnimatedAlign`…) veulent une `Curve`, pas une simulation. Celle-ci rejoue
+/// une `SpringSimulation` sur la durée de l'animation : on garde la commodité
+/// des widgets implicites, et on gagne le dépassement et le retour d'un vrai
+/// ressort — ce qu'aucune `Cubic` ne sait faire, puisqu'elle ne dépasse
+/// jamais sa cible deux fois.
+class CourbeRessort extends Curve {
+  const CourbeRessort(this.ressort, this.duree);
+
+  final SpringDescription ressort;
+
+  /// La durée de l'animation qui utilisera la courbe : c'est elle qui relie
+  /// le temps normalisé `t` au temps physique de la simulation.
+  final Duration duree;
+
+  /// Une simulation n'atteint jamais tout à fait 1 ; `Curve.transform`
+  /// renvoie déjà 0 et 1 exacts aux bornes, donc la pilule se pose au pixel
+  /// près sans rien ajouter ici.
+  @override
+  double transformInternal(double t) {
+    final secondes = duree.inMicroseconds / Duration.microsecondsPerSecond;
+    return SpringSimulation(ressort, 0, 1, 0).x(t * secondes);
+  }
 }
