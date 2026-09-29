@@ -60,6 +60,10 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  # Génère l'écran de lancement natif d'Android — celui que le système montre
+  # avant que Flutter ait dessiné quoi que ce soit. Outil de génération
+  # seulement : rien n'en part dans l'APK hormis les ressources qu'il écrit.
+  flutter_native_splash: ^2.4.6
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
@@ -82,6 +86,9 @@ flutter:
     # et le public a un forfait data limité. Produits par
     # `node scripts/avatars.mjs`.
     - assets/avatars/
+    # Le logo, dans l'en-tête et à la connexion : la marque doit se voir dans
+    # l'application, pas seulement sur l'écran d'accueil du téléphone. 30 ko.
+    - assets/marque/logo.png
 
   fonts:
     # Nunito Sans embarquée, et non téléchargée par `google_fonts` au premier
@@ -100,3 +107,21 @@ flutter:
           weight: 700
         - asset: assets/polices/NunitoSans.ttf
           weight: 800
+
+# Écran de lancement : le logo sur le jaune de marque, au lieu d'un écran
+# blanc pendant que Flutter démarre — la première seconde que voit un
+# étudiant. Régénérer après modification :
+#
+#   dart run flutter_native_splash:create
+flutter_native_splash:
+  color: "#FFC300"
+  image: assets/marque/logo-objet.png
+  # Android 12 et plus découpent l'image dans un disque : la version dédiée
+  # tient dans ce disque par sa diagonale (voir scripts/icones.mjs pour le
+  # même raisonnement sur l'icône adaptative).
+  android_12:
+    color: "#FFC300"
+    image: assets/marque/logo-lancement-a12.png
+  android: true
+  ios: false
+  web: false

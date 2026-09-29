@@ -74,6 +74,10 @@ class _EnTete extends StatelessWidget {
       color: Couleurs.fond,
       child: Row(
         children: [
+          // Le logo à côté du nom : la marque vit dans l'application, pas
+          // seulement sur l'écran d'accueil du téléphone.
+          const LogoReviz(taille: 30),
+          const SizedBox(width: Espaces.x8),
           // `Expanded` et non `Text` + `Spacer` : à 320 px, les deux badges
           // et le titre ne tiennent pas côte à côte, et c'est le titre qui
           // doit céder — les compteurs sont l'information.
@@ -105,6 +109,30 @@ class _EnTete extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Le logo de Reviz : la pile de fiches cochée, sur le jaune.
+///
+/// C'est la même image que l'icône du téléphone (`scripts/icones.mjs`),
+/// réduite : on reconnaît dans l'application ce qu'on a touché pour l'ouvrir.
+class LogoReviz extends StatelessWidget {
+  const LogoReviz({super.key, this.taille = 32});
+
+  final double taille;
+
+  @override
+  Widget build(BuildContext context) {
+    return Image.asset(
+      'assets/marque/logo.png',
+      width: taille,
+      height: taille,
+      // Décodé à la taille d'affichage : 288 px gardés en mémoire pour un
+      // logo de 30 serait du gaspillage.
+      cacheWidth: (taille * 3).round(),
+      filterQuality: FilterQuality.medium,
+      semanticLabel: 'Reviz',
     );
   }
 }

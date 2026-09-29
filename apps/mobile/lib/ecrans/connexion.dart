@@ -2,9 +2,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../composants/apparition.dart';
 import '../composants/bouton.dart';
 import '../composants/carte.dart';
 import '../composants/champ.dart';
+import '../composants/coquille.dart' show LogoReviz;
 import '../donnees/config.dart';
 import '../donnees/google.dart';
 import '../donnees/supabase.dart';
@@ -191,18 +193,34 @@ class _EcranConnexionState extends State<EcranConnexion> {
                 vertical: Espaces.x32,
               ),
               children: [
-                Text(
-                  _etape == _Etape.email
-                      ? Fr.connexion.titre
-                      : Fr.connexion.titreCode,
-                  style: Typo.headlineXl,
+                // Le premier écran qu'un étudiant voit : la marque d'abord,
+                // puis ce qu'on attend de lui. Les trois entrent l'un après
+                // l'autre, dans l'ordre où on les lit.
+                const Apparition(
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: LogoReviz(taille: 64),
+                  ),
+                ),
+                const SizedBox(height: Espaces.x24),
+                Apparition(
+                  ordre: 1,
+                  child: Text(
+                    _etape == _Etape.email
+                        ? Fr.connexion.titre
+                        : Fr.connexion.titreCode,
+                    style: Typo.headlineXl,
+                  ),
                 ),
                 const SizedBox(height: Espaces.x8),
-                Text(
-                  _etape == _Etape.email
-                      ? Fr.connexion.sousTitre
-                      : Fr.connexion.sousTitreCode(_email.text.trim()),
-                  style: Typo.bodyMd.copyWith(color: Couleurs.attenue),
+                Apparition(
+                  ordre: 2,
+                  child: Text(
+                    _etape == _Etape.email
+                        ? Fr.connexion.sousTitre
+                        : Fr.connexion.sousTitreCode(_email.text.trim()),
+                    style: Typo.bodyMd.copyWith(color: Couleurs.attenue),
+                  ),
                 ),
                 const SizedBox(height: Espaces.x32),
 
