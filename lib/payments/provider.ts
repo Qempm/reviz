@@ -1,201 +1,232 @@
 /**
  * Abstraction des fournisseurs de paiement Mobile Money.
  *
- * Chaque fournisseur implémente l'interface PaymentProvider : initialiser une
- * transaction, la présenter à l'utilisateur, et recevoir la confirmation via
- * webhook. FedaPay est la première implémentation (Bénin, Togo, Côte d'Ivoire) ;
- * Moneroo et KkiaPay suivront avec la même interface.
+ * Chaque fournisseur implémente l'interface PaymentProvider : ouvrir une
+ * transaction, dire où l'étudiant la paie, et relire son statut. FedaPay est
+ * la première implémentation (Bénin, Togo, Côte d'Ivoire) ; Moneroo et
+ * KkiaPay suivront avec la même interface.
  *
- * Reference: https://fedapay.com/doc/
+ * **Réécrit le 29 septembre 2026, doc et SDK officiel en main.** La première
+ * version avait été écrite sans eux, et six points divergeaient de l'API
+ * réelle — chacun suffisait à ce qu'aucun paiement n'aboutisse : adresse de
+ * l'API figée sur la production, devise `'FCFA'` au lieu de `{ iso: 'XOF' }`,
+ * `metadata` au lieu de `custom_metadata`, lien de paiement fabriqué à la
+ * main au lieu d'être demandé, réponse lue sous `data` alors que FedaPay
+ * l'enveloppe sous `v1/transaction`, et signature de webhook calculée sur le
+ * corps seul. Les références :
+ *
+ *   https://docs.fedapay.com/api-reference/transactions/create
+ *   https://docs.fedapay.com/api-reference/transactions/create-token
+ *   https://docs.fedapay.com/fr/integration-api/webhooks
+ *   SDK Node `fedapay` 1.2.5, `src/Webhook.ts` et `src/Requestor.ts`
  */
 
 import { createHmac, timingSafeEqual } from 'node:crypto'
 
-/**
- * Résultat de l'initialisation d'une transaction.
- * Le client redirige vers `redirectUrl` pour compléter le paiement.
- */
-export type InitPaymentResult = {
-  ok: true
-  transactionId: string
-  redirectUrl: string
+/** Résultat de l'ouverture d'une transaction. */
+export type InitPaymentResult =
+  | {
+      ok: true
+      transactionId: string
+      /** La page FedaPay où l'étudiant choisit son opérateur et paie. */
+      redirectUrl: string
+      amount: number
+    }
+  | {
+      ok: false
+      error: string
+    }
+
+/** Les statuts d'une transaction FedaPay. */
+export type StatutTransaction =
+  | 'pending'
+  | 'approved'
+  | 'declined'
+  | 'canceled'
+  | 'refunded'
+  | 'transferred'
+  | 'expired'
+  | (string & {})
+
+export type EtatTransaction = {
+  id: string
+  status: StatutTransaction
   amount: number
-  currency: 'FCFA'
-} | {
-  ok: false
-  error: string
 }
 
-/**
- * Webhook de confirmation de paiement.
- * Le fournisseur appelle cette URL au changement de statut de la transaction.
- */
-export type WebhookPayload = {
-  transactionId: string
-  status: 'success' | 'failed' | 'cancelled'
-  amount: number
-  reference?: string
-  timestamp: string
-}
-
-/**
- * Interface abstraite d'un fournisseur de paiement.
- */
 export interface PaymentProvider {
-  /**
-   * Initialiser une transaction de paiement.
-   * Enregistre en base avec status='pending', retourne l'URL de redirection.
-   */
+  /** Ouvre une transaction et rend l'URL où l'étudiant la paie. */
   initPayment(opts: {
     userId: string
+    paiementId: string
     amount: number
     packCode: string
-    operator?: 'mtn' | 'moov' | 'wave'
-    phone?: string
+    /** Où FedaPay renvoie l'étudiant une fois le paiement tranché. */
+    retourUrl: string
   }): Promise<InitPaymentResult>
 
   /**
-   * Vérifier le statut d'une transaction (optionnel, pour polling).
-   */
-  checkStatus?(transactionId: string): Promise<{
-    status: 'pending' | 'success' | 'failed' | 'cancelled'
-    amount: number
-  }>
-
-  /**
-   * Vérifier la signature d'un webhook.
+   * Relit une transaction auprès du fournisseur.
    *
-   * Déclarée ici pour que ce soit le contrat et non un détail d'une
-   * implémentation : `FedaPayProvider` portait cette méthode sans que
-   * l'interface la connaisse, donc personne ne pouvait l'appeler à travers
-   * `createPaymentProvider()`, et elle était de fait morte — un second
-   * fournisseur aurait pu l'oublier sans que rien ne le signale.
+   * C'est le filet du webhook : si la notification se perd ou arrive avec
+   * une signature refusée, l'écran qui attend le paiement le demande
+   * directement, avec la clé secrète — une source aussi sûre que le webhook.
    */
-  verifyWebhookSignature(payload: string, signature: string): boolean
+  checkStatus(transactionId: string): Promise<EtatTransaction | null>
+}
+
+/** Les adresses de l'API, reprises du SDK officiel (`Requestor.ts`). */
+const BASE_SANDBOX = 'https://sandbox-api.fedapay.com'
+const BASE_LIVE = 'https://api.fedapay.com'
+
+/**
+ * L'environnement se lit sur la clé elle-même.
+ *
+ * FedaPay préfixe ses clés secrètes `sk_sandbox_` ou `sk_live_`, et une clé
+ * d'un environnement est refusée par l'autre. Le déduire évite une seconde
+ * variable qui pourrait contredire la première — une clé de test envoyée en
+ * production répondrait 401, et on chercherait longtemps pourquoi.
+ */
+export function baseFedaPay(cle: string): string {
+  if (cle.startsWith('sk_live_')) return BASE_LIVE
+  if (cle.startsWith('sk_sandbox_')) return BASE_SANDBOX
+  throw new Error(
+    'FEDAPAY_SECRET_KEY doit commencer par sk_live_ ou sk_sandbox_ : ' +
+      'c’est la clé **secrète** du tableau de bord FedaPay, pas la publique.',
+  )
 }
 
 /**
- * FedaPay implementation for West African markets.
- * https://fedapay.com/doc/
- *
- * Supports Benin (MTN, Moov), Togo (MTN, Moov), Côte d'Ivoire (Orange, MTN).
+ * FedaPay enveloppe chaque objet sous son type : `{ "v1/transaction": {…} }`.
+ * Constaté dans les fixtures du SDK officiel, que la doc ne montre pas.
  */
+function deballer(corps: unknown, cle: string): Record<string, unknown> | null {
+  if (!corps || typeof corps !== 'object') return null
+  const objet = (corps as Record<string, unknown>)[cle]
+  return objet && typeof objet === 'object'
+    ? (objet as Record<string, unknown>)
+    : null
+}
+
 class FedaPayProvider implements PaymentProvider {
-  private apiKey: string
-  private baseUrl: string
-  private webhookSecret: string
+  private cle: string
+  private base: string
 
-  constructor(apiKey?: string, webhookSecret?: string) {
-    this.apiKey = apiKey || process.env.FEDAPAY_SECRET_KEY || ''
-    this.webhookSecret = webhookSecret || process.env.FEDAPAY_WEBHOOK_SECRET || ''
-    this.baseUrl = 'https://api.fedapay.com'
-
-    if (!this.apiKey) {
+  constructor(cle?: string) {
+    this.cle = cle || process.env.FEDAPAY_SECRET_KEY || ''
+    if (!this.cle) {
       throw new Error('FEDAPAY_SECRET_KEY missing in environment')
     }
-    if (!this.webhookSecret) {
-      throw new Error('FEDAPAY_WEBHOOK_SECRET missing in environment')
-    }
+    this.base = baseFedaPay(this.cle)
+  }
+
+  private appeler(methode: 'GET' | 'POST', chemin: string, corps?: unknown) {
+    return fetch(`${this.base}/v1${chemin}`, {
+      method: methode,
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${this.cle}`,
+      },
+      body: corps === undefined ? undefined : JSON.stringify(corps),
+    })
   }
 
   async initPayment(opts: {
     userId: string
+    paiementId: string
     amount: number
     packCode: string
-    operator?: 'mtn' | 'moov' | 'wave'
-    phone?: string
+    retourUrl: string
   }): Promise<InitPaymentResult> {
     try {
-      const response = await fetch(`${this.baseUrl}/v1/transactions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${this.apiKey}`,
+      // 1. La transaction.
+      const creation = await this.appeler('POST', '/transactions', {
+        description: `Reviz — pack ${opts.packCode}`,
+        amount: opts.amount,
+        currency: { iso: 'XOF' },
+        // Pour FedaPay, `callback_url` est la page où **l'étudiant** revient
+        // après avoir payé — pas l'adresse du webhook, qui se déclare dans
+        // le tableau de bord. Les confondre renvoyait l'étudiant sur une
+        // route d'API qui ne répond qu'en POST.
+        callback_url: opts.retourUrl,
+        custom_metadata: {
+          user_id: opts.userId,
+          pack_code: opts.packCode,
+          paiement_id: opts.paiementId,
         },
-        body: JSON.stringify({
-          amount: opts.amount,
-          currency: 'FCFA',
-          description: `Reviz pack ${opts.packCode}`,
-          customer: {
-            phone: opts.phone || '',
-          },
-          metadata: {
-            user_id: opts.userId,
-            pack_code: opts.packCode,
-          },
-          callback_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/payments/webhook`,
-          return_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/paiement/en-cours`,
-        }),
       })
 
-      if (!response.ok) {
-        const error = await response.json().catch(() => ({}))
+      const corpsCreation = await creation.json().catch(() => null)
+      if (!creation.ok) {
         return {
           ok: false,
-          error: error.message || `FedaPay returned ${response.status}`,
+          error:
+            (corpsCreation as { message?: string } | null)?.message ??
+            `FedaPay a répondu ${creation.status} à la création.`,
         }
       }
 
-      const data = (await response.json()) as {
-        transaction?: {
-          id: string | number
-          token?: string
-        }
-        data?: {
-          id: string | number
-          token?: string
-        }
+      const transaction = deballer(corpsCreation, 'v1/transaction')
+      const id = transaction?.id
+      if (typeof id !== 'number' && typeof id !== 'string') {
+        return { ok: false, error: 'Réponse FedaPay sans identifiant.' }
       }
 
-      // FedaPay wraps response in `data`
-      const tx = (data.data || data.transaction) as {
-        id: string | number
-        token?: string
-      } | undefined
+      // 2. Le lien de paiement, qui ne se devine pas : il porte un jeton.
+      const jeton = await this.appeler('POST', `/transactions/${id}/token`)
+      const corpsJeton = (await jeton.json().catch(() => null)) as {
+        url?: unknown
+      } | null
 
-      if (!tx?.id) {
+      if (!jeton.ok || typeof corpsJeton?.url !== 'string') {
         return {
           ok: false,
-          error: 'Invalid FedaPay response: no transaction ID',
+          error: `FedaPay n’a pas rendu de lien de paiement (${jeton.status}).`,
         }
       }
-
-      const redirectUrl = `${this.baseUrl}/checkout/${tx.id}${tx.token ? `?token=${tx.token}` : ''}`
 
       return {
         ok: true,
-        transactionId: String(tx.id),
-        redirectUrl,
+        transactionId: String(id),
+        redirectUrl: corpsJeton.url,
         amount: opts.amount,
-        currency: 'FCFA',
       }
     } catch (error) {
-      console.error('FedaPay initPayment error:', error)
+      console.error('FedaPay initPayment :', error)
       return {
         ok: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error.message : 'Erreur inconnue',
       }
     }
   }
 
-  /**
-   * Vérifie la signature d'un webhook FedaPay (en-tête
-   * `X-Fedapay-Signature`), avec le secret que porte cette instance.
-   *
-   * Délègue à `validateWebhookSignature` : il n'y a qu'une comparaison HMAC
-   * dans le dépôt, et c'est celle qui est testée. Deux implémentations
-   * concurrentes de la même vérification, c'était l'état précédent — et la
-   * seule des deux qui était appelée n'était pas celle-ci.
-   */
-  verifyWebhookSignature(payload: string, signature: string): boolean {
-    return validateWebhookSignature(payload, signature, this.webhookSecret)
+  async checkStatus(transactionId: string): Promise<EtatTransaction | null> {
+    try {
+      const reponse = await this.appeler(
+        'GET',
+        `/transactions/${encodeURIComponent(transactionId)}`,
+      )
+      if (!reponse.ok) return null
+
+      const transaction = deballer(
+        await reponse.json().catch(() => null),
+        'v1/transaction',
+      )
+      if (!transaction || typeof transaction.status !== 'string') return null
+
+      return {
+        id: String(transaction.id),
+        status: transaction.status,
+        amount: Number(transaction.amount ?? 0),
+      }
+    } catch (error) {
+      console.error('FedaPay checkStatus :', error)
+      return null
+    }
   }
 }
 
-/**
- * Factory to get the appropriate payment provider.
- * Currently only FedaPay is implemented.
- */
+/** Le fournisseur demandé. FedaPay seul pour l'instant. */
 export function createPaymentProvider(
   provider: string = 'fedapay',
 ): PaymentProvider {
@@ -209,38 +240,61 @@ export function createPaymentProvider(
 
 export { FedaPayProvider }
 
+/** Au-delà de cinq minutes, une signature est refusée : c'est le rejeu. */
+export const TOLERANCE_SIGNATURE_S = 300
+
 /**
- * Vérifie la signature d'un webhook : HMAC-SHA256 de la charge utile brute.
+ * Vérifie l'en-tête `X-FEDAPAY-SIGNATURE` d'un webhook.
  *
- * **La comparaison est à temps constant.** Un `===` sur deux chaînes s'arrête
- * au premier caractère différent : le temps de réponse renseigne alors sur le
- * nombre de caractères devinés, et une signature se reconstitue octet par
- * octet. `timingSafeEqual` compare la totalité, toujours.
+ * Le format est celui du SDK officiel (`WebhookSignature.verifyHeader`) :
+ * `t=<horodatage>,s=<signature>`, où la signature est le HMAC-SHA256
+ * hexadécimal de `"<horodatage>.<corps brut>"` avec le secret du point de
+ * terminaison (`wh_live_…` ou `wh_sandbox_…`). Plusieurs `s=` peuvent
+ * coexister pendant une rotation de secret : une seule doit correspondre.
  *
- * Trois refus avant même de comparer, parce que `timingSafeEqual` exige des
- * tampons de même longueur et lèverait sinon :
+ * **L'horodatage est signé**, ce qui permet de refuser un vieux message
+ * rejoué : sans la tolérance, quelqu'un qui aurait intercepté une
+ * notification `approved` pourrait la renvoyer indéfiniment.
  *
- *   * une signature vide — cas d'un en-tête absent ;
- *   * une signature qui n'est pas de l'hexadécimal ;
- *   * une signature de la mauvaise longueur.
- *
- * Aucun des trois ne peut venir d'un fournisseur légitime, et leur longueur
- * n'est pas un secret : la refuser tôt ne divulgue rien.
+ * **La comparaison est à temps constant.** Un `===` s'arrête au premier
+ * caractère différent, et le temps de réponse renseigne alors sur ce qui a
+ * été deviné. Une signature qui n'est pas de l'hexadécimal de la bonne
+ * longueur est écartée avant, parce que `timingSafeEqual` exige deux tampons
+ * de même taille et lèverait.
  */
 export function validateWebhookSignature(
   payload: string,
-  signature: string,
+  entete: string,
   secret: string,
+  maintenantS: number = Math.floor(Date.now() / 1000),
+  toleranceS: number = TOLERANCE_SIGNATURE_S,
 ): boolean {
-  if (!secret || !signature) return false
+  if (!secret || !entete) return false
 
-  const attendu = createHmac('sha256', secret).update(payload).digest('hex')
+  let horodatage = -1
+  const signatures: string[] = []
+  for (const morceau of entete.split(',')) {
+    const [cle, ...reste] = morceau.trim().split('=')
+    const valeur = reste.join('=')
+    if (cle === 't') horodatage = Number.parseInt(valeur, 10)
+    if (cle === 's') signatures.push(valeur)
+  }
 
-  if (signature.length !== attendu.length) return false
-  if (!/^[0-9a-fA-F]+$/.test(signature)) return false
+  if (!Number.isFinite(horodatage) || horodatage < 0) return false
+  if (signatures.length === 0) return false
+  if (Math.abs(maintenantS - horodatage) > toleranceS) return false
 
-  return timingSafeEqual(
-    Buffer.from(attendu, 'hex'),
-    Buffer.from(signature.toLowerCase(), 'hex'),
+  const attendu = Buffer.from(
+    createHmac('sha256', secret)
+      .update(`${horodatage}.${payload}`, 'utf8')
+      .digest('hex'),
+    'hex',
   )
+
+  return signatures.some((s) => {
+    if (s.length !== attendu.length * 2 || !/^[0-9a-fA-F]+$/.test(s)) {
+      return false
+    }
+    return timingSafeEqual(attendu, Buffer.from(s.toLowerCase(), 'hex'))
+  })
 }

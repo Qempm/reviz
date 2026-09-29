@@ -223,11 +223,43 @@ session. La vérification passe par `verifierRetrait()`, qui porte ces deux
 cas séparément, et le solde est relu côté serveur — un montant proposé par le
 client ne décide de rien.
 
+### `POST /api/payments/init`
+
+`{ packCode }` → `{ paiementId, transactionId, redirectUrl, montantFcfa }`.
+Le prix est lu en base. La route crée la ligne `payments` en `pending`, ouvre
+la transaction FedaPay (`currency: { iso: 'XOF' }`, `custom_metadata` avec
+`user_id`, `pack_code` et `paiement_id`), puis demande le lien de paiement par
+`POST /v1/transactions/{id}/token`. `callback_url` est `/paiement/retour` : la
+page où FedaPay renvoie **l'étudiant**, pas le webhook. **503** si
+`FEDAPAY_SECRET_KEY` manque ou n'est pas une clé secrète.
+
+L'environnement FedaPay se lit sur le préfixe de la clé : `sk_sandbox_` →
+`sandbox-api.fedapay.com`, `sk_live_` → `api.fedapay.com`.
+
+### `GET /api/payments/status[?id=<paiementId>]`
+
+→ `{ id, status, amount_fcfa, pack_code, created_at }`, `status` valant
+`pending`, `success` ou `failed`. **Filet du webhook** : tant que le paiement
+est `pending` depuis plus de 15 s, la route relit la transaction chez FedaPay
+(`GET /v1/transactions/{id}`, avec la clé secrète) et applique l'issue par
+`traiterTransaction()` — la même fonction que le webhook. Un étudiant qui a
+payé est donc activé même si la notification se perd. 400 sur un `id` qui
+n'est pas un UUID, 404 s'il n'y a rien à suivre.
+
 ### `POST /api/payments/webhook`
 
-Appelée par le fournisseur, jamais par un client. Signature HMAC-SHA256 sur la
-charge utile brute, en-tête `X-Fedapay-Signature`, **comparée à temps
-constant**.
+Appelée par FedaPay, jamais par un client. Déclarée dans le tableau de bord
+FedaPay (Webhooks → Nouveau webhook), avec les événements
+`transaction.approved`, `transaction.declined` et `transaction.canceled` ; son
+secret (`wh_live_…` / `wh_sandbox_…`, « Click to reveal ») va dans
+`FEDAPAY_WEBHOOK_SECRET`.
+
+Signature au format du SDK officiel : en-tête `X-FEDAPAY-SIGNATURE` valant
+`t=<horodatage>,s=<hmac>`, HMAC-SHA256 de `"<horodatage>.<corps brut>"`,
+**comparé à temps constant**, refusé au-delà de 5 minutes. Événement
+`{ name, entity }` : `name` vaut `transaction.approved`…, `entity` est la
+transaction. `approved` et `transferred` activent ; `declined`, `canceled` et
+`expired` échouent ; le reste est ignoré (`statutDepuisFedaPay()`).
 
 Elle répond **200 sur tout ce qui n'a pas d'effet** — statut `pending`,
 transaction inconnue, événement déjà traité : un autre code ferait réessayer le

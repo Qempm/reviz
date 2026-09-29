@@ -582,6 +582,41 @@ class DepotBoutique {
       depuis: (data) => data['active'] as bool? ?? true,
     );
   }
+
+  /// Ouvre un paiement FedaPay pour un pack. Le prix vient de la base, côté
+  /// serveur : l'application n'envoie que le code.
+  Future<Reponse<PaiementOuvert>> ouvrirPaiement(
+    ApiReviz api,
+    String codePack,
+  ) {
+    return api.poster<PaiementOuvert>(
+      '/api/payments/init',
+      corps: {'packCode': codePack},
+      depuis: (data) => PaiementOuvert(
+        id: data['paiementId'] as String,
+        url: data['redirectUrl'] as String,
+      ),
+    );
+  }
+
+  /// Où en est ce paiement : `pending`, `success` ou `failed`.
+  ///
+  /// Le serveur, tant que c'est `pending`, relit la transaction chez FedaPay :
+  /// interroger ici suffit à activer le pack même si le webhook s'est perdu.
+  Future<Reponse<String>> suivrePaiement(ApiReviz api, String id) {
+    return api.obtenir<String>(
+      '/api/payments/status?id=${Uri.encodeQueryComponent(id)}',
+      depuis: (data) => data['status'] as String? ?? 'pending',
+    );
+  }
+}
+
+/// Un paiement ouvert : son identifiant chez Reviz, et la page FedaPay.
+class PaiementOuvert {
+  const PaiementOuvert({required this.id, required this.url});
+
+  final String id;
+  final String url;
 }
 
 // ----------------------------------------------------------------- Gains

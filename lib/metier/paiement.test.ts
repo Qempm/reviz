@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   deciderPaiement,
+  statutDepuisFedaPay,
   statutDepuisFournisseur,
   type ContextePaiement,
 } from './paiement'
@@ -56,6 +57,27 @@ describe('statutDepuisFournisseur', () => {
     // Un paiement en cours n'est pas un échec : le traduire en `failed`
     // fermerait l'accès d'un étudiant en train de payer.
     expect(statutDepuisFournisseur('pending')).toBeNull()
+  })
+})
+
+describe('statutDepuisFedaPay', () => {
+  it('compte un paiement transféré comme payé', () => {
+    // `transferred` suit `approved` : l'argent est parti vers le compte
+    // marchand. Le traiter en échec retirerait un accès payé.
+    expect(statutDepuisFedaPay('approved')).toBe('approved')
+    expect(statutDepuisFedaPay('transferred')).toBe('approved')
+  })
+
+  it('compte une page refermée ou abandonnée comme un échec', () => {
+    expect(statutDepuisFedaPay('declined')).toBe('declined')
+    expect(statutDepuisFedaPay('canceled')).toBe('declined')
+    expect(statutDepuisFedaPay('expired')).toBe('declined')
+  })
+
+  it('n’invente pas d’issue pour un statut inconnu', () => {
+    expect(statutDepuisFedaPay('pending')).toBe('pending')
+    expect(statutDepuisFedaPay('refunded')).toBe('pending')
+    expect(statutDepuisFedaPay('un-statut-de-2027')).toBe('pending')
   })
 })
 

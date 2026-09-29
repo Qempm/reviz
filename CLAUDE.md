@@ -162,8 +162,15 @@ Ce qui reste à faire, par ordre de valeur :
    GitHub — la page `/app` affiche le bouton, la taille et l'empreinte. Reste
    à l'**essayer sur un vrai téléphone** : c'est la seule chose qu'aucune
    vérification d'ici ne remplace.
-3. **Le paiement réel** — attend `FEDAPAY_SECRET_KEY` et
-   `FEDAPAY_WEBHOOK_SECRET`.
+3. **Le paiement réel** — branché le 29 septembre 2026, **réécrit d'après la
+   doc FedaPay et le SDK officiel** (la première version ne parlait pas la
+   langue de l'API : voir `lib/payments/provider.ts`). La boutique ouvre la
+   page FedaPay, l'écran `EcranPaiement` suit l'issue, et `/api/payments/status`
+   relit FedaPay si le webhook tarde. Clé **secrète** (`sk_live_` ou
+   `sk_sandbox_`, l'environnement s'en déduit) dans `FEDAPAY_SECRET_KEY` ;
+   secret du webhook (`wh_…`, créé dans le tableau de bord FedaPay sur
+   `/api/payments/webhook`) dans `FEDAPAY_WEBHOOK_SECRET` — **les deux aussi
+   sur Vercel**. Reste un vrai paiement, de préférence en sandbox d'abord.
 4. **La connexion Google** — configurée le 29 septembre 2026 : ID client
    **Web** dans `.env.local` (`GOOGLE_WEB_CLIENT_ID`, compilé dans l'APK depuis
    la 2.1.1), client **Android** créé côté Google Cloud (paquet

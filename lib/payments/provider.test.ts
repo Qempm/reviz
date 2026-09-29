@@ -1,6 +1,7 @@
 import { createHmac } from 'node:crypto'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
+  baseFedaPay,
   createPaymentProvider,
   FedaPayProvider,
   validateWebhookSignature,
@@ -9,80 +10,101 @@ import {
 /**
  * Tests du fournisseur de paiement.
  *
- * Ce fichier — celui qui manipule l'argent — n'en avait aucun. Deux choses
- * comptent ici : qu'une signature ne soit acceptée que si elle est juste, et
- * qu'une réponse inattendue du fournisseur ne soit jamais prise pour un
- * succès. Le reste de la chaîne est vérifié par `lib/metier/paiement.test.ts`.
+ * Les formats attendus viennent de la doc FedaPay et du SDK Node officiel
+ * (`fedapay` 1.2.5), pas de ce que le code faisait : la première version de
+ * ce fichier testait fidèlement une implémentation qui ne parlait pas la
+ * langue de l'API, et elle passait au vert.
  */
 
-const SECRET = 'un-secret-de-webhook'
-const CHARGE = '{"event":"transaction.approved","data":{"id":42}}'
+const SECRET = 'wh_sandbox_un-secret-de-webhook'
+const CHARGE = JSON.stringify({
+  name: 'transaction.approved',
+  object: 'transaction',
+  entity: { id: 42, status: 'approved', amount: 1500 },
+})
+const MAINTENANT = 1_790_000_000
 
-const signer = (charge: string, secret = SECRET) =>
-  createHmac('sha256', secret).update(charge).digest('hex')
+/** L'en-tête tel que FedaPay le produit (`generateTestHeaderString`). */
+const entete = (
+  charge: string,
+  { secret = SECRET, t = MAINTENANT }: { secret?: string; t?: number } = {},
+) =>
+  `t=${t},s=${createHmac('sha256', secret).update(`${t}.${charge}`).digest('hex')}`
+
+const verifier = (charge: string, en: string, secret = SECRET) =>
+  validateWebhookSignature(charge, en, secret, MAINTENANT)
 
 describe('validateWebhookSignature', () => {
-  it('accepte une signature juste', () => {
-    expect(validateWebhookSignature(CHARGE, signer(CHARGE), SECRET)).toBe(true)
+  it('accepte un en-tête FedaPay juste', () => {
+    expect(verifier(CHARGE, entete(CHARGE))).toBe(true)
   })
 
-  it('accepte la même signature en majuscules', () => {
-    // L'hexadécimal n'a pas de casse ; un fournisseur peut envoyer l'un ou
-    // l'autre, et refuser sur ce motif serait un refus au hasard.
-    expect(
-      validateWebhookSignature(CHARGE, signer(CHARGE).toUpperCase(), SECRET),
-    ).toBe(true)
+  it('refuse l’ancien calcul, sur le corps seul', () => {
+    // C'est ce que faisait la première version : aucune vraie notification
+    // FedaPay ne l'aurait passé. Garder ce test empêche d'y revenir.
+    const corpsSeul = createHmac('sha256', SECRET).update(CHARGE).digest('hex')
+    expect(verifier(CHARGE, corpsSeul)).toBe(false)
+    expect(verifier(CHARGE, `t=${MAINTENANT},s=${corpsSeul}`)).toBe(false)
   })
 
-  it('refuse une charge utile modifiée', () => {
-    const signature = signer(CHARGE)
-    const falsifiee = CHARGE.replace('42', '43')
-    expect(validateWebhookSignature(falsifiee, signature, SECRET)).toBe(false)
+  it('refuse un corps modifié', () => {
+    const falsifiee = CHARGE.replace('1500', '1')
+    expect(verifier(falsifiee, entete(CHARGE))).toBe(false)
   })
 
   it('refuse un autre secret', () => {
-    expect(
-      validateWebhookSignature(CHARGE, signer(CHARGE, 'autre'), SECRET),
-    ).toBe(false)
+    expect(verifier(CHARGE, entete(CHARGE, { secret: 'wh_sandbox_autre' }))).toBe(
+      false,
+    )
   })
 
-  it('refuse une signature absente', () => {
-    // Cas de l'en-tête manquant, qui arrive au code sous forme de chaîne
-    // vide. `timingSafeEqual` lèverait sur des tampons de tailles
-    // différentes : le refus doit venir avant.
-    expect(validateWebhookSignature(CHARGE, '', SECRET)).toBe(false)
+  it('refuse un message rejoué au-delà de cinq minutes', () => {
+    const ancien = entete(CHARGE, { t: MAINTENANT - 301 })
+    expect(verifier(CHARGE, ancien)).toBe(false)
+    const recent = entete(CHARGE, { t: MAINTENANT - 299 })
+    expect(verifier(CHARGE, recent)).toBe(true)
   })
 
-  it('refuse un secret absent', () => {
-    // Sans secret configuré, tout serait accepté par une HMAC sur chaîne
-    // vide — c'est-à-dire n'importe quel appelant.
-    expect(validateWebhookSignature(CHARGE, signer(CHARGE), '')).toBe(false)
+  it('ne se laisse pas tromper par un horodatage changé', () => {
+    // L'horodatage est signé : le rajeunir invalide la signature.
+    const vieux = entete(CHARGE, { t: MAINTENANT - 3600 })
+    const rajeuni = vieux.replace(`t=${MAINTENANT - 3600}`, `t=${MAINTENANT}`)
+    expect(verifier(CHARGE, rajeuni)).toBe(false)
   })
 
-  it('refuse une signature trop courte, sans lever', () => {
-    const tronquee = signer(CHARGE).slice(0, 32)
-    expect(() =>
-      validateWebhookSignature(CHARGE, tronquee, SECRET),
-    ).not.toThrow()
-    expect(validateWebhookSignature(CHARGE, tronquee, SECRET)).toBe(false)
+  it('accepte une signature parmi plusieurs, pendant une rotation', () => {
+    const bonne = entete(CHARGE).split(',s=')[1]
+    expect(verifier(CHARGE, `t=${MAINTENANT},s=${'0'.repeat(64)},s=${bonne}`)).toBe(
+      true,
+    )
   })
 
-  it('refuse ce qui n’est pas de l’hexadécimal, sans lever', () => {
-    // `Buffer.from(x, 'hex')` ne lève pas sur une chaîne invalide : il
-    // s'arrête au premier caractère non hexadécimal et rend un tampon plus
-    // court, ce qui ferait lever `timingSafeEqual`. D'où le filtre explicite.
-    const bruit = 'z'.repeat(signer(CHARGE).length)
-    expect(() => validateWebhookSignature(CHARGE, bruit, SECRET)).not.toThrow()
-    expect(validateWebhookSignature(CHARGE, bruit, SECRET)).toBe(false)
+  it('accepte la signature en majuscules', () => {
+    const [t, s] = entete(CHARGE).split(',s=')
+    expect(verifier(CHARGE, `${t},s=${s.toUpperCase()}`)).toBe(true)
   })
 
-  it('compare la totalité de la signature, pas seulement son début', () => {
-    // Le premier octet juste et le reste faux doit être refusé comme
-    // n'importe quoi d'autre : c'est ce qu'un `===` interrompu rendrait
-    // mesurable au chronomètre.
-    const juste = signer(CHARGE)
-    const presque = juste.slice(0, 2) + 'f'.repeat(juste.length - 2)
-    expect(validateWebhookSignature(CHARGE, presque, SECRET)).toBe(false)
+  it('refuse les en-têtes incomplets ou mal formés, sans lever', () => {
+    const s = entete(CHARGE).split(',s=')[1]
+    expect(verifier(CHARGE, '')).toBe(false)
+    expect(verifier(CHARGE, `s=${s}`)).toBe(false)
+    expect(verifier(CHARGE, `t=${MAINTENANT}`)).toBe(false)
+    expect(verifier(CHARGE, `t=abc,s=${s}`)).toBe(false)
+    expect(verifier(CHARGE, `t=${MAINTENANT},s=zz${s.slice(2)}`)).toBe(false)
+    expect(verifier(CHARGE, `t=${MAINTENANT},s=${s.slice(1)}`)).toBe(false)
+    expect(verifier(CHARGE, entete(CHARGE), '')).toBe(false)
+  })
+})
+
+describe('baseFedaPay', () => {
+  it('lit l’environnement sur la clé', () => {
+    expect(baseFedaPay('sk_live_abc')).toBe('https://api.fedapay.com')
+    expect(baseFedaPay('sk_sandbox_abc')).toBe('https://sandbox-api.fedapay.com')
+  })
+
+  it('refuse une clé publique ou une autre valeur', () => {
+    expect(() => baseFedaPay('pk_live_abc')).toThrow(/secrète/)
+    expect(() => baseFedaPay('https://exemple.com')).toThrow(/sk_live_/)
   })
 })
 
@@ -90,8 +112,7 @@ describe('createPaymentProvider', () => {
   const env = { ...process.env }
 
   beforeEach(() => {
-    process.env.FEDAPAY_SECRET_KEY = 'sk_test'
-    process.env.FEDAPAY_WEBHOOK_SECRET = SECRET
+    process.env.FEDAPAY_SECRET_KEY = 'sk_sandbox_test'
   })
 
   afterEach(() => {
@@ -111,121 +132,143 @@ describe('createPaymentProvider', () => {
 
   it('refuse de se construire sans clé', () => {
     delete process.env.FEDAPAY_SECRET_KEY
-    // Mieux vaut échouer au démarrage qu'envoyer une requête sans
-    // authentification et interpréter le refus comme un paiement échoué.
+    // Mieux vaut échouer tôt qu'envoyer une requête sans authentification et
+    // prendre le refus pour un paiement échoué.
     expect(() => createPaymentProvider()).toThrow(/FEDAPAY_SECRET_KEY/)
   })
 
-  it('refuse de se construire sans secret de webhook', () => {
+  it('n’exige pas le secret du webhook pour ouvrir un paiement', () => {
+    // La première version l'exigeait : un secret manquant empêchait
+    // l'étudiant de payer, alors qu'il ne sert qu'à lire les notifications.
     delete process.env.FEDAPAY_WEBHOOK_SECRET
-    expect(() => createPaymentProvider()).toThrow(/FEDAPAY_WEBHOOK_SECRET/)
-  })
-
-  it('vérifie une signature à travers l’interface', () => {
-    // Le point de la correction : cette méthode existait déjà mais était
-    // absente de l'interface, donc inatteignable par `createPaymentProvider`.
-    const fournisseur = createPaymentProvider()
-    expect(fournisseur.verifyWebhookSignature(CHARGE, signer(CHARGE))).toBe(
-      true,
-    )
-    expect(fournisseur.verifyWebhookSignature(CHARGE, signer(CHARGE, 'x'))).toBe(
-      false,
-    )
+    expect(() => createPaymentProvider()).not.toThrow()
   })
 })
 
 describe('FedaPayProvider.initPayment', () => {
-  const env = { ...process.env }
-
-  beforeEach(() => {
-    process.env.FEDAPAY_SECRET_KEY = 'sk_test'
-    process.env.FEDAPAY_WEBHOOK_SECRET = SECRET
-    process.env.NEXT_PUBLIC_APP_URL = 'https://reviz.app'
-  })
-
-  afterEach(() => {
-    process.env = { ...env }
-    vi.restoreAllMocks()
-  })
+  afterEach(() => vi.restoreAllMocks())
 
   const reponse = (corps: unknown, ok = true, status = 200) =>
-    ({
-      ok,
-      status,
-      json: async () => corps,
-    }) as Response
+    ({ ok, status, json: async () => corps }) as Response
 
   const opts = {
     userId: '11111111-1111-1111-1111-111111111111',
-    amount: 500,
+    paiementId: '22222222-2222-2222-2222-222222222222',
+    amount: 1500,
     packCode: 'controle',
-    phone: '+22997123456',
+    retourUrl: 'https://reviz.app/paiement/retour',
   }
 
-  it('rend l’identifiant et l’URL de paiement', async () => {
-    const fetchMock = vi
+  it('crée la transaction dans la forme de l’API, puis demande le lien', async () => {
+    const appels = vi
       .spyOn(globalThis, 'fetch')
-      .mockResolvedValue(reponse({ data: { id: 777, token: 'tok' } }))
+      .mockResolvedValueOnce(
+        reponse({ 'v1/transaction': { id: 42, status: 'pending' } }, true, 201),
+      )
+      .mockResolvedValueOnce(
+        reponse({ token: 'JETON', url: 'https://process.fedapay.com/JETON' }),
+      )
 
-    const resultat = await new FedaPayProvider().initPayment(opts)
+    const resultat = await new FedaPayProvider('sk_sandbox_x').initPayment(opts)
 
-    expect(resultat.ok).toBe(true)
-    if (!resultat.ok) return
-    expect(resultat.transactionId).toBe('777')
-    expect(resultat.redirectUrl).toContain('777')
-    expect(resultat.redirectUrl).toContain('token=tok')
-    // Le montant rendu est celui demandé : jamais celui que renvoie le
-    // fournisseur, qui n'a pas à décider du prix d'un pack.
-    expect(resultat.amount).toBe(500)
+    expect(resultat).toEqual({
+      ok: true,
+      transactionId: '42',
+      redirectUrl: 'https://process.fedapay.com/JETON',
+      amount: 1500,
+    })
 
-    const [, init] = fetchMock.mock.calls[0]
-    const envoye = JSON.parse(String((init as RequestInit).body))
-    // Les métadonnées sont ce que le webhook retrouvera : sans elles, un
-    // paiement ne peut pas être rattaché à un étudiant.
-    expect(envoye.metadata).toEqual({
+    const [url, init] = appels.mock.calls[0]
+    expect(url).toBe('https://sandbox-api.fedapay.com/v1/transactions')
+    expect((init?.headers as Record<string, string>).Authorization).toBe(
+      'Bearer sk_sandbox_x',
+    )
+    const corps = JSON.parse(String(init?.body))
+    expect(corps.currency).toEqual({ iso: 'XOF' })
+    expect(corps.amount).toBe(1500)
+    expect(corps.callback_url).toBe(opts.retourUrl)
+    expect(corps.custom_metadata).toEqual({
       user_id: opts.userId,
       pack_code: 'controle',
+      paiement_id: opts.paiementId,
     })
-    expect(envoye.callback_url).toBe('https://reviz.app/api/payments/webhook')
-  })
 
-  it('accepte aussi la forme « transaction » de la réponse', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      reponse({ transaction: { id: '888' } }),
+    expect(appels.mock.calls[1][0]).toBe(
+      'https://sandbox-api.fedapay.com/v1/transactions/42/token',
     )
-
-    const resultat = await new FedaPayProvider().initPayment(opts)
-    expect(resultat.ok).toBe(true)
-    if (resultat.ok) expect(resultat.transactionId).toBe('888')
+    expect(appels.mock.calls[1][1]?.method).toBe('POST')
   })
 
-  it('refuse une réponse sans identifiant de transaction', async () => {
-    // Le cas qui compte : sans identifiant, le webhook ne pourra jamais
-    // rattacher le paiement. Prendre cela pour un succès laisserait
-    // l'étudiant devant une page de paiement vide.
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(reponse({ data: {} }))
+  it('va en production avec une clé live', async () => {
+    const appels = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(reponse({ 'v1/transaction': { id: 7 } }))
+      .mockResolvedValueOnce(reponse({ url: 'https://process.fedapay.com/T' }))
 
-    const resultat = await new FedaPayProvider().initPayment(opts)
-    expect(resultat.ok).toBe(false)
+    await new FedaPayProvider('sk_live_x').initPayment(opts)
+    expect(appels.mock.calls[0][0]).toBe('https://api.fedapay.com/v1/transactions')
   })
 
-  it('rapporte une erreur HTTP du fournisseur', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+  it('rend le message de FedaPay quand la création est refusée', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
       reponse({ message: 'Montant invalide' }, false, 422),
     )
-
-    const resultat = await new FedaPayProvider().initPayment(opts)
-    expect(resultat.ok).toBe(false)
-    if (!resultat.ok) expect(resultat.error).toBe('Montant invalide')
+    const resultat = await new FedaPayProvider('sk_sandbox_x').initPayment(opts)
+    expect(resultat).toEqual({ ok: false, error: 'Montant invalide' })
   })
 
-  it('rapporte une panne réseau sans lever', async () => {
-    // Une exception qui traverse ferait un 500 opaque sur l'écran boutique.
-    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('ECONNRESET'))
-    vi.spyOn(console, 'error').mockImplementation(() => {})
-
-    const resultat = await new FedaPayProvider().initPayment(opts)
+  it('ne prend jamais une réponse sans identifiant pour un succès', async () => {
+    // L'ancienne lecture (`data.data`) sur une réponse réelle, enveloppée
+    // sous `v1/transaction`, aurait abouti ici.
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      reponse({ data: { id: 42 } }),
+    )
+    const resultat = await new FedaPayProvider('sk_sandbox_x').initPayment(opts)
     expect(resultat.ok).toBe(false)
-    if (!resultat.ok) expect(resultat.error).toBe('ECONNRESET')
+  })
+
+  it('échoue si le lien de paiement ne vient pas', async () => {
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(reponse({ 'v1/transaction': { id: 42 } }))
+      .mockResolvedValueOnce(reponse({}, false, 500))
+    const resultat = await new FedaPayProvider('sk_sandbox_x').initPayment(opts)
+    expect(resultat.ok).toBe(false)
+  })
+
+  it('transforme une coupure réseau en échec, sans lever', async () => {
+    vi.spyOn(globalThis, 'fetch').mockRejectedValueOnce(new Error('réseau'))
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const resultat = await new FedaPayProvider('sk_sandbox_x').initPayment(opts)
+    expect(resultat).toEqual({ ok: false, error: 'réseau' })
+  })
+})
+
+describe('FedaPayProvider.checkStatus', () => {
+  afterEach(() => vi.restoreAllMocks())
+
+  it('lit la transaction dans son enveloppe', async () => {
+    const appel = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        'v1/transaction': { id: 42, status: 'approved', amount: 1500 },
+      }),
+    } as Response)
+
+    const etat = await new FedaPayProvider('sk_sandbox_x').checkStatus('42')
+
+    expect(etat).toEqual({ id: '42', status: 'approved', amount: 1500 })
+    expect(appel.mock.calls[0][0]).toBe(
+      'https://sandbox-api.fedapay.com/v1/transactions/42',
+    )
+  })
+
+  it('rend null plutôt qu’un statut inventé', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
+      ok: false,
+      status: 404,
+      json: async () => ({}),
+    } as Response)
+    expect(await new FedaPayProvider('sk_sandbox_x').checkStatus('9')).toBeNull()
   })
 })

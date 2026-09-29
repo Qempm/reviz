@@ -88,9 +88,32 @@ class _Boutique {
       : '$n matières';
 
   final String choisir = 'Choisir ce pack';
+  String payer(int prix) => 'Payer $prix F';
   final String activerDecouverte = 'Activer gratuitement';
   final String decouverteUtilisee = 'Découverte déjà utilisée';
-  final String paiementBientot = 'Paiement Mobile Money bientôt disponible';
+  final String mobileMoney = 'Mobile Money, sur la page sécurisée de FedaPay';
+  final String ouvertureImpossible =
+      'Le paiement n’a pas pu s’ouvrir. Réessaie dans un instant.';
+
+  // Suivi du paiement
+  final String attenteTitre = 'On attend la confirmation';
+  final String attenteDetail =
+      'Valide le paiement sur ton téléphone, avec ton code Mobile Money, '
+      'puis reviens ici. Ça prend en général moins d’une minute.';
+  final String rouvrir = 'Rouvrir la page de paiement';
+  final String reussiTitre = 'Ton pack est actif !';
+  final String reussiDetail =
+      'Tout est débloqué. Bonne révision, et bon courage pour tes examens.';
+  final String commencer = 'Commencer à réviser';
+  final String echecTitre = 'Le paiement n’est pas passé';
+  final String echecDetail =
+      'Aucun montant n’a été prélevé. Tu peux réessayer quand tu veux.';
+  final String retourPacks = 'Revenir aux packs';
+  final String longTitre = 'Toujours en attente';
+  final String longDetail =
+      'FedaPay n’a pas encore confirmé. Si tu as bien payé, ton pack '
+      's’activera tout seul : tu peux fermer cet écran et revenir plus tard.';
+  final String verifier = 'Vérifier maintenant';
   final String activationImpossible =
       'L’activation n’a pas abouti. Réessaie dans un instant.';
 

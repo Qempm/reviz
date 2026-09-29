@@ -14,6 +14,7 @@ import 'ecrans/aide.dart';
 import 'ecrans/avatar.dart';
 import 'ecrans/carte.dart';
 import 'ecrans/boutique.dart';
+import 'ecrans/paiement.dart';
 import 'ecrans/classement.dart';
 import 'ecrans/connexion.dart';
 import 'ecrans/correction.dart';
@@ -59,6 +60,7 @@ abstract final class Chemins {
   static String session(String id) => '/cours/$id/session';
   static String fiches(String id) => '/cours/$id/fiches';
   static String correction(String id) => '/corrections/$id';
+  static String paiement(String id) => '/boutique/paiement/$id';
 }
 
 /// Les deux gestes de navigation de l'application.
@@ -74,7 +76,10 @@ extension NavigationReviz on BuildContext {
   /// Aller plus loin : de la liste au détail, du profil à l'avatar, du cours
   /// à la session. La page d'où l'on vient reste dessous, et le retour y
   /// ramène.
-  void descendre(String chemin) => push(chemin);
+  ///
+  /// `extra` passe à l'écran ce qui ne va pas dans l'adresse — le lien de la
+  /// page de paiement, par exemple, qui porte un jeton.
+  void descendre(String chemin, {Object? extra}) => push(chemin, extra: extra);
 
   /// Revenir d'où l'on vient. S'il n'y a rien dessous — l'écran a été ouvert
   /// par un lien direct —, on va au `repli`, qui est le parent logique : le
@@ -136,6 +141,20 @@ GoRouter creerRouteur(Ref ref) {
         path: Chemins.boutique,
         parentNavigatorKey: racine,
         builder: (_, _) => const EcranBoutique(),
+        routes: [
+          // Le suivi d'un paiement, au-dessus de la boutique : le retour y
+          // ramène, sur la liste des packs.
+          GoRoute(
+            path: 'paiement/:id',
+            parentNavigatorKey: racine,
+            builder: (_, etat) => EcranPaiement(
+              paiementId: etat.pathParameters['id']!,
+              // Pour « Rouvrir la page de paiement ». Absent si l'écran est
+              // ouvert autrement (lien direct) : le bouton ne s'affiche pas.
+              urlPaiement: etat.extra is String ? etat.extra as String : null,
+            ),
+          ),
+        ],
       ),
 
       // --- Les cinq onglets ------------------------------------------------

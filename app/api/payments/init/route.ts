@@ -19,9 +19,10 @@ import { createPaymentProvider } from '@/lib/payments/provider'
  * ni le passage de l'opérateur. Cette Action est partie avec `app/(app)/` ;
  * il ne reste que cette route, celle que Flutter appellera.
  *
- * Le paiement lui-même n'est pas branché : `FEDAPAY_SECRET_KEY` manque, et
- * `createPaymentProvider()` refuse de se construire sans. La boutique Flutter
- * le dit à l'écran plutôt que d'ouvrir une page vide.
+ * L'étudiant paie sur la page FedaPay (`redirectUrl`), puis y est renvoyé
+ * vers `/paiement/retour`. L'application, elle, suit l'issue par
+ * `/api/payments/status?id=…` : c'est ce suivi, pas la page de retour, qui
+ * décide de ce qu'elle affiche.
  */
 
 const corpsSchema = z.object({
@@ -56,6 +57,11 @@ export async function POST(request: Request) {
   }
 
   const { packCode, operator, phone } = analyse.data
+
+  // Où FedaPay renvoie l'étudiant. L'origine de la requête est celle du
+  // déploiement qui répond : juste en production comme en préversion.
+  const origine =
+    process.env.NEXT_PUBLIC_APP_URL ?? new URL(request.url).origin
   const userId = appelant.user.id
 
   // Le prix vient de la base, jamais du client : sans cela, un appel bricolé
@@ -135,13 +141,14 @@ export async function POST(request: Request) {
   try {
     resultat = await createPaymentProvider('fedapay').initPayment({
       userId,
+      paiementId: paiement.id,
       amount: pack.price_fcfa,
       packCode,
-      operator,
-      phone,
+      retourUrl: `${origine}/paiement/retour`,
     })
   } catch (e) {
-    // `createPaymentProvider` lève quand la clé manque de l'environnement.
+    // `createPaymentProvider` lève quand la clé manque de l'environnement,
+    // ou quand ce n'est pas une clé secrète (`sk_live_` / `sk_sandbox_`).
     console.error('[paiement] fournisseur indisponible', e)
     await admin.from('payments').update({ status: 'failed' }).eq('id', paiement.id)
     return Response.json(

@@ -29,6 +29,30 @@ import {
 /** Les statuts que FedaPay envoie. */
 export type StatutFournisseur = 'approved' | 'declined' | 'pending'
 
+/**
+ * Ramène un statut de transaction FedaPay à ce qui compte pour Reviz.
+ *
+ * FedaPay en connaît davantage que les trois de la première version :
+ * `canceled` (l'étudiant a refermé la page), `expired` (il ne l'a jamais
+ * finie), `transferred` (l'argent approuvé est parti vers le compte
+ * marchand — il **reste** payé), `refunded`. Un statut inconnu vaut
+ * `pending`, c'est-à-dire « ne rien faire » : mieux vaut attendre la
+ * notification suivante que prendre un statut nouveau pour un échec.
+ */
+export function statutDepuisFedaPay(statut: string): StatutFournisseur {
+  switch (statut) {
+    case 'approved':
+    case 'transferred':
+      return 'approved'
+    case 'declined':
+    case 'canceled':
+    case 'expired':
+      return 'declined'
+    default:
+      return 'pending'
+  }
+}
+
 /** Les statuts que porte la colonne `payments.status`. */
 export type StatutPaiement = 'pending' | 'success' | 'failed'
 
