@@ -1,28 +1,34 @@
 import { z } from 'zod'
 import { authentifier, refusSession } from '@/lib/supabase/jeton'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { createPaymentProvider } from '@/lib/payments/provider'
+import {
+  createPaymentProvider,
+  type PaymentProvider,
+} from '@/lib/payments/provider'
+import { normaliserTelephone } from '@/lib/auth/phone'
+import { modeFedaPay, OPERATEURS } from '@/lib/metier/operateurs'
 
 /**
  * POST /api/payments/init
  *
- * Ouvre une transaction Mobile Money et rend l'URL où l'étudiant paie.
+ * Ouvre un paiement Mobile Money **qui se fait entièrement dans
+ * l'application** : la route crée la transaction FedaPay, puis envoie la
+ * demande directement au téléphone de l'étudiant (`POST /v1/{mode}`). Il la
+ * valide avec son code secret ; l'application suit l'issue par
+ * `/api/payments/status?id=…`.
  *
- * Convertie au lot D : elle construisait son client depuis les cookies
- * uniquement — donc 401 à tout appel Flutter —, rendait `{ ok, redirectUrl }`
- * à plat au lieu de l'enveloppe commune, et répondait en anglais
- * (`Unauthorized`, `Invalid input`, `Pack not found`).
+ * Avant le 29 septembre 2026, la route rendait le lien de la page hébergée
+ * FedaPay, que l'application ouvrait dans un navigateur. Le propriétaire a
+ * voulu que rien ne fasse sortir de Reviz : seuls les opérateurs payables
+ * « sans redirection » sont acceptés (`lib/metier/operateurs.ts`).
  *
- * Elle était aussi la **deuxième** voie d'initiation de paiement : la Server
- * Action `initiatePayment` de l'écran boutique faisait presque la même chose,
- * en divergeant — elle n'avait ni le garde-fou « Découverte une seule fois »
- * ni le passage de l'opérateur. Cette Action est partie avec `app/(app)/` ;
- * il ne reste que cette route, celle que Flutter appellera.
+ * **Le client ne dit que son numéro et son opérateur.** Le prix vient de la
+ * base, le prénom du profil, l'e-mail de la session : un appel bricolé ne
+ * choisit ni combien payer, ni au nom de qui.
  *
- * L'étudiant paie sur la page FedaPay (`redirectUrl`), puis y est renvoyé
- * vers `/paiement/retour`. L'application, elle, suit l'issue par
- * `/api/payments/status?id=…` : c'est ce suivi, pas la page de retour, qui
- * décide de ce qu'elle affiche.
+ * Historique : convertie au lot D (cookies seuls, enveloppe à plat, réponses
+ * en anglais) ; seule voie d'initiation depuis le retrait de la Server Action
+ * `initiatePayment`, qui n'avait pas le garde-fou « Découverte une fois ».
  */
 
 const corpsSchema = z.object({
@@ -33,12 +39,15 @@ const corpsSchema = z.object({
     'semestre',
     'rattrapage',
   ]),
-  operator: z.enum(['mtn', 'moov', 'wave']).optional(),
-  phone: z
-    .string()
-    .regex(/^\+?[0-9]{8,15}$/)
-    .optional(),
+  // Facultatifs **pour le schéma seulement** : la 2.2.0 n'envoyait que le
+  // pack (elle ouvrait la page FedaPay). On la reconnaît à leur absence, pour
+  // lui dire de se mettre à jour plutôt que « vérifie le numéro ».
+  operateur: z.enum(OPERATEURS).optional(),
+  telephone: z.string().min(6).max(24).optional(),
 })
+
+const refus = (status: number, motif: string, error: string) =>
+  Response.json({ ok: false, error, motif }, { status })
 
 export async function POST(request: Request) {
   const appelant = await authentifier(request)
@@ -46,66 +55,88 @@ export async function POST(request: Request) {
 
   const analyse = corpsSchema.safeParse(await request.json().catch(() => null))
   if (!analyse.success) {
-    return Response.json(
-      {
-        ok: false,
-        error: 'Vérifie le pack, l’opérateur et le numéro.',
-        motif: 'entree-invalide',
-      },
-      { status: 400 },
+    return refus(
+      400,
+      'entree-invalide',
+      'Vérifie le pack, l’opérateur et le numéro.',
     )
   }
 
-  const { packCode, operator, phone } = analyse.data
-
-  // Où FedaPay renvoie l'étudiant. L'origine de la requête est celle du
-  // déploiement qui répond : juste en production comme en préversion.
-  const origine =
-    process.env.NEXT_PUBLIC_APP_URL ?? new URL(request.url).origin
+  const { packCode, operateur, telephone } = analyse.data
   const userId = appelant.user.id
 
-  // Le prix vient de la base, jamais du client : sans cela, un appel bricolé
-  // choisirait combien payer.
-  const [{ data: pack }, { count: decouverteDejaLa }] = await Promise.all([
-    appelant.supabase
-      .from('packs')
-      .select('code, price_fcfa')
-      .eq('code', packCode)
-      .maybeSingle(),
-    appelant.supabase
-      .from('subscriptions')
-      .select('pack_code', { count: 'exact', head: true })
-      .eq('user_id', userId)
-      .eq('pack_code', 'decouverte'),
-  ])
-
-  if (!pack) {
-    return Response.json(
-      { ok: false, error: 'Ce pack n’existe pas.', motif: 'pack-inconnu' },
-      { status: 404 },
+  if (!operateur || !telephone) {
+    return refus(
+      426,
+      'mise-a-jour',
+      'Mets Reviz à jour pour payer : le paiement se fait maintenant sans quitter l’application.',
     )
   }
 
-  if (packCode === 'decouverte' && (decouverteDejaLa ?? 0) > 0) {
-    return Response.json(
-      {
-        ok: false,
-        error: 'Tu as déjà utilisé le pack Découverte.',
-        motif: 'deja-utilise',
-      },
-      { status: 409 },
+  const numero = normaliserTelephone(telephone)
+  if (!numero.ok) {
+    return refus(
+      400,
+      'telephone-invalide',
+      'Ce numéro ne ressemble pas à un numéro Mobile Money.',
     )
+  }
+
+  // Le fournisseur d'abord : sans clé, inutile d'écrire quoi que ce soit.
+  let fournisseur: PaymentProvider
+  try {
+    fournisseur = createPaymentProvider('fedapay')
+  } catch (e) {
+    // Clé absente, ou qui n'est pas une clé secrète (`sk_live_` / `sk_sandbox_`).
+    console.error('[paiement] fournisseur indisponible', e)
+    return refus(
+      503,
+      'fournisseur-absent',
+      'Le paiement Mobile Money n’est pas encore disponible.',
+    )
+  }
+
+  const mode = modeFedaPay(operateur, numero.pays.code, fournisseur.sandbox)
+  if (!mode) {
+    return refus(
+      400,
+      'operateur-indisponible',
+      `Cet opérateur ne se paie pas encore dans Reviz pour ce pays (${numero.pays.nom}).`,
+    )
+  }
+
+  // Le prix vient de la base, jamais du client.
+  const [{ data: pack }, { count: decouverteDejaLa }, { data: profil }] =
+    await Promise.all([
+      appelant.supabase
+        .from('packs')
+        .select('code, price_fcfa')
+        .eq('code', packCode)
+        .maybeSingle(),
+      appelant.supabase
+        .from('subscriptions')
+        .select('pack_code', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .eq('pack_code', 'decouverte'),
+      appelant.supabase
+        .from('profiles')
+        .select('first_name')
+        .eq('id', userId)
+        .maybeSingle(),
+    ])
+
+  if (!pack) return refus(404, 'pack-inconnu', 'Ce pack n’existe pas.')
+
+  if (packCode === 'decouverte' && (decouverteDejaLa ?? 0) > 0) {
+    return refus(409, 'deja-utilise', 'Tu as déjà utilisé le pack Découverte.')
   }
 
   if (pack.price_fcfa === 0) {
     // Un pack gratuit n'a pas de transaction : il s'active directement.
-    return Response.json(
-      {
-        ok: false,
-        error: 'Ce pack est gratuit : active-le depuis la boutique.',
-        motif: 'pack-gratuit',
-      },
-      { status: 400 },
+    return refus(
+      400,
+      'pack-gratuit',
+      'Ce pack est gratuit : active-le depuis la boutique.',
     )
   }
 
@@ -117,8 +148,8 @@ export async function POST(request: Request) {
       user_id: userId,
       provider: 'fedapay',
       amount_fcfa: pack.price_fcfa,
-      operator: operator ?? null,
-      phone: phone ?? null,
+      operator: operateur,
+      phone: numero.e164,
       status: 'pending',
       pack_code: packCode,
     })
@@ -127,69 +158,72 @@ export async function POST(request: Request) {
 
   if (erreurPaiement || !paiement) {
     console.error('[paiement] création impossible', erreurPaiement)
-    return Response.json(
-      {
-        ok: false,
-        error: 'On n’a pas pu ouvrir le paiement. Réessaie dans un instant.',
-        motif: 'serveur',
-      },
-      { status: 500 },
+    return refus(
+      500,
+      'serveur',
+      'On n’a pas pu ouvrir le paiement. Réessaie dans un instant.',
     )
   }
 
-  let resultat
-  try {
-    resultat = await createPaymentProvider('fedapay').initPayment({
-      userId,
-      paiementId: paiement.id,
-      amount: pack.price_fcfa,
-      packCode,
-      retourUrl: `${origine}/paiement/retour`,
-    })
-  } catch (e) {
-    // `createPaymentProvider` lève quand la clé manque de l'environnement,
-    // ou quand ce n'est pas une clé secrète (`sk_live_` / `sk_sandbox_`).
-    console.error('[paiement] fournisseur indisponible', e)
+  const echouer = async (motif: string, message: string, detail: unknown) => {
     await admin.from('payments').update({ status: 'failed' }).eq('id', paiement.id)
-    return Response.json(
-      {
-        ok: false,
-        error: 'Le paiement Mobile Money n’est pas encore disponible.',
-        motif: 'fournisseur-absent',
-      },
-      { status: 503 },
+    console.error(`[paiement] ${motif}`, detail)
+    return refus(502, motif, message)
+  }
+
+  const telephoneFedaPay = { national: numero.national, pays: numero.pays.code }
+
+  // 1. La transaction et son jeton.
+  const transaction = await fournisseur.initPayment({
+    userId,
+    paiementId: paiement.id,
+    amount: pack.price_fcfa,
+    packCode,
+    client: {
+      prenom: profil?.first_name ?? null,
+      email: appelant.user.email ?? null,
+      telephone: telephoneFedaPay,
+    },
+  })
+
+  if (!transaction.ok) {
+    return echouer(
+      'fournisseur',
+      'Le paiement n’a pas pu s’ouvrir. Réessaie dans un instant.',
+      transaction.error,
     )
   }
 
-  if (!resultat.ok) {
-    await admin.from('payments').update({ status: 'failed' }).eq('id', paiement.id)
-    console.error('[paiement] ouverture refusée', resultat.error)
-    return Response.json(
-      {
-        ok: false,
-        error: 'Le paiement n’a pas pu s’ouvrir. Réessaie dans un instant.',
-        motif: 'fournisseur',
-      },
-      { status: 502 },
-    )
-  }
-
-  // `provider_ref` est ce que le webhook retrouvera : sans lui, un paiement
-  // réussi ne pourrait être rattaché à personne.
+  // `provider_ref` avant la demande : si le webhook arrive très vite, il
+  // doit déjà pouvoir rattacher la transaction à ce paiement.
   await admin
     .from('payments')
     .update({
-      provider_ref: resultat.transactionId,
-      raw: { redirectUrl: resultat.redirectUrl },
+      provider_ref: transaction.transactionId,
+      raw: { mode },
     })
     .eq('id', paiement.id)
+
+  // 2. La demande, envoyée au téléphone.
+  const demande = await fournisseur.envoyerDemande({
+    token: transaction.token,
+    mode,
+    telephone: telephoneFedaPay,
+  })
+
+  if (!demande.ok) {
+    return echouer(
+      'demande-refusee',
+      'La demande n’a pas pu partir vers ton téléphone. Vérifie le numéro et l’opérateur, puis réessaie.',
+      demande.error,
+    )
+  }
 
   return Response.json({
     ok: true,
     data: {
       paiementId: paiement.id,
-      transactionId: resultat.transactionId,
-      redirectUrl: resultat.redirectUrl,
+      transactionId: transaction.transactionId,
       montantFcfa: pack.price_fcfa,
     },
   })

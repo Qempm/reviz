@@ -164,9 +164,12 @@ Ce qui reste à faire, par ordre de valeur :
    vérification d'ici ne remplace.
 3. **Le paiement réel** — branché le 29 septembre 2026, **réécrit d'après la
    doc FedaPay et le SDK officiel** (la première version ne parlait pas la
-   langue de l'API : voir `lib/payments/provider.ts`). La boutique ouvre la
-   page FedaPay, l'écran `EcranPaiement` suit l'issue, et `/api/payments/status`
-   relit FedaPay si le webhook tarde. Clé **secrète** (`sk_live_` ou
+   langue de l'API : voir `lib/payments/provider.ts`). **Tout se fait dans
+   l'application** : `EcranPayer` (numéro pré-rempli, opérateur, nom et
+   e-mail du compte), la demande part sur le téléphone (`POST /v1/{mode}`),
+   `EcranPaiement` suit l'issue, et `/api/payments/status` relit FedaPay si
+   le webhook tarde. Seuls les opérateurs « sans redirection »
+   (`lib/metier/operateurs.ts`) ; Wave, Orange et le Burkina plus tard. Clé **secrète** (`sk_live_` ou
    `sk_sandbox_`, l'environnement s'en déduit) dans `FEDAPAY_SECRET_KEY` ;
    secret du webhook (`wh_…`, créé dans le tableau de bord FedaPay sur
    `/api/payments/webhook`) dans `FEDAPAY_WEBHOOK_SECRET` — **les deux aussi

@@ -225,13 +225,22 @@ client ne décide de rien.
 
 ### `POST /api/payments/init`
 
-`{ packCode }` → `{ paiementId, transactionId, redirectUrl, montantFcfa }`.
-Le prix est lu en base. La route crée la ligne `payments` en `pending`, ouvre
-la transaction FedaPay (`currency: { iso: 'XOF' }`, `custom_metadata` avec
-`user_id`, `pack_code` et `paiement_id`), puis demande le lien de paiement par
-`POST /v1/transactions/{id}/token`. `callback_url` est `/paiement/retour` : la
-page où FedaPay renvoie **l'étudiant**, pas le webhook. **503** si
-`FEDAPAY_SECRET_KEY` manque ou n'est pas une clé secrète.
+`{ packCode, operateur, telephone }` → `{ paiementId, transactionId,
+montantFcfa }`. **Le paiement se fait dans l'application** : la route crée la
+transaction FedaPay avec son `customer` (prénom du profil, e-mail de la
+session — jamais envoyés par le client), demande le jeton
+(`POST /v1/transactions/{id}/token`), puis envoie la demande au téléphone
+(`POST /v1/{mode}` `{ token, phone_number: { number, country } }`).
+L'étudiant la valide avec son code secret.
+
+`operateur` ∈ `mtn | moov | celtiis | togocel | free` ; le mode FedaPay est
+choisi par `modeFedaPay()` (`lib/metier/operateurs.ts`) selon le pays du
+numéro — Bénin `mtn_open` / `moov` / `sbin`, Togo `moov_tg` / `togocel`,
+CI `mtn_ci`, Sénégal `free_sn`, et `momo_test` en sandbox. Wave, Orange et le
+Burkina ne se paient que sur la page hébergée : refusés (**400**
+`operateur-indisponible`). **426** `mise-a-jour` si `operateur` ou
+`telephone` manquent (la 2.2.0, qui ouvrait la page FedaPay). **502** si la
+demande ne part pas ; **503** sans clé secrète valide.
 
 L'environnement FedaPay se lit sur le préfixe de la clé : `sk_sandbox_` →
 `sandbox-api.fedapay.com`, `sk_live_` → `api.fedapay.com`.

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../composants/bouton.dart';
 import '../composants/carte.dart';
 import '../composants/chargement.dart';
@@ -86,46 +85,10 @@ class _Contenu extends ConsumerStatefulWidget {
 class _ContenuState extends ConsumerState<_Contenu> {
   bool _enCours = false;
 
-  /// Le pack dont le paiement s'ouvre, pour mettre **son** bouton en attente.
-  String? _paiementEnOuverture;
-
-  /// Ouvre la page FedaPay du pack, puis l'écran qui suit le paiement.
-  ///
-  /// La page s'ouvre dans un onglet du navigateur posé sur l'application
-  /// (`inAppBrowserView`), et non dans une vue web : l'étudiant y voit
-  /// l'adresse de FedaPay et son cadenas, ce qui compte au moment de payer.
-  Future<void> _payer(PackBoutique pack) async {
-    setState(() => _paiementEnOuverture = pack.code);
-
-    final reponse = await ref
-        .read(depotBoutiqueProvider)
-        .ouvrirPaiement(ref.read(apiProvider), pack.code);
-
-    if (!mounted) return;
-    setState(() => _paiementEnOuverture = null);
-
-    switch (reponse) {
-      case ReponseSucces(:final data):
-        // Le suivi d'abord : l'étudiant le trouvera en refermant l'onglet.
-        context.descendre(Chemins.paiement(data.id), extra: data.url);
-        try {
-          await launchUrl(
-            Uri.parse(data.url),
-            mode: LaunchMode.inAppBrowserView,
-          );
-        } catch (_) {
-          // Aucun navigateur : l'écran de suivi propose de rouvrir la page.
-        }
-      case ReponseEchec(:final erreur):
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              erreur.isEmpty ? Fr.boutique.ouvertureImpossible : erreur,
-            ),
-          ),
-        );
-    }
-  }
+  /// Payer se fait sur un écran à part, dans l'application : numéro,
+  /// opérateur, puis la demande part sur le téléphone.
+  void _payer(PackBoutique pack) =>
+      context.descendre(Chemins.payer, extra: pack);
 
   Future<void> _activerDecouverte() async {
     setState(() => _enCours = true);
@@ -177,8 +140,6 @@ class _ContenuState extends ConsumerState<_Contenu> {
             pack: pack,
             decouverteUtilisee: widget.donnees.decouverteUtilisee,
             enCours: _enCours,
-            ouvertureEnCours: _paiementEnOuverture == pack.code,
-            occupe: _paiementEnOuverture != null,
             onActiver: _activerDecouverte,
             onPayer: () => _payer(pack),
           ),
@@ -283,8 +244,6 @@ class _CartePack extends StatelessWidget {
     required this.pack,
     required this.decouverteUtilisee,
     required this.enCours,
-    required this.ouvertureEnCours,
-    required this.occupe,
     required this.onActiver,
     required this.onPayer,
   });
@@ -293,19 +252,13 @@ class _CartePack extends StatelessWidget {
   final bool decouverteUtilisee;
   final bool enCours;
 
-  /// Ce pack-ci ouvre son paiement : son bouton tourne.
-  final bool ouvertureEnCours;
-
-  /// Un paiement s'ouvre, quel qu'il soit : les autres boutons attendent,
-  /// pour qu'un double appui n'ouvre pas deux transactions.
-  final bool occupe;
   final VoidCallback onActiver;
   final VoidCallback onPayer;
 
   @override
   Widget build(BuildContext context) {
     // Le pack gratuit s'active tout de suite, sans fournisseur de paiement.
-    // Les autres ouvrent la page FedaPay.
+    // Les autres ouvrent l'écran de paiement, dans l'application.
     final gratuitDisponible = pack.gratuit && !decouverteUtilisee;
 
     return Carte(
@@ -373,8 +326,7 @@ class _CartePack extends StatelessWidget {
           Bouton(
             libelle: Fr.boutique.payer(pack.prixFcfa),
             icone: Icons.smartphone,
-            chargement: ouvertureEnCours,
-            onTap: occupe ? null : onPayer,
+            onTap: onPayer,
           ),
           Text(
             Fr.boutique.mobileMoney,

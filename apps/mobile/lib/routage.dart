@@ -13,8 +13,10 @@ import 'ecrans/ajouter_cours.dart';
 import 'ecrans/aide.dart';
 import 'ecrans/avatar.dart';
 import 'ecrans/carte.dart';
+import 'donnees/modeles.dart';
 import 'ecrans/boutique.dart';
 import 'ecrans/paiement.dart';
+import 'ecrans/payer.dart';
 import 'ecrans/classement.dart';
 import 'ecrans/connexion.dart';
 import 'ecrans/correction.dart';
@@ -61,6 +63,7 @@ abstract final class Chemins {
   static String fiches(String id) => '/cours/$id/fiches';
   static String correction(String id) => '/corrections/$id';
   static String paiement(String id) => '/boutique/paiement/$id';
+  static const payer = '/boutique/payer';
 }
 
 /// Les deux gestes de navigation de l'application.
@@ -142,17 +145,24 @@ GoRouter creerRouteur(Ref ref) {
         parentNavigatorKey: racine,
         builder: (_, _) => const EcranBoutique(),
         routes: [
-          // Le suivi d'un paiement, au-dessus de la boutique : le retour y
-          // ramène, sur la liste des packs.
+          // Payer un pack : le pack arrive par `extra`, depuis la boutique.
+          // Ouvert autrement (lien direct), il n'y a rien à payer : retour
+          // à la boutique.
+          GoRoute(
+            path: 'payer',
+            parentNavigatorKey: racine,
+            redirect: (_, etat) =>
+                etat.extra is PackBoutique ? null : Chemins.boutique,
+            builder: (_, etat) =>
+                EcranPayer(pack: etat.extra! as PackBoutique),
+          ),
+          // Le suivi d'un paiement, au-dessus de l'écran de paiement : le
+          // retour y ramène, numéro et opérateur gardés.
           GoRoute(
             path: 'paiement/:id',
             parentNavigatorKey: racine,
-            builder: (_, etat) => EcranPaiement(
-              paiementId: etat.pathParameters['id']!,
-              // Pour « Rouvrir la page de paiement ». Absent si l'écran est
-              // ouvert autrement (lien direct) : le bouton ne s'affiche pas.
-              urlPaiement: etat.extra is String ? etat.extra as String : null,
-            ),
+            builder: (_, etat) =>
+                EcranPaiement(paiementId: etat.pathParameters['id']!),
           ),
         ],
       ),

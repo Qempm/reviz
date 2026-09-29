@@ -5,8 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:reviz/donnees/api.dart';
 import 'package:reviz/donnees/depots.dart';
 import 'package:reviz/donnees/modeles.dart';
-import 'package:reviz/ecrans/boutique.dart';
 import 'package:reviz/ecrans/paiement.dart';
+import 'package:reviz/ecrans/payer.dart';
 import 'package:reviz/etat/fournisseurs.dart';
 import 'package:reviz/theme/theme.dart';
 
@@ -16,9 +16,10 @@ class _DepotFaux extends DepotBoutique {
   _DepotFaux({this.statuts = const [], this.ouverture});
 
   final List<Reponse<String>> statuts;
-  final Reponse<PaiementOuvert>? ouverture;
+  final Reponse<String>? ouverture;
   int interrogations = 0;
-  final List<String> packsOuverts = [];
+  final List<(String, String, String)> demandes = [];
+  String? numeroPasse;
 
   @override
   Future<Reponse<String>> suivrePaiement(ApiReviz api, String id) async {
@@ -30,13 +31,18 @@ class _DepotFaux extends DepotBoutique {
   }
 
   @override
-  Future<Reponse<PaiementOuvert>> ouvrirPaiement(
-    ApiReviz api,
-    String codePack,
-  ) async {
-    packsOuverts.add(codePack);
+  Future<Reponse<String>> ouvrirPaiement(
+    ApiReviz api, {
+    required String codePack,
+    required String operateur,
+    required String telephoneE164,
+  }) async {
+    demandes.add((codePack, operateur, telephoneE164));
     return ouverture!;
   }
+
+  @override
+  Future<String?> dernierTelephone() async => numeroPasse;
 }
 
 const _enAttente = Reponse<String>.succes('pending');
@@ -74,13 +80,10 @@ void main() {
       tester,
     ) async {
       final depot = _DepotFaux(statuts: [_enAttente, _enAttente, _paye]);
-      await _poser(
-        tester,
-        const EcranPaiement(paiementId: 'p1', urlPaiement: 'https://x'),
-        depot,
-      );
+      await _poser(tester, const EcranPaiement(paiementId: 'p1'), depot);
 
       expect(find.text('On attend la confirmation'), findsOneWidget);
+      expect(find.textContaining('code secret'), findsOneWidget);
 
       await tester.pump(const Duration(seconds: 4));
       await tester.pump(const Duration(seconds: 4));
@@ -109,7 +112,7 @@ void main() {
 
       expect(find.text('Le paiement n’est pas passé'), findsOneWidget);
       expect(find.textContaining('Aucun montant'), findsOneWidget);
-      expect(find.text('Revenir aux packs'), findsOneWidget);
+      expect(find.text('Réessayer'), findsOneWidget);
 
       await _retirer(tester);
     });
@@ -159,30 +162,10 @@ void main() {
       await _retirer(tester);
     });
 
-    testWidgets('ne propose de rouvrir la page que s’il la connaît', (
-      tester,
-    ) async {
-      await _poser(
-        tester,
-        const EcranPaiement(paiementId: 'p1'),
-        _DepotFaux(statuts: [_enAttente]),
-      );
-      expect(find.text('Rouvrir la page de paiement'), findsNothing);
-      await _retirer(tester);
-
-      await _poser(
-        tester,
-        const EcranPaiement(paiementId: 'p1', urlPaiement: 'https://x'),
-        _DepotFaux(statuts: [_enAttente]),
-      );
-      expect(find.text('Rouvrir la page de paiement'), findsOneWidget);
-      await _retirer(tester);
-    });
-
     testWidgets('ne déborde pas à 320 px', (tester) async {
       await _poser(
         tester,
-        const EcranPaiement(paiementId: 'p1', urlPaiement: 'https://x'),
+        const EcranPaiement(paiementId: 'p1'),
         _DepotFaux(statuts: [_enAttente]),
         taille: const Size(320, 640),
       );
@@ -191,52 +174,135 @@ void main() {
     });
   });
 
-  group('le bouton de paiement de la boutique', () {
-    const packs = [
-      PackBoutique(
-        code: 'controle',
-        libelle: 'Contrôle',
-        description: null,
-        prixFcfa: 500,
-        dureeJours: 7,
-        correctionsIncluses: 3,
-        plafondMatieres: 2,
-      ),
-    ];
+  group('l’écran de paiement', () {
+    const pack = PackBoutique(
+      code: 'controle',
+      libelle: 'Contrôle',
+      description: null,
+      prixFcfa: 500,
+      dureeJours: 7,
+      correctionsIncluses: 3,
+      plafondMatieres: 2,
+    );
 
-    testWidgets('ouvre le paiement du bon pack, et dit pourquoi il échoue', (
-      tester,
-    ) async {
-      final depot = _DepotFaux(
-        ouverture: const Reponse.echec(
-          'Le paiement Mobile Money n’est pas encore disponible.',
-        ),
-      );
+    Profil profil({String? telephone}) => Profil(
+      id: 'u1',
+      prenom: 'Awa',
+      xpTotal: 0,
+      serieCourante: 0,
+      dernierJourValide: null,
+      faculteId: 'f1',
+      universiteNom: null,
+      faculteNom: null,
+      codeParrain: null,
+      telephone: telephone,
+    );
 
+    Future<void> ouvrir(
+      WidgetTester tester,
+      _DepotFaux depot, {
+      String? telephone,
+      Size taille = const Size(375, 812),
+    }) async {
       await _poser(
         tester,
-        const EcranBoutique(),
+        const EcranPayer(pack: pack, emailCompte: 'awa@exemple.com'),
         depot,
+        taille: taille,
         autres: [
-          boutiqueProvider.overrideWith(
-            (_) async => const DonneesBoutique(packs: packs, abonnements: []),
+          profilProvider.overrideWith(
+            (_) async => profil(telephone: telephone),
           ),
         ],
       );
       await tester.pumpAndSettle();
+    }
 
-      // Plus de « bientôt disponible » : le bouton dit ce qu'il fait.
-      expect(find.textContaining('bientôt'), findsNothing);
+    testWidgets('pré-remplit le nom, l’e-mail et le numéro du compte', (
+      tester,
+    ) async {
+      await ouvrir(tester, _DepotFaux(), telephone: '+2290197123456');
 
+      expect(find.text('Awa'), findsOneWidget);
+      expect(find.text('awa@exemple.com'), findsOneWidget);
+      expect(find.text('01 97 12 34 56'), findsOneWidget);
+      // Un numéro béninois : les trois réseaux du Bénin.
+      expect(find.text('MTN MoMo'), findsOneWidget);
+      expect(find.text('Moov Money'), findsOneWidget);
+      expect(find.text('Celtiis Cash'), findsOneWidget);
+    });
+
+    testWidgets('reprend le numéro du dernier paiement, à défaut du profil', (
+      tester,
+    ) async {
+      await ouvrir(tester, _DepotFaux()..numeroPasse = '+22997123456');
+      expect(find.text('97 12 34 56'), findsOneWidget);
+    });
+
+    testWidgets('ne propose que les réseaux du pays du numéro', (tester) async {
+      await ouvrir(tester, _DepotFaux());
+
+      await tester.enterText(find.byType(TextField), '+225 07 12 34 56 78');
+      await tester.pump();
+
+      // Côte d'Ivoire : MTN seul, choisi d'office.
+      expect(find.text('MTN MoMo'), findsOneWidget);
+      expect(find.text('Moov Money'), findsNothing);
+      expect(find.byIcon(Icons.check), findsOneWidget);
+    });
+
+    testWidgets('dit quand un pays ne se paie pas encore dans l’app', (
+      tester,
+    ) async {
+      final depot = _DepotFaux();
+      await ouvrir(tester, depot);
+
+      await tester.enterText(find.byType(TextField), '+226 70 12 34 56');
+      await tester.pump();
+
+      expect(find.textContaining('Burkina Faso'), findsOneWidget);
+      await tester.tap(find.text('Payer 500 F'));
+      await tester.pump();
+      expect(depot.demandes, isEmpty);
+    });
+
+    testWidgets('envoie le pack, l’opérateur et le numéro — rien d’autre', (
+      tester,
+    ) async {
+      final depot = _DepotFaux(
+        ouverture: const Reponse.echec(
+          'La demande n’a pas pu partir vers ton téléphone.',
+        ),
+      );
+      await ouvrir(tester, depot, telephone: '+2290197123456');
+
+      // Sans opérateur choisi, rien ne part.
+      await tester.tap(find.text('Payer 500 F'));
+      await tester.pump();
+      expect(find.text('Choisis ton opérateur.'), findsOneWidget);
+      expect(depot.demandes, isEmpty);
+
+      await tester.tap(find.text('MTN MoMo'));
+      await tester.pump();
       await tester.tap(find.text('Payer 500 F'));
       await tester.pumpAndSettle();
 
-      expect(depot.packsOuverts, ['controle']);
-      // Le message du serveur, tel quel : il sait pourquoi.
+      expect(depot.demandes, [('controle', 'mtn', '+2290197123456')]);
+      // Le message du serveur, tel quel.
       expect(
-        find.text('Le paiement Mobile Money n’est pas encore disponible.'),
+        find.text('La demande n’a pas pu partir vers ton téléphone.'),
         findsOneWidget,
       );
+    });
+
+    testWidgets('ne déborde pas à 320 px', (tester) async {
+      await ouvrir(
+        tester,
+        _DepotFaux(),
+        telephone: '+2290197123456',
+        taille: const Size(320, 640),
+      );
+      expect(tester.takeException(), isNull);
     });
   });
 }

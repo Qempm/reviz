@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../composants/bouton.dart';
 import '../composants/mascotte.dart';
 import '../donnees/api.dart';
@@ -15,9 +14,11 @@ import '../theme/typographie.dart';
 
 /// Le suivi d'un paiement, pendant que l'étudiant paie sur la page FedaPay.
 ///
-/// L'écran interroge `/api/payments/status` toutes les quatre secondes, et
-/// **tout de suite** quand l'étudiant revient dans l'application — c'est le
-/// moment où il attend une réponse. Le serveur, lui, relit la transaction
+/// La demande est partie sur le téléphone de l'étudiant (`EcranPayer`) : il
+/// la valide avec son code secret, souvent dans une fenêtre du système
+/// par-dessus Reviz. L'écran interroge `/api/payments/status` toutes les
+/// quatre secondes, et **tout de suite** quand l'application revient au
+/// premier plan — c'est le moment où il attend une réponse. Le serveur, lui, relit la transaction
 /// chez FedaPay tant qu'elle n'est pas tranchée : le pack s'active même si le
 /// webhook s'est perdu.
 ///
@@ -28,13 +29,11 @@ class EcranPaiement extends ConsumerStatefulWidget {
   const EcranPaiement({
     super.key,
     required this.paiementId,
-    this.urlPaiement,
     this.intervalle = const Duration(seconds: 4),
     this.patience = const Duration(minutes: 10),
   });
 
   final String paiementId;
-  final String? urlPaiement;
 
   /// Réglables pour les tests ; les valeurs par défaut sont celles de l'app.
   final Duration intervalle;
@@ -115,14 +114,6 @@ class _EcranPaiementState extends ConsumerState<EcranPaiement>
   void _terminer(_Etape etape) {
     _minuteur?.cancel();
     setState(() => _etape = etape);
-  }
-
-  Future<void> _rouvrir() async {
-    final url = widget.urlPaiement;
-    if (url == null) return;
-    try {
-      await launchUrl(Uri.parse(url), mode: LaunchMode.inAppBrowserView);
-    } catch (_) {}
   }
 
   @override
@@ -210,16 +201,9 @@ class _EcranPaiementState extends ConsumerState<EcranPaiement>
 
   List<Widget> _actions(BuildContext context) {
     switch (_etape) {
+      // Rien à faire ici : la demande est sur le téléphone de l'étudiant.
       case _Etape.attente:
-        return [
-          if (widget.urlPaiement != null)
-            Bouton(
-              libelle: Fr.boutique.rouvrir,
-              icone: Icons.open_in_new,
-              variante: VarianteBouton.secondaire,
-              onTap: _rouvrir,
-            ),
-        ];
+        return const [];
       case _Etape.reussi:
         return [
           Bouton(
@@ -232,9 +216,11 @@ class _EcranPaiementState extends ConsumerState<EcranPaiement>
         ];
       case _Etape.echoue:
         return [
+          // L'écran de paiement est dessous, numéro et opérateur gardés :
+          // réessayer, c'est y revenir et appuyer une seconde fois.
           Bouton(
-            libelle: Fr.boutique.retourPacks,
-            icone: Icons.arrow_back,
+            libelle: Fr.boutique.reessayer,
+            icone: Icons.refresh,
             onTap: () => context.remonter(Chemins.boutique),
           ),
         ];

@@ -91,16 +91,33 @@ class _Boutique {
   String payer(int prix) => 'Payer $prix F';
   final String activerDecouverte = 'Activer gratuitement';
   final String decouverteUtilisee = 'Découverte déjà utilisée';
-  final String mobileMoney = 'Mobile Money, sur la page sécurisée de FedaPay';
+  final String mobileMoney = 'Mobile Money, sans quitter l’application';
   final String ouvertureImpossible =
       'Le paiement n’a pas pu s’ouvrir. Réessaie dans un instant.';
+
+  // Écran de paiement
+  final String payerTitre = 'Payer ton pack';
+  final String auNomDe = 'Au nom de';
+  final String numeroPaiement = 'Ton numéro Mobile Money';
+  final String aideNumero =
+      'Celui qui recevra la demande de paiement. Pour un numéro hors du '
+      'Bénin, commence par l’indicatif (+228, +225…).';
+  final String numeroInvalide = 'Ce numéro ne ressemble pas à un numéro.';
+  final String operateurTitre = 'Ton opérateur';
+  final String choisisOperateur = 'Choisis ton opérateur.';
+  String paysIndisponible(String pays) =>
+      'Le paiement depuis $pays n’est pas encore possible dans Reviz.';
+  final String commentCaMarche =
+      'Tu vas recevoir une demande sur ce téléphone : valide-la avec ton '
+      'code secret Mobile Money. Paiement unique, aucun prélèvement '
+      'automatique.';
 
   // Suivi du paiement
   final String attenteTitre = 'On attend la confirmation';
   final String attenteDetail =
-      'Valide le paiement sur ton téléphone, avec ton code Mobile Money, '
-      'puis reviens ici. Ça prend en général moins d’une minute.';
-  final String rouvrir = 'Rouvrir la page de paiement';
+      'Une demande de paiement arrive sur ton téléphone : valide-la avec ton '
+      'code secret. Reviz active ton pack dès que c’est confirmé.';
+  final String reessayer = 'Réessayer';
   final String reussiTitre = 'Ton pack est actif !';
   final String reussiDetail =
       'Tout est débloqué. Bonne révision, et bon courage pour tes examens.';

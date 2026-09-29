@@ -156,10 +156,14 @@ describe('FedaPayProvider.initPayment', () => {
     paiementId: '22222222-2222-2222-2222-222222222222',
     amount: 1500,
     packCode: 'controle',
-    retourUrl: 'https://reviz.app/paiement/retour',
+    client: {
+      prenom: 'Awa',
+      email: 'awa@exemple.com',
+      telephone: { national: '0197123456', pays: 'BJ' },
+    },
   }
 
-  it('crée la transaction dans la forme de l’API, puis demande le lien', async () => {
+  it('crée la transaction avec son client, puis demande le jeton', async () => {
     const appels = vi
       .spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(
@@ -174,7 +178,7 @@ describe('FedaPayProvider.initPayment', () => {
     expect(resultat).toEqual({
       ok: true,
       transactionId: '42',
-      redirectUrl: 'https://process.fedapay.com/JETON',
+      token: 'JETON',
       amount: 1500,
     })
 
@@ -186,7 +190,14 @@ describe('FedaPayProvider.initPayment', () => {
     const corps = JSON.parse(String(init?.body))
     expect(corps.currency).toEqual({ iso: 'XOF' })
     expect(corps.amount).toBe(1500)
-    expect(corps.callback_url).toBe(opts.retourUrl)
+    // Nom et e-mail viennent du profil, jamais saisis par l'étudiant.
+    expect(corps.customer).toEqual({
+      firstname: 'Awa',
+      email: 'awa@exemple.com',
+      phone_number: { number: '0197123456', country: 'bj' },
+    })
+    // Plus de page de retour : rien ne fait sortir de l'application.
+    expect(corps.callback_url).toBeUndefined()
     expect(corps.custom_metadata).toEqual({
       user_id: opts.userId,
       pack_code: 'controle',
@@ -203,7 +214,7 @@ describe('FedaPayProvider.initPayment', () => {
     const appels = vi
       .spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(reponse({ 'v1/transaction': { id: 7 } }))
-      .mockResolvedValueOnce(reponse({ url: 'https://process.fedapay.com/T' }))
+      .mockResolvedValueOnce(reponse({ token: 'T' }))
 
     await new FedaPayProvider('sk_live_x').initPayment(opts)
     expect(appels.mock.calls[0][0]).toBe('https://api.fedapay.com/v1/transactions')
@@ -227,7 +238,30 @@ describe('FedaPayProvider.initPayment', () => {
     expect(resultat.ok).toBe(false)
   })
 
-  it('échoue si le lien de paiement ne vient pas', async () => {
+  it('accepte un jeton numérique, comme le type la doc', async () => {
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(reponse({ 'v1/transaction': { id: 42 } }))
+      .mockResolvedValueOnce(reponse({ token: 123456 }))
+    const resultat = await new FedaPayProvider('sk_sandbox_x').initPayment(opts)
+    expect(resultat).toMatchObject({ ok: true, token: '123456' })
+  })
+
+  it('n’envoie ni prénom ni e-mail absents', async () => {
+    const appels = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(reponse({ 'v1/transaction': { id: 42 } }))
+      .mockResolvedValueOnce(reponse({ token: 'T' }))
+    await new FedaPayProvider('sk_sandbox_x').initPayment({
+      ...opts,
+      client: { ...opts.client, prenom: null, email: null },
+    })
+    const corps = JSON.parse(String(appels.mock.calls[0][1]?.body))
+    expect(corps.customer).toEqual({
+      phone_number: { number: '0197123456', country: 'bj' },
+    })
+  })
+
+  it('échoue si le jeton de paiement ne vient pas', async () => {
     vi.spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(reponse({ 'v1/transaction': { id: 42 } }))
       .mockResolvedValueOnce(reponse({}, false, 500))
@@ -240,6 +274,65 @@ describe('FedaPayProvider.initPayment', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     const resultat = await new FedaPayProvider('sk_sandbox_x').initPayment(opts)
     expect(resultat).toEqual({ ok: false, error: 'réseau' })
+  })
+})
+
+describe('FedaPayProvider.envoyerDemande', () => {
+  afterEach(() => vi.restoreAllMocks())
+
+  const demande = {
+    token: 'JETON',
+    mode: 'mtn_open',
+    telephone: { national: '0197123456', pays: 'BJ' },
+  }
+
+  it('envoie la demande au téléphone par POST /v1/{mode}', async () => {
+    const appel = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ 'v1/payment_intent': { status: 'pending' } }),
+    } as Response)
+
+    const resultat = await new FedaPayProvider('sk_live_x').envoyerDemande(
+      demande,
+    )
+
+    expect(resultat).toEqual({ ok: true })
+    const [url, init] = appel.mock.calls[0]
+    // Le chemin du SDK officiel, et non `/transactions/{mode}` que la page de
+    // référence annonce à tort.
+    expect(url).toBe('https://api.fedapay.com/v1/mtn_open')
+    expect(init?.method).toBe('POST')
+    expect(JSON.parse(String(init?.body))).toEqual({
+      token: 'JETON',
+      phone_number: { number: '0197123456', country: 'bj' },
+    })
+  })
+
+  it('rend le message de FedaPay quand la demande est refusée', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
+      ok: false,
+      status: 422,
+      json: async () => ({ message: 'Numéro invalide' }),
+    } as Response)
+    expect(
+      await new FedaPayProvider('sk_live_x').envoyerDemande(demande),
+    ).toEqual({ ok: false, error: 'Numéro invalide' })
+  })
+
+  it('transforme une coupure réseau en échec, sans lever', async () => {
+    vi.spyOn(globalThis, 'fetch').mockRejectedValueOnce(new Error('réseau'))
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    expect(
+      await new FedaPayProvider('sk_live_x').envoyerDemande(demande),
+    ).toEqual({ ok: false, error: 'réseau' })
+  })
+})
+
+describe('FedaPayProvider.sandbox', () => {
+  it('se lit sur la clé', () => {
+    expect(new FedaPayProvider('sk_sandbox_x').sandbox).toBe(true)
+    expect(new FedaPayProvider('sk_live_x').sandbox).toBe(false)
   })
 })
 

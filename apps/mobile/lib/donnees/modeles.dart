@@ -25,6 +25,7 @@ class Profil {
     this.avatar,
     this.statutVerification = 'none',
     this.anneeEtude,
+    this.telephone,
   });
 
   final String id;
@@ -45,6 +46,10 @@ class Profil {
   /// faire échouer la lecture du profil.
   final String statutVerification;
   final int? anneeEtude;
+
+  /// Au format E.164, facultatif et non vérifié : il sert aux notifications
+  /// WhatsApp, et à pré-remplir le numéro de paiement.
+  final String? telephone;
 
   bool get verifie => statutVerification == 'verified';
   bool get verificationEnCours => statutVerification == 'pending';
@@ -67,6 +72,7 @@ class Profil {
     avatar: l['avatar_key'] as String?,
     statutVerification: l['verification_status'] as String? ?? 'none',
     anneeEtude: (l['study_year'] as num?)?.toInt(),
+    telephone: l['phone'] as String?,
   );
 }
 

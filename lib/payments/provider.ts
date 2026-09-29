@@ -28,8 +28,11 @@ export type InitPaymentResult =
   | {
       ok: true
       transactionId: string
-      /** La page FedaPay où l'étudiant choisit son opérateur et paie. */
-      redirectUrl: string
+      /**
+       * Le jeton de paiement : c'est lui qu'on présente à `POST /v1/{mode}`
+       * pour envoyer la demande au téléphone de l'étudiant.
+       */
+      token: string
       amount: number
     }
   | {
@@ -54,16 +57,40 @@ export type EtatTransaction = {
   amount: number
 }
 
+/** Qui paie. Lu côté serveur — profil et session —, jamais sur le client. */
+export type ClientPaiement = {
+  prenom: string | null
+  email: string | null
+  /** Le numéro **national**, sans indicatif, et le pays en ISO (`BJ`). */
+  telephone: { national: string; pays: string }
+}
+
+export type ResultatDemande = { ok: true } | { ok: false; error: string }
+
 export interface PaymentProvider {
-  /** Ouvre une transaction et rend l'URL où l'étudiant la paie. */
+  /** Ouvre une transaction et rend son jeton de paiement. */
   initPayment(opts: {
     userId: string
     paiementId: string
     amount: number
     packCode: string
-    /** Où FedaPay renvoie l'étudiant une fois le paiement tranché. */
-    retourUrl: string
+    client: ClientPaiement
   }): Promise<InitPaymentResult>
+
+  /**
+   * Envoie la demande de paiement au téléphone : l'étudiant la valide avec
+   * son code secret, sans jamais quitter Reviz. Un succès ici veut dire
+   * « demande partie », pas « payé » — l'issue arrive par le webhook ou par
+   * `checkStatus`.
+   */
+  envoyerDemande(opts: {
+    token: string
+    mode: string
+    telephone: { national: string; pays: string }
+  }): Promise<ResultatDemande>
+
+  /** Vrai en environnement de test (clé `sk_sandbox_`). */
+  readonly sandbox: boolean
 
   /**
    * Relit une transaction auprès du fournisseur.
@@ -111,6 +138,7 @@ function deballer(corps: unknown, cle: string): Record<string, unknown> | null {
 class FedaPayProvider implements PaymentProvider {
   private cle: string
   private base: string
+  readonly sandbox: boolean
 
   constructor(cle?: string) {
     this.cle = cle || process.env.FEDAPAY_SECRET_KEY || ''
@@ -118,6 +146,7 @@ class FedaPayProvider implements PaymentProvider {
       throw new Error('FEDAPAY_SECRET_KEY missing in environment')
     }
     this.base = baseFedaPay(this.cle)
+    this.sandbox = this.base === BASE_SANDBOX
   }
 
   private appeler(methode: 'GET' | 'POST', chemin: string, corps?: unknown) {
@@ -136,19 +165,26 @@ class FedaPayProvider implements PaymentProvider {
     paiementId: string
     amount: number
     packCode: string
-    retourUrl: string
+    client: ClientPaiement
   }): Promise<InitPaymentResult> {
     try {
-      // 1. La transaction.
+      const { client } = opts
+
+      // 1. La transaction, avec son client. FedaPay reconnaît un client à son
+      //    e-mail : le même étudiant retrouve le même client d'un achat à
+      //    l'autre, et le reçu part à la bonne adresse.
       const creation = await this.appeler('POST', '/transactions', {
         description: `Reviz — pack ${opts.packCode}`,
         amount: opts.amount,
         currency: { iso: 'XOF' },
-        // Pour FedaPay, `callback_url` est la page où **l'étudiant** revient
-        // après avoir payé — pas l'adresse du webhook, qui se déclare dans
-        // le tableau de bord. Les confondre renvoyait l'étudiant sur une
-        // route d'API qui ne répond qu'en POST.
-        callback_url: opts.retourUrl,
+        customer: {
+          ...(client.prenom ? { firstname: client.prenom } : {}),
+          ...(client.email ? { email: client.email } : {}),
+          phone_number: {
+            number: client.telephone.national,
+            country: client.telephone.pays.toLowerCase(),
+          },
+        },
         custom_metadata: {
           user_id: opts.userId,
           pack_code: opts.packCode,
@@ -172,27 +208,69 @@ class FedaPayProvider implements PaymentProvider {
         return { ok: false, error: 'Réponse FedaPay sans identifiant.' }
       }
 
-      // 2. Le lien de paiement, qui ne se devine pas : il porte un jeton.
+      // 2. Le jeton de paiement.
       const jeton = await this.appeler('POST', `/transactions/${id}/token`)
       const corpsJeton = (await jeton.json().catch(() => null)) as {
-        url?: unknown
+        token?: unknown
       } | null
 
-      if (!jeton.ok || typeof corpsJeton?.url !== 'string') {
+      // La doc le type en entier, le SDK le rend en chaîne : les deux passent.
+      const token = corpsJeton?.token
+      if (!jeton.ok || (typeof token !== 'string' && typeof token !== 'number')) {
         return {
           ok: false,
-          error: `FedaPay n’a pas rendu de lien de paiement (${jeton.status}).`,
+          error: `FedaPay n’a pas rendu de jeton de paiement (${jeton.status}).`,
         }
       }
 
       return {
         ok: true,
         transactionId: String(id),
-        redirectUrl: corpsJeton.url,
+        token: String(token),
         amount: opts.amount,
       }
     } catch (error) {
       console.error('FedaPay initPayment :', error)
+      return {
+        ok: false,
+        error: error instanceof Error ? error.message : 'Erreur inconnue',
+      }
+    }
+  }
+
+  async envoyerDemande(opts: {
+    token: string
+    mode: string
+    telephone: { national: string; pays: string }
+  }): Promise<ResultatDemande> {
+    try {
+      // `POST /v1/{mode}` : le chemin du SDK officiel (`sendNowWithToken`) et
+      // d'une seconde bibliothèque. La page de référence de l'API annonce
+      // `/transactions/{mode}` avec une réponse recopiée des virements : elle
+      // est fausse sur ce point.
+      const reponse = await this.appeler(
+        'POST',
+        `/${encodeURIComponent(opts.mode)}`,
+        {
+          token: opts.token,
+          phone_number: {
+            number: opts.telephone.national,
+            country: opts.telephone.pays.toLowerCase(),
+          },
+        },
+      )
+
+      if (reponse.ok) return { ok: true }
+
+      const corps = (await reponse.json().catch(() => null)) as {
+        message?: string
+      } | null
+      return {
+        ok: false,
+        error: corps?.message ?? `FedaPay a répondu ${reponse.status}.`,
+      }
+    } catch (error) {
+      console.error('FedaPay envoyerDemande :', error)
       return {
         ok: false,
         error: error instanceof Error ? error.message : 'Erreur inconnue',

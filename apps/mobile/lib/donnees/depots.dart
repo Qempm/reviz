@@ -42,7 +42,7 @@ class DepotProfil {
         .select(
           'id, first_name, xp_total, current_streak, last_validated_on, '
           'faculty_id, referral_code, avatar_key, verification_status, '
-          'study_year, universities(name), faculties(name)',
+          'study_year, phone, universities(name), faculties(name)',
         )
         .eq('id', id)
         .maybeSingle();
@@ -583,20 +583,46 @@ class DepotBoutique {
     );
   }
 
-  /// Ouvre un paiement FedaPay pour un pack. Le prix vient de la base, côté
-  /// serveur : l'application n'envoie que le code.
-  Future<Reponse<PaiementOuvert>> ouvrirPaiement(
-    ApiReviz api,
-    String codePack,
-  ) {
-    return api.poster<PaiementOuvert>(
+  /// Ouvre un paiement et envoie la demande au téléphone de l'étudiant.
+  ///
+  /// Le client n'envoie que le pack, l'opérateur et le numéro : le prix vient
+  /// de la base, le nom et l'e-mail du profil et de la session, côté serveur.
+  /// Rend l'identifiant du paiement à suivre.
+  Future<Reponse<String>> ouvrirPaiement(
+    ApiReviz api, {
+    required String codePack,
+    required String operateur,
+    required String telephoneE164,
+  }) {
+    return api.poster<String>(
       '/api/payments/init',
-      corps: {'packCode': codePack},
-      depuis: (data) => PaiementOuvert(
-        id: data['paiementId'] as String,
-        url: data['redirectUrl'] as String,
-      ),
+      corps: {
+        'packCode': codePack,
+        'operateur': operateur,
+        'telephone': telephoneE164,
+      },
+      depuis: (data) => data['paiementId'] as String,
     );
+  }
+
+  /// Le numéro du dernier paiement, pour le proposer de nouveau.
+  ///
+  /// Lu en direct : la politique de `payments` ne laisse voir que ses propres
+  /// lignes. `null` si rien n'a encore été payé, ou si la lecture échoue — ce
+  /// n'est qu'une commodité.
+  Future<String?> dernierTelephone() async {
+    try {
+      final ligne = await supabase
+          .from('payments')
+          .select('phone')
+          .not('phone', 'is', null)
+          .order('created_at', ascending: false)
+          .limit(1)
+          .maybeSingle();
+      return ligne?['phone'] as String?;
+    } catch (_) {
+      return null;
+    }
   }
 
   /// Où en est ce paiement : `pending`, `success` ou `failed`.
@@ -611,13 +637,6 @@ class DepotBoutique {
   }
 }
 
-/// Un paiement ouvert : son identifiant chez Reviz, et la page FedaPay.
-class PaiementOuvert {
-  const PaiementOuvert({required this.id, required this.url});
-
-  final String id;
-  final String url;
-}
 
 // ----------------------------------------------------------------- Gains
 
