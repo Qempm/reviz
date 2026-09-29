@@ -5,6 +5,11 @@
  * 01:00–04:00 et 06:00–10:00 UTC du lundi au vendredi, sauf si le job attend
  * depuis plus de 20 minutes.
  *
+ * **Depuis le 29 septembre 2026, seulement pour une photo** (`vision: true`
+ * dans la charge utile). Lire un PDF ou un Word n'appelle aucun modèle : le
+ * retenir n'économisait rien et faisait attendre l'étudiant jusqu'à vingt
+ * minutes. L'esprit de la règle — le coût — est gardé là où il existe.
+ *
  * Ce module double la fonction SQL `public.job_peut_demarrer` : la règle vit
  * dans les deux, la base tranchant en dernier ressort. Toute correction ici
  * doit être répercutée dans supabase/migrations/20260908120500_jobs_et_ia.sql.
@@ -26,6 +31,15 @@ const CRENEAUX: ReadonlyArray<readonly [number, number]> = [
 export const HEAVY_JOB_TYPES = ['ingest_course'] as const
 export type HeavyJobType = (typeof HEAVY_JOB_TYPES)[number]
 
+/**
+ * Un cours en photo, lu par un modèle de vision — et non un PDF ou un Word,
+ * dont la lecture n'appelle aucun modèle. Décidé sur l'extension du fichier
+ * déposé (`courses.storage_path`).
+ */
+export function estPhoto(chemin: string | null | undefined): boolean {
+  return /\.(jpe?g|png|webp|heic|heif)$/i.test(chemin ?? '')
+}
+
 /** Délai au-delà duquel un job passe outre les heures pleines. */
 export const MAX_WAIT_MS = 20 * 60 * 1000
 
@@ -46,11 +60,17 @@ export function canStartJob(opts: {
   type: string
   /** Date de création du job, pour la dérogation des 20 minutes. */
   createdAt: Date
+  /** La charge utile du job : `vision: true` pour un cours en photo. */
+  payload?: unknown
   now?: Date
 }): boolean {
   const now = opts.now ?? new Date()
 
   if (!(HEAVY_JOB_TYPES as readonly string[]).includes(opts.type)) return true
+  // Un cours PDF ou Word ne passe par aucun modèle à la lecture.
+  if ((opts.payload as { vision?: unknown } | undefined)?.vision !== true) {
+    return true
+  }
   if (now.getTime() - opts.createdAt.getTime() > MAX_WAIT_MS) return true
 
   return !isDeepSeekPeakHour(now)

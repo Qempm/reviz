@@ -588,13 +588,13 @@ export const ingestCourseHandler = async (
 // --------------------------------------------- Génération des questions
 
 /**
- * Générer les questions et les fiches d'un cours, **un chapitre à la fois**.
+ * Générer les questions et les fiches d'un cours, **un lot de chapitres à la
+ * fois** (`CHAPITRES_PAR_PASSAGE`, en parallèle).
  *
- * Le traitement prend le premier chapitre sans question, l'traite, et se
+ * Le traitement prend les premiers chapitres sans question, les traite, et se
  * remet en file s'il en reste. C'est ce découpage qui tient dans les soixante
- * secondes d'une fonction serverless : un cours de trente chapitres devient
- * trente invocations d'une dizaine de secondes, et une coupure ne perd que le
- * chapitre en cours.
+ * secondes d'une fonction serverless, et une coupure ne perd que le lot en
+ * cours.
  *
  * Le plafond de 200 questions par cours est tenu par le trigger SQL
  * `questions_cap`. On le vérifie aussi ici, pour arrêter de générer — et donc
@@ -659,6 +659,20 @@ Réponds en JSON :
 Rien que du JSON, sans texte avant ni après.`
 }
 
+/**
+ * Chapitres traités dans une même invocation, **en parallèle**.
+ *
+ * Avant : un chapitre par invocation, ses deux appels l'un après l'autre, et
+ * chaque invocation déclenchée par un sondage de l'écran — qui s'arrêtait au
+ * bout de deux minutes. Un cours de vingt chapitres restait en plan. Cinq
+ * chapitres, soit dix appels simultanés, tiennent dans le temps d'un seul
+ * (DeepSeek en admet 2 500 à la fois, docs/STACK-IA.md § 1.3), et restent
+ * sous les 60 s d'une fonction grâce au délai par appel de `runAiTask`.
+ */
+export const CHAPITRES_PAR_PASSAGE = 5
+
+type ChapitreAGenerer = { id: string; index: number; title: string; text: string }
+
 export const generateQuestionsHandler = async (
   job: Job,
   ctx: JobContext,
@@ -692,9 +706,10 @@ export const generateQuestionsHandler = async (
     return
   }
 
+  // Sans le texte : on ne relit que celui des chapitres de ce passage.
   const { data: chapitres, error: erreurChapitres } = await admin
     .from('chapters')
-    .select('id, index, title, text, questions(id)')
+    .select('id, index, title, questions(id)')
     .eq('course_id', course_id)
     .order('index')
 
@@ -709,26 +724,23 @@ export const generateQuestionsHandler = async (
     )
   }
 
-  const dejaGenerees = chapitres.reduce(
-    (total, c) => total + ((c.questions as unknown[] | null)?.length ?? 0),
-    0,
-  )
+  const nbQuestions = (c: { questions: unknown }) =>
+    (c.questions as unknown[] | null)?.length ?? 0
 
-  const suivant = chapitres.find(
-    (c) => ((c.questions as unknown[] | null)?.length ?? 0) === 0,
-  )
+  const dejaGenerees = chapitres.reduce((t, c) => t + nbQuestions(c), 0)
+  const restants = chapitres.filter((c) => nbQuestions(c) === 0)
 
-  // Tous les chapitres ont leurs questions : le cours est prêt.
-  if (!suivant || dejaGenerees >= PLAFOND_QUESTIONS) {
+  const marquerPret = async () => {
     const { error } = await admin
       .from('courses')
       .update({ status: 'ready' })
       .eq('id', course_id)
+    if (error) throw new Error(`Passage en « prêt » impossible : ${error.message}`)
+  }
 
-    if (error) {
-      throw new Error(`Passage en « prêt » impossible : ${error.message}`)
-    }
-
+  // Tous les chapitres ont leurs questions : le cours est prêt.
+  if (restants.length === 0 || dejaGenerees >= PLAFOND_QUESTIONS) {
+    await marquerPret()
     ctx.log('cours prêt', {
       course_id,
       questions: dejaGenerees,
@@ -738,9 +750,19 @@ export const generateQuestionsHandler = async (
     return
   }
 
-  // Un chapitre, deux appels : les questions et les fiches. Deux appels
-  // séparés plutôt qu'un seul JSON qui porte les deux — un JSON de 8 000
-  // jetons se fait tronquer, et on perdrait les deux à la fois.
+  const lotIds = restants.slice(0, CHAPITRES_PAR_PASSAGE).map((c) => c.id)
+  const { data: textes, error: erreurTextes } = await admin
+    .from('chapters')
+    .select('id, index, title, text')
+    .in('id', lotIds)
+    .order('index')
+
+  if (erreurTextes || !textes) {
+    throw new Error(
+      `Lecture du texte des chapitres impossible : ${erreurTextes?.message}`,
+    )
+  }
+
   const commun = {
     jobId: job.id,
     userId: cours.owner_id ?? undefined,
@@ -748,113 +770,119 @@ export const generateQuestionsHandler = async (
     signal: ctx.signal,
   }
 
-  let questions
-  let fiches
-  try {
-    questions = await runAiTask<QuestionsPayload>({
-      task: 'questions',
-      messages: [
-        {
-          role: 'user',
-          content: consigneQuestions(suivant.title, suivant.text),
-        },
-      ],
-      ...commun,
-    })
+  // Un chapitre, deux appels : les questions et les fiches, **en même
+  // temps**. Deux appels séparés plutôt qu'un seul JSON qui porte les deux —
+  // un JSON de 8 000 jetons se fait tronquer, et on perdrait les deux à la
+  // fois. `allSettled` : un chapitre qui échoue ne fait pas perdre les autres.
+  const genererChapitre = async (ch: ChapitreAGenerer) => {
+    const [q, f] = await Promise.allSettled([
+      runAiTask<QuestionsPayload>({
+        task: 'questions',
+        messages: [{ role: 'user', content: consigneQuestions(ch.title, ch.text) }],
+        ...commun,
+      }),
+      runAiTask<FlashcardsPayload>({
+        task: 'flashcards',
+        messages: [{ role: 'user', content: consigneFiches(ch.title, ch.text) }],
+        ...commun,
+      }),
+    ])
+    return { ch, q, f }
+  }
 
-    fiches = await runAiTask<FlashcardsPayload>({
-      task: 'flashcards',
-      messages: [
-        { role: 'user', content: consigneFiches(suivant.title, suivant.text) },
-      ],
-      ...commun,
-    })
-  } catch (e) {
-    if (e instanceof AiError) {
+  const resultats = await Promise.all(textes.map(genererChapitre))
+
+  // Les écritures, elles, restent en ordre : le plafond porte sur le cours
+  // entier, et on n'insère que ce qui rentre.
+  let place = PLAFOND_QUESTIONS - dejaGenerees
+  let inserees = 0
+
+  for (const { ch, q, f } of resultats) {
+    if (q.status === 'rejected') {
+      if (!(q.reason instanceof AiError)) throw q.reason
       // Aucun fournisseur n'a produit de JSON valide pour ce chapitre. On
-      // n'échoue pas tout le cours pour un chapitre : on le marque en posant
-      // une question de secours, qui le fait sortir de la file.
+      // n'échoue pas tout le cours pour un chapitre : on le marque d'une
+      // question de secours, qui le fait sortir de la file.
       ctx.log('chapitre non généré, on passe au suivant', {
-        chapitre: suivant.index,
-        tentatives: e.attempts.map((a) => `${a.model}:${a.outcome}`).join(', '),
+        chapitre: ch.index,
+        tentatives: q.reason.attempts
+          .map((a) => `${a.model}:${a.outcome}`)
+          .join(', '),
       })
-
       await admin.from('questions').insert({
-        chapter_id: suivant.id,
+        chapter_id: ch.id,
         type: 'open',
-        statement: `Relis « ${suivant.title} » et résume-le en cinq lignes.`,
+        statement: `Relis « ${ch.title} » et résume-le en cinq lignes.`,
         answer:
           'Ta réponse t’appartient : ce chapitre n’a pas pu être découpé en ' +
           'questions automatiquement.',
         probability: 'low',
       })
-
-      await admin.from('jobs').insert({
-        type: 'generate_questions',
-        payload: { course_id },
-      })
-      return
+      continue
     }
-    throw e
+
+    const aInserer = q.value.data.questions.slice(0, Math.max(place, 0))
+    if (aInserer.length > 0) {
+      const { error } = await admin.from('questions').insert(
+        aInserer.map((qq) => ({
+          chapter_id: ch.id,
+          type: qq.type,
+          statement: qq.statement,
+          // La contrainte SQL exige un tableau pour un QCM et NULL pour une
+          // question ouverte.
+          options: qq.type === 'mcq' ? qq.options : null,
+          answer: qq.answer,
+          explanation: qq.explanation ?? null,
+          probability: qq.probability,
+        })),
+      )
+      if (error) {
+        throw new Error(`Insertion des questions impossible : ${error.message}`)
+      }
+      place -= aInserer.length
+      inserees += aInserer.length
+    }
+
+    if (f.status === 'fulfilled') {
+      const { error } = await admin.from('flashcards').insert(
+        f.value.data.flashcards.slice(0, FICHES_PAR_CHAPITRE).map((fc) => ({
+          chapter_id: ch.id,
+          front: fc.front,
+          back: fc.back,
+        })),
+      )
+      // Les questions sont écrites : perdre les fiches d'un chapitre ne
+      // justifie pas de refaire les appels.
+      if (error) {
+        ctx.log('fiches non insérées', { chapitre: ch.index, erreur: error.message })
+      }
+    } else {
+      ctx.log('fiches non générées', { chapitre: ch.index })
+    }
   }
 
-  // Le plafond porte sur le cours entier : on n'insère que ce qui rentre.
-  const place = PLAFOND_QUESTIONS - dejaGenerees
-  const aInserer = questions.data.questions.slice(0, place)
+  const resteApres = restants.length - textes.length
+  ctx.log('lot généré', {
+    course_id,
+    chapitres: textes.map((c) => c.index),
+    questions: inserees,
+    restants: resteApres,
+  })
 
-  const { error: erreurQuestions } = await admin.from('questions').insert(
-    aInserer.map((q) => ({
-      chapter_id: suivant.id,
-      type: q.type,
-      statement: q.statement,
-      // La contrainte SQL exige un tableau pour un QCM et NULL pour une
-      // question ouverte.
-      options: q.type === 'mcq' ? q.options : null,
-      answer: q.answer,
-      explanation: q.explanation ?? null,
-      probability: q.probability,
-    })),
-  )
-
-  if (erreurQuestions) {
-    throw new Error(`Insertion des questions impossible : ${erreurQuestions.message}`)
+  // Fini, ou plafond atteint : prêt tout de suite, sans un passage de plus.
+  if (resteApres <= 0 || place <= 0) {
+    await marquerPret()
+    ctx.log('cours prêt', { course_id, questions: dejaGenerees + inserees })
+    return
   }
 
-  const { error: erreurFiches } = await admin.from('flashcards').insert(
-    fiches.data.flashcards.slice(0, FICHES_PAR_CHAPITRE).map((f) => ({
-      chapter_id: suivant.id,
-      front: f.front,
-      back: f.back,
-    })),
-  )
-
-  if (erreurFiches) {
-    // Les questions sont écrites : perdre les fiches d'un chapitre ne
-    // justifie pas de refaire les deux appels.
-    ctx.log('fiches non insérées', {
-      chapitre: suivant.index,
-      erreur: erreurFiches.message,
-    })
-  }
-
-  // Il reste des chapitres : on se remet en file plutôt que de continuer et
-  // de se faire couper au milieu du suivant.
+  // Il reste des chapitres : le passage suivant les prendra. C'est
+  // `lancerJobMaintenant` qui l'enchaîne, sans attendre l'écran.
   const { error: erreurJob } = await admin.from('jobs').insert({
     type: 'generate_questions',
     payload: { course_id },
   })
-
-  if (erreurJob) {
-    throw new Error(`Remise en file impossible : ${erreurJob.message}`)
-  }
-
-  ctx.log('chapitre généré', {
-    course_id,
-    chapitre: suivant.index,
-    questions: aInserer.length,
-    fiches: fiches.data.flashcards.length,
-    modele: questions.model,
-  })
+  if (erreurJob) throw new Error(`Remise en file impossible : ${erreurJob.message}`)
 }
 
 // --------------------------------------------- Vérification de la carte

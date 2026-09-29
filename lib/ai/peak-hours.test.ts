@@ -3,6 +3,7 @@ import {
   canStartJob,
   isDeepSeekPeakHour,
   nextAllowedStart,
+  estPhoto,
 } from './peak-hours'
 
 /** Mercredi 2026-09-09 à l'heure UTC demandée. */
@@ -33,11 +34,24 @@ describe('heures pleines DeepSeek', () => {
 })
 
 describe('démarrage des jobs', () => {
-  it('bloque un ingest_course en heure pleine', () => {
+  const photo = { vision: true }
+
+  it('bloque la lecture d’une photo en heure pleine', () => {
     const now = mercredi(7)
     expect(
-      canStartJob({ type: 'ingest_course', createdAt: now, now }),
+      canStartJob({ type: 'ingest_course', createdAt: now, payload: photo, now }),
     ).toBe(false)
+  })
+
+  it('laisse lire un PDF ou un Word à toute heure', () => {
+    // Aucun modèle n'est appelé pour les lire : les retenir n'économisait
+    // rien et faisait attendre l'étudiant.
+    const now = mercredi(7)
+    expect(
+      canStartJob({ type: 'ingest_course', createdAt: now, payload: { vision: false }, now }),
+    ).toBe(true)
+    // Un job d'avant le marquage, sans le champ : traité comme un document.
+    expect(canStartJob({ type: 'ingest_course', createdAt: now, now })).toBe(true)
   })
 
   it('laisse passer les autres types en permanence', () => {
@@ -54,10 +68,10 @@ describe('démarrage des jobs', () => {
 
     // Exactement 20 minutes : la dérogation n'est pas encore acquise.
     expect(
-      canStartJob({ type: 'ingest_course', createdAt: vingtMinutes, now }),
+      canStartJob({ type: 'ingest_course', createdAt: vingtMinutes, payload: photo, now }),
     ).toBe(false)
     expect(
-      canStartJob({ type: 'ingest_course', createdAt: unPeuPlus, now }),
+      canStartJob({ type: 'ingest_course', createdAt: unPeuPlus, payload: photo, now }),
     ).toBe(true)
   })
 
@@ -72,5 +86,21 @@ describe('démarrage des jobs', () => {
     expect(nextAllowedStart(mercredi(12)).toISOString()).toBe(
       '2026-09-09T12:00:00.000Z',
     )
+  })
+})
+
+describe('estPhoto', () => {
+  it('reconnaît une photo à son extension', () => {
+    expect(estPhoto('u1/c1/cours.jpg')).toBe(true)
+    expect(estPhoto('u1/c1/cours.JPEG')).toBe(true)
+    expect(estPhoto('u1/c1/cours.png')).toBe(true)
+    expect(estPhoto('u1/c1/cours.heic')).toBe(true)
+  })
+
+  it('laisse les documents et les chemins absents', () => {
+    expect(estPhoto('u1/c1/cours.pdf')).toBe(false)
+    expect(estPhoto('u1/c1/cours.docx')).toBe(false)
+    expect(estPhoto(null)).toBe(false)
+    expect(estPhoto(undefined)).toBe(false)
   })
 })

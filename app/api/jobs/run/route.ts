@@ -1,6 +1,8 @@
 import { timingSafeEqual } from 'node:crypto'
-import { NextResponse } from 'next/server'
+import { after, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { createSupabaseJobStore, handlers, runJobs } from '@/lib/jobs'
+import { lancerJobMaintenant, prochainJobDuCours } from '@/lib/jobs/immediat'
 
 /**
  * Passage de la file, déclenché par Vercel Cron **une fois par jour** à 22:00
@@ -56,6 +58,28 @@ export async function GET(request: Request) {
 
   if (!secretValide(request.headers.get('authorization'), attendu)) {
     return NextResponse.json({ ok: false, error: 'Non autorisé.' }, { status: 401 })
+  }
+
+  // Relance ciblée : un cours qui s'enchaîne lui-même (`lancerJobMaintenant`)
+  // demande une invocation fraîche. On répond tout de suite et on travaille
+  // après la réponse — l'appelant n'attend que l'accusé.
+  const cours = new URL(request.url).searchParams.get('cours')
+  if (cours !== null) {
+    if (!z.string().uuid().safeParse(cours).success) {
+      return NextResponse.json({ ok: false, error: 'Cours invalide.' }, { status: 400 })
+    }
+    const job = await prochainJobDuCours(cours)
+    if (job) {
+      const origine = new URL(request.url).origin
+      after(() =>
+        lancerJobMaintenant(job, {
+          budgetSecondes: maxDuration - MARGE_MS / 1000,
+          coursId: cours,
+          origine,
+        }),
+      )
+    }
+    return NextResponse.json({ ok: true, data: { relance: job } }, { status: 202 })
   }
 
   const deadline = new Date(Date.now() + maxDuration * 1000 - MARGE_MS)

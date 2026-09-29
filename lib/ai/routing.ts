@@ -107,7 +107,17 @@ export type RunOptions<T> = {
   now?: () => Date
   /** Attente entre deux tentatives. Mise à 0 dans les tests. */
   retryDelayMs?: number
+  /**
+   * Délai d'**un** appel. Au-delà, on l'abandonne et on passe au fournisseur
+   * suivant. Sans lui, un fournisseur qui ne répond plus tenait l'appel
+   * jusqu'à ce que Vercel coupe l'invocation à 60 s — et le job restait en
+   * `running` jusqu'au cron du soir.
+   */
+  delaiAppelMs?: number
 }
+
+/** 30 s : un chapitre se génère d'ordinaire en 8 à 20 s. */
+export const DELAI_APPEL_MS = 30_000
 
 export type RunResult<T> = {
   data: T
@@ -183,7 +193,12 @@ export async function runAiTask<T = unknown>(
           maxTokens: opts.maxTokens ?? params.maxTokens,
           jsonMode: true,
           userId: opts.userId,
-          signal: opts.signal,
+          signal: opts.signal
+            ? AbortSignal.any([
+                opts.signal,
+                AbortSignal.timeout(opts.delaiAppelMs ?? DELAI_APPEL_MS),
+              ])
+            : AbortSignal.timeout(opts.delaiAppelMs ?? DELAI_APPEL_MS),
           fetchImpl: opts.fetchImpl,
         })
 

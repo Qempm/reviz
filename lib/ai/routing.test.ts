@@ -468,3 +468,38 @@ describe('tarif heures pleines', () => {
     }
   })
 })
+
+describe('délai par appel', () => {
+  it('abandonne un fournisseur qui ne répond pas et passe au suivant', async () => {
+    const appels: string[] = []
+    // DeepSeek ne répond jamais, sauf à l'annulation ; Qwen répond.
+    const impl = vi.fn((_url: unknown, init?: RequestInit) => {
+      const modele = JSON.parse(String(init?.body)).model as string
+      appels.push(modele)
+      if (appels.length === 1) {
+        return new Promise<Response>((_, rejeter) => {
+          init?.signal?.addEventListener('abort', () =>
+            rejeter(new DOMException('délai', 'AbortError')),
+          )
+        })
+      }
+      return Promise.resolve(reponse(QUESTIONS_VALIDES))
+    }) as unknown as typeof fetch
+
+    const debut = Date.now()
+    const resultat = await runAiTask({
+      task: 'questions',
+      messages: MESSAGES,
+      env: ENV,
+      fetchImpl: impl,
+      retryDelayMs: 0,
+      delaiAppelMs: 50,
+    })
+
+    expect(resultat.provider).not.toBe('deepseek')
+    expect(appels).toHaveLength(2)
+    // Le délai a joué : l'appel pendu n'a pas tenu la tâche.
+    expect(Date.now() - debut).toBeLessThan(2000)
+    expect(resultat.attempts[0].outcome).toBe('network_error')
+  })
+})

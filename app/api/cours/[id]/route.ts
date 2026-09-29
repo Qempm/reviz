@@ -99,7 +99,11 @@ export async function GET(
     // façon si quelqu'un d'autre l'a déjà pris.
     if (job && new Date(job.run_after) <= new Date()) {
       after(() =>
-        lancerJobMaintenant(job.id, { budgetSecondes: BUDGET_TRAITEMENT_S }),
+        lancerJobMaintenant(job.id, {
+          budgetSecondes: BUDGET_TRAITEMENT_S,
+          coursId: parse.data,
+          origine: new URL(request.url).origin,
+        }),
       )
     }
   }

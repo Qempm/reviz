@@ -6,6 +6,7 @@ import {
   peutAjouterMatiere,
   type Subscription,
 } from '@/lib/payments/subscriptions'
+import { estPhoto } from '@/lib/ai/peak-hours'
 import { BAREME } from '@/lib/xp/attribution'
 import { attribuerXp } from '@/lib/xp/attribuer'
 
@@ -212,7 +213,7 @@ export async function confirmerDepot(
     .eq('id', parse.data)
     .eq('owner_id', userId)
     .eq('status', 'uploaded')
-    .select('id')
+    .select('id, storage_path')
 
   if (error) {
     console.error('[cours] passage en traitement impossible', error.message)
@@ -233,7 +234,16 @@ export async function confirmerDepot(
   const { createAdminClient } = await import('@/lib/supabase/admin')
   const { data: job, error: erreurJob } = await createAdminClient()
     .from('jobs')
-    .insert({ type: 'ingest_course', payload: { course_id: parse.data } })
+    .insert({
+      type: 'ingest_course',
+      payload: {
+        course_id: parse.data,
+        // Seule une photo appelle l'IA à la lecture (la vision) : c'est
+        // elle, et elle seule, que les heures pleines retiennent (règle
+        // métier 6, `job_peut_demarrer`). PDF et Word partent à toute heure.
+        vision: estPhoto(modifie?.[0]?.storage_path),
+      },
+    })
     .select('id')
     .single()
 

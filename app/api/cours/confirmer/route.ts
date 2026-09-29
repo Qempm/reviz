@@ -51,6 +51,9 @@ export async function POST(request: Request) {
     after(() =>
       lancerJobMaintenant(resultat.jobId!, {
         budgetSecondes: BUDGET_TRAITEMENT_S,
+        // La lecture, puis les chapitres, s'enchaînent d'eux-mêmes.
+        coursId: parse.data.courseId,
+        origine: new URL(request.url).origin,
       }),
     )
   }
