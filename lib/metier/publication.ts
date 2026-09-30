@@ -38,8 +38,9 @@ export const VERSION_MINIMALE = '2.0.0'
 export const MAINTENANCE = false
 
 export const NOTES =
-  'Les chapitres de tes cours s’affichent de nouveau, avec leur ' +
-  'progression.'
+  'Ton école, ta filière ou ta matière se tapent si elles manquent, le ' +
+  'pack gratuit s’active en un appui, et tes séries de questions changent ' +
+  'à chaque fois.'
 
 /** Date de la publication, au format `AAAA-MM-JJ`. */
 export const DATE = '2026-09-30'
