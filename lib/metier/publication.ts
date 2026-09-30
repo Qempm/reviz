@@ -13,7 +13,7 @@
  */
 
 /** La version publiée, telle que `pubspec.yaml` la déclare. */
-export const VERSION = '2.5.0'
+export const VERSION = '2.5.1'
 
 /**
  * En dessous, l'application refuse de servir.
@@ -38,9 +38,9 @@ export const VERSION_MINIMALE = '2.0.0'
 export const MAINTENANCE = false
 
 export const NOTES =
-  'Tes cours deviennent un chemin à couronnes, tu gagnes des niveaux, tu ' +
-  'joues ta ligue de la semaine, et tes copies sont corrigées d’après ton ' +
-  'cours et ton année.'
+  'Le panthéreau t’accompagne partout : onze nouvelles poses. Et toujours ' +
+  'ton chemin à couronnes, tes niveaux, ta ligue de la semaine et tes ' +
+  'copies corrigées d’après ton cours.'
 
 /** Date de la publication, au format `AAAA-MM-JJ`. */
 export const DATE = '2026-09-30'
@@ -75,9 +75,9 @@ export type Apk =
 
 export const APK: Apk = {
   publie: true,
-  url: 'https://github.com/Qempm/reviz/releases/download/v2.5.0/reviz-2.5.0.apk',
-  tailleOctets: 61_404_475,
-  sha256: 'b4b9a3ce1c669709087a97033318fb6cee52ce0b7b77d68b0a22b0713df446d7',
+  url: 'https://github.com/Qempm/reviz/releases/download/v2.5.1/reviz-2.5.1.apk',
+  tailleOctets: 61_693_446,
+  sha256: '4483fae06496dd01986fa524062dfb0d08ef43f3c9f9e68665a725b1b9ea0304',
 }
 
 /**
