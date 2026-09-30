@@ -86,6 +86,14 @@ const copieCorrigeeSchema = z.object({
     strengths: z.array(z.string().max(500)).max(10).default([]),
     improvements: z.array(z.string().max(500)).max(10).default([]),
   }),
+  /**
+   * Les numéros des chapitres du cours à revoir, d'après la copie. Rendu
+   * seulement quand la consigne porte le cours (`lib/ai/consignes.ts`) ; un
+   * numéro inconnu est écarté au rattachement, pas ici.
+   */
+  chapters: z.array(z.number().int().min(0)).max(10).default([]),
+  /** Les notions manquées ou confondues, en quelques mots. */
+  missedNotions: z.array(z.string().max(200)).max(10).default([]),
 })
 
 /**

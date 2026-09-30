@@ -945,17 +945,23 @@ class DepotCorrections {
     required ApiReviz api,
     required List<FichierAEnvoyer> fichiers,
     String? coursId,
+    String? typeEpreuve,
+    int? bareme,
     void Function(double part)? progression,
   }) async {
     final copie = fichiers.firstWhere((f) => f.champ == 'copie');
+    final pages = fichiers.where((f) => f.champ == 'page').toList();
     final sujet = fichiers.where((f) => f.champ == 'sujet').firstOrNull;
 
     final prepare = await api.poster<DepotPrepare>(
       '/api/corrections/preparer',
       corps: {
         'copie': copie.description,
+        if (pages.isNotEmpty) 'pages': [for (final p in pages) p.description],
         if (sujet != null) 'sujet': sujet.description,
         'courseId': ?coursId,
+        'typeEpreuve': ?typeEpreuve,
+        'bareme': ?bareme,
       },
       depuis: DepotPrepare.depuis,
     );
@@ -971,8 +977,12 @@ class DepotCorrections {
     final total = fichiers.fold<int>(0, (t, f) => t + f.octets.length);
     var deja = 0;
 
+    // Les pages partagent le même champ : on les apparie dans l'ordre, celui
+    // où le serveur a signé leurs URL.
+    final restants = [...fichiers];
     for (final envoi in depot.envois) {
-      final fichier = fichiers.firstWhere((f) => f.champ == envoi.champ);
+      final fichier = restants.firstWhere((f) => f.champ == envoi.champ);
+      restants.remove(fichier);
       final avant = deja;
 
       final echec = await api.televerser(

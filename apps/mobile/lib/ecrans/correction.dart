@@ -405,6 +405,44 @@ class _ResultatState extends ConsumerState<_Resultat> {
               ),
             ],
 
+            // --- Ce que la copie dit de son cours : les chapitres à revoir,
+            // chacun à un appui de sa série de questions. C'est là que la
+            // correction cesse d'être une note et devient un plan.
+            if (retour != null &&
+                (retour.notions.isNotEmpty ||
+                    (retour.chapitres.isNotEmpty && c.coursId != null))) ...[
+              const SizedBox(height: Espaces.x12),
+              Carte(
+                enfants: [
+                  Text(Fr.correction.aRevoirCours, style: Typo.headlineSm),
+                  if (retour.notions.isNotEmpty) ...[
+                    Text(Fr.correction.notionsManquees, style: Typo.labelLg),
+                    Wrap(
+                      spacing: Espaces.x8,
+                      runSpacing: Espaces.x8,
+                      children: [
+                        for (final n in retour.notions)
+                          Puce(
+                            libelle: n,
+                            ton: TonPuce.orange,
+                            icone: Icons.lightbulb_outline,
+                          ),
+                      ],
+                    ),
+                  ],
+                  if (c.coursId != null)
+                    for (final (id, titre) in retour.chapitres)
+                      Bouton(
+                        libelle: Fr.correction.reviserChapitre(titre),
+                        icone: Icons.bolt,
+                        onTap: () => context.descendre(
+                          Chemins.session(c.coursId!, chapitre: id),
+                        ),
+                      ),
+                ],
+              ),
+            ],
+
             const SizedBox(height: Espaces.x20),
             Bouton(
               libelle: Fr.correction.titre,

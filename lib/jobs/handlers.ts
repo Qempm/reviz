@@ -6,6 +6,7 @@ import type {
   QuestionsPayload,
   TranscriptionPayload,
 } from '@/lib/ai/schemas'
+import type { ContexteCorrection } from '@/lib/ai/consignes'
 import type { Handlers } from './runner'
 import { PermanentJobError, type Job, type JobContext } from './types'
 
@@ -104,44 +105,11 @@ const correctCopySchema = z.object({
 })
 
 /**
- * Consigne de correction.
- *
- * Décrit le schéma Zod, et non plus une forme inventée : c'est le même
- * contrat des deux côtés. La branche « illisible » est annoncée au modèle,
- * sans quoi il inventerait une note sur une photo floue — le cas d'échec le
- * plus fréquent chez un étudiant qui photographie sa copie à 23 h.
+ * La consigne de correction vit dans `lib/ai/consignes.ts` : calibrée sur le
+ * cours, l'année, la filière et l'historique de l'étudiant, et testée sans
+ * appel au modèle. L'ancienne consigne, générique, corrigeait « dans
+ * l'absolu » — le défaut même d'un assistant généraliste.
  */
-const CONSIGNE_CORRECTION = `Tu es un professeur d'université qui corrige la copie d'un étudiant.
-
-La copie t'est donnée en photo. Un sujet peut l'accompagner.
-
-Si tu n'arrives pas à lire la copie — photo floue, trop sombre, cadrage qui
-coupe le texte, page blanche — ne devine pas de note. Réponds :
-{"isReadable": false, "reason": "<ce que l'étudiant doit corriger, en une phrase, en le tutoyant>"}
-
-Sinon, corrige et réponds :
-{
-  "isReadable": true,
-  "grade": 14,
-  "maxGrade": 20,
-  "rubric": [
-    {"criterion": "Compréhension du sujet", "points": 4, "maxPoints": 5, "comment": "..."},
-    {"criterion": "Argumentation", "points": 6, "maxPoints": 9, "comment": "..."}
-  ],
-  "feedback": {
-    "summary": "...",
-    "strengths": ["...", "..."],
-    "improvements": ["...", "..."]
-  }
-}
-
-Règles :
-- note sur 20, et la somme des points de la rubrique doit valoir la note ;
-- chaque "points" reste inférieur ou égal à son "maxPoints" ;
-- entre 2 et 8 critères, nommés en français ;
-- tu t'adresses à l'étudiant en le tutoyant, tu es exigeant et encourageant ;
-- rien que du JSON, sans texte avant ni après.`
-
 export const correctCopyHandler = async (
   job: Job,
   ctx: JobContext,
@@ -161,6 +129,10 @@ export const correctCopyHandler = async (
   const { runAiTask } = await import('@/lib/ai/routing')
   const { recordAiUsage } = await import('@/lib/ai/usage')
   const { AiError } = await import('@/lib/ai/types')
+  const { consigneCorrection, normaliserNote } = await import('@/lib/ai/consignes')
+  const { chargerContexte, ordonnerPages, rattacherChapitres } = await import(
+    '@/lib/jobs/contexte-correction'
+  )
   const admin = createAdminClient()
 
   /**
@@ -180,10 +152,10 @@ export const correctCopyHandler = async (
     }
   }
 
-  // 1. Les images, par URL signée.
-  const images: string[] = []
+  // 1. Les images, par URL signée, dans l'ordre de lecture et étiquetées.
+  const images: Array<{ url: string; etiquette: string }> = []
 
-  for (const path of storage_paths) {
+  for (const { chemin: path, etiquette } of ordonnerPages(storage_paths)) {
     // URL signée, et non `getPublicUrl` : le seau `copies` est privé, et
     // `getPublicUrl` ne fait que fabriquer une chaîne — il n'échoue jamais,
     // ce qui rendait le garde-fou « aucune image » incapable de se
@@ -197,7 +169,7 @@ export const correctCopyHandler = async (
       continue
     }
 
-    images.push(data.signedUrl)
+    images.push({ url: data.signedUrl, etiquette })
   }
 
   if (images.length === 0) {
@@ -217,7 +189,26 @@ export const correctCopyHandler = async (
     .update({ status: 'processing' })
     .eq('id', correction_id)
 
-  // 3. L'appel, par la chaîne de secours.
+  // 3. Le contexte : son cours, son niveau, ses points faibles, ses
+  //    corrections passées. Une lecture qui échoue retire un morceau de
+  //    contexte, jamais la correction.
+  const { data: ligne } = await admin
+    .from('corrections')
+    .select('course_id, feedback')
+    .eq('id', correction_id)
+    .maybeSingle()
+  const { contexte, chapitres } = await chargerContexte(admin, {
+    userId: user_id,
+    courseId: ligne?.course_id ?? null,
+    feedback: ligne?.feedback,
+  }).catch((e: unknown) => {
+    ctx.log('contexte de correction incomplet', {
+      erreur: e instanceof Error ? e.message : String(e),
+    })
+    return { contexte: {} as ContexteCorrection, chapitres: [] }
+  })
+
+  // 4. L'appel, par la chaîne de secours.
   let resultat
   try {
     // Le type ne se déduit pas de `task` : `runAiTask` est générique et
@@ -229,11 +220,13 @@ export const correctCopyHandler = async (
         {
           role: 'user',
           content: [
-            { type: 'text', text: CONSIGNE_CORRECTION },
-            ...images.map((url) => ({
-              type: 'image_url' as const,
-              image_url: { url },
-            })),
+            { type: 'text', text: consigneCorrection(contexte) },
+            // Chaque image précédée de son étiquette : le modèle sait ce qui
+            // est la copie, dans quel ordre, et ce qui est le sujet.
+            ...images.flatMap(({ url, etiquette }) => [
+              { type: 'text' as const, text: etiquette },
+              { type: 'image_url' as const, image_url: { url } },
+            ]),
           ],
         },
       ],
@@ -264,7 +257,7 @@ export const correctCopyHandler = async (
 
   const correction = resultat.data
 
-  // 4. Copie illisible : une réponse valide, pas une panne. L'étudiant n'a
+  // 5. Copie illisible : une réponse valide, pas une panne. L'étudiant n'a
   //    qu'à reprendre la photo, et on ne lui décompte rien.
   if (!correction.isReadable) {
     const { error } = await admin
@@ -284,17 +277,23 @@ export const correctCopyHandler = async (
     return
   }
 
-  // 5. La note, la rubrique et le retour.
+  // 6. La note, la rubrique et le retour. La note fait foi au détail et au
+  //    barème demandé (`normaliserNote`) ; les chapitres à revoir sont
+  //    rattachés à leur identifiant, pour le bouton « Réviser ce chapitre ».
+  const notee = normaliserNote(correction, contexte.bareme)
+  const aRevoir = rattacherChapitres(correction.chapters, chapitres)
   const { error: erreurEcriture } = await admin
     .from('corrections')
     .update({
       status: 'ready',
-      grade: correction.grade,
-      // Le barème vient du modèle et non d'un 20 en dur : le schéma a déjà
-      // vérifié que la note ne le dépasse pas.
-      max_grade: correction.maxGrade,
-      rubric: correction.rubric,
-      feedback: correction.feedback,
+      grade: notee.grade,
+      max_grade: notee.maxGrade,
+      rubric: notee.rubric,
+      feedback: {
+        ...correction.feedback,
+        chapitres: aRevoir.map((c) => ({ id: c.id, index: c.index, titre: c.titre })),
+        notions: correction.missedNotions,
+      },
       model_used: resultat.model,
     })
     .eq('id', correction_id)
@@ -306,7 +305,7 @@ export const correctCopyHandler = async (
     throw new Error(`Correction non consignée : ${erreurEcriture.message}`)
   }
 
-  // 6. Le décompte, **au succès seulement**. Facturer une correction que
+  // 7. Le décompte, **au succès seulement**. Facturer une correction que
   //    l'IA n'a pas produite serait facturer du vide ; le plafond de cinq par
   //    jour suffit à empêcher qu'on relance sans fin.
   const { data: restant, error: erreurCredit } = await admin.rpc(
@@ -632,8 +631,27 @@ const FICHES_PAR_CHAPITRE = 4
 /** Plafond SQL, répété ici pour arrêter avant le refus (règle métier 5). */
 const PLAFOND_QUESTIONS = 200
 
-function consigneQuestions(titre: string, texte: string): string {
-  return `Tu prépares des questions de révision pour un étudiant d'université d'Afrique francophone.
+/**
+ * Qui révise : la matière, l'année, la filière. Des questions de L1 et de M2
+ * sur le même texte ne se posent pas de la même façon.
+ */
+function situationEtudiant(s: {
+  matiere?: string | null
+  annee?: number | null
+  filiere?: string | null
+}): string {
+  const morceaux = [
+    s.matiere ? `en ${s.matiere}` : '',
+    s.annee ? (s.annee <= 3 ? `en L${s.annee}` : `en M${s.annee - 3}`) : '',
+    s.filiere ? `(${s.filiere})` : '',
+  ].filter(Boolean)
+  return morceaux.length ? ` ${morceaux.join(' ')}` : ''
+}
+
+type Situation = Parameters<typeof situationEtudiant>[0]
+
+function consigneQuestions(titre: string, texte: string, situation: Situation = {}): string {
+  return `Tu prépares des questions de révision pour un étudiant d'université d'Afrique francophone${situationEtudiant(situation)}.
 
 Voici un chapitre du cours « ${titre} » :
 
@@ -648,7 +666,8 @@ Règles :
 - la réponse juste doit figurer mot pour mot dans les propositions ;
 - tu ne poses de question que sur ce qui est écrit dans le chapitre — tu n'ajoutes rien ;
 - l'explication dit pourquoi la réponse est juste, en une ou deux phrases ;
-- \`probability\` vaut "high" si la notion a toutes les chances de tomber à l'examen, "medium" sinon, "low" pour un détail ;
+- \`probability\` dit la chance que la notion tombe à l'examen : "high" pour ce que le chapitre met en avant — une définition, un principe, une méthode, une formule, une date ou un auteur central, ce qu'un professeur interroge volontiers ; "medium" pour une notion utile mais secondaire ; "low" pour un détail ou un exemple ;
+- ajuste la difficulté au niveau de l'étudiant ;
 - tu t'adresses à l'étudiant en le tutoyant.
 
 Réponds en JSON :
@@ -657,8 +676,8 @@ Réponds en JSON :
 Rien que du JSON, sans texte avant ni après.`
 }
 
-function consigneFiches(titre: string, texte: string): string {
-  return `Tu prépares des fiches de révision pour un étudiant d'université d'Afrique francophone.
+function consigneFiches(titre: string, texte: string, situation: Situation = {}): string {
+  return `Tu prépares des fiches de révision pour un étudiant d'université d'Afrique francophone${situationEtudiant(situation)}.
 
 Voici un chapitre du cours « ${titre} » :
 
@@ -715,11 +734,25 @@ export const generateQuestionsHandler = async (
 
   const { data: cours } = await admin
     .from('courses')
-    .select('id, owner_id, title, status')
+    .select('id, owner_id, title, status, subjects(name)')
     .eq('id', course_id)
     .maybeSingle()
 
   if (!cours) throw new PermanentJobError(`Cours ${course_id} introuvable.`)
+
+  // Qui a déposé : sa matière, son année, sa filière. Facultatif — une
+  // lecture qui échoue donne des questions sans calibrage, pas d'échec.
+  const { data: auteur } = await admin
+    .from('profiles')
+    .select('study_year, faculties(name)')
+    .eq('id', cours.owner_id ?? '')
+    .maybeSingle()
+  const situation: Situation = {
+    matiere: (cours as unknown as { subjects: { name: string } | null }).subjects?.name,
+    annee: auteur?.study_year ?? null,
+    filiere: (auteur as unknown as { faculties: { name: string } | null } | null)?.faculties
+      ?.name,
+  }
   if (cours.status === 'ready') {
     ctx.log('cours déjà prêt, rien à générer', { course_id })
     return
@@ -797,12 +830,12 @@ export const generateQuestionsHandler = async (
     const [q, f] = await Promise.allSettled([
       runAiTask<QuestionsPayload>({
         task: 'questions',
-        messages: [{ role: 'user', content: consigneQuestions(ch.title, ch.text) }],
+        messages: [{ role: 'user', content: consigneQuestions(ch.title, ch.text, situation) }],
         ...commun,
       }),
       runAiTask<FlashcardsPayload>({
         task: 'flashcards',
-        messages: [{ role: 'user', content: consigneFiches(ch.title, ch.text) }],
+        messages: [{ role: 'user', content: consigneFiches(ch.title, ch.text, situation) }],
         ...commun,
       }),
     ])

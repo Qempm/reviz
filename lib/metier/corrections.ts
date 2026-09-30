@@ -1,6 +1,7 @@
 import 'server-only'
 import { z } from 'zod'
 import type { ClientReviz } from '@/lib/supabase/jeton'
+import { TYPES_EPREUVE } from '@/lib/metier/corrections-types'
 import {
   etatAcces,
   peutCorriger,
@@ -47,8 +48,21 @@ const fichier = z.object({
   taille: z.number().int().positive().max(TAILLE_MAX_COPIE),
 })
 
+/** Pages de copie au-delà de la première. */
+export const PAGES_SUPPLEMENTAIRES_MAX = 3
+
+
 export const entreeCorrection = z.object({
   copie: fichier,
+  /**
+   * Les pages suivantes de la copie. Facultatif : un APK antérieur n'envoie
+   * que `copie`, et continue de fonctionner.
+   */
+  pages: z.array(fichier).max(PAGES_SUPPLEMENTAIRES_MAX).optional(),
+  /** Le type d'épreuve, pour exiger ce qu'on attend à ce moment de l'année. */
+  typeEpreuve: z.enum(TYPES_EPREUVE).nullable().optional(),
+  /** Le barème annoncé par le professeur. 20 par défaut. */
+  bareme: z.number().int().min(5).max(100).nullable().optional(),
   /** Le sujet, facultatif : il aide le modèle à noter ce qui était demandé. */
   sujet: fichier.nullable().optional(),
   /** Rattachement à un cours, pour situer la correction. Facultatif. */
@@ -56,6 +70,9 @@ export const entreeCorrection = z.object({
 })
 
 export type EntreeCorrection = z.input<typeof entreeCorrection>
+
+/** `page` : une page de copie au-delà de la première, dans l'ordre. */
+export type ChampEnvoi = 'copie' | 'page' | 'sujet'
 
 export type RefusPreparation =
   | 'invalide'
@@ -67,8 +84,8 @@ export type PreparationCorrection =
   | {
       ok: true
       correctionId: string
-      /** Une entrée par fichier attendu, dans l'ordre : copie, puis sujet. */
-      envois: Array<{ champ: 'copie' | 'sujet'; chemin: string; url: string }>
+      /** Une entrée par fichier attendu, dans l'ordre : copie, pages, sujet. */
+      envois: Array<{ champ: ChampEnvoi; chemin: string; url: string }>
     }
   | {
       ok: false
@@ -101,7 +118,7 @@ export async function preparerCorrection(
 ): Promise<PreparationCorrection> {
   const parse = entreeCorrection.safeParse(brut)
   if (!parse.success) return { ok: false, error: 'invalide' }
-  const { copie, sujet, courseId } = parse.data
+  const { copie, sujet, courseId, pages, typeEpreuve, bareme } = parse.data
 
   const { data: lignes } = await supabase
     .from('subscriptions')
@@ -147,8 +164,14 @@ export async function preparerCorrection(
   // en dépendent, et le client doit les connaître avant d'envoyer.
   const correctionId = crypto.randomUUID()
 
-  const attendus: Array<{ champ: 'copie' | 'sujet'; chemin: string }> = [
+  const attendus: Array<{ champ: ChampEnvoi; chemin: string }> = [
     { champ: 'copie', chemin: `${userId}/${correctionId}/copie.${MIMES[copie.mime]}` },
+    // Numérotées à partir de 2 : `copie-2`, `copie-3`… Le gestionnaire les
+    // remet dans cet ordre et les étiquette « Page N de la copie ».
+    ...(pages ?? []).map((p, i) => ({
+      champ: 'page' as const,
+      chemin: `${userId}/${correctionId}/copie-${i + 2}.${MIMES[p.mime]}`,
+    })),
   ]
 
   if (sujet) {
@@ -164,6 +187,12 @@ export async function preparerCorrection(
     course_id: courseId ?? null,
     storage_paths: attendus.map((a) => a.chemin),
     status: 'pending',
+    // Ce que l'étudiant a précisé, gardé dans `feedback` jusqu'à la
+    // correction, qui le remplace : pas de colonne à ajouter, donc rien qui
+    // casse tant que la base n'a pas été migrée.
+    feedback: {
+      demande: { typeEpreuve: typeEpreuve ?? null, bareme: bareme ?? null },
+    },
   })
 
   if (error) {
@@ -173,8 +202,7 @@ export async function preparerCorrection(
     return { ok: false, error: 'plafond_journalier' }
   }
 
-  const envois: Array<{ champ: 'copie' | 'sujet'; chemin: string; url: string }> =
-    []
+  const envois: Array<{ champ: ChampEnvoi; chemin: string; url: string }> = []
 
   for (const attendu of attendus) {
     const { data: signature, error: erreurSignature } = await supabase.storage

@@ -290,7 +290,16 @@ Vérifié contre la base hébergée : la même charge utile jouée deux fois ren
 
 ### Les quatre routes de la correction
 
-`POST /api/corrections/preparer` — `{ copie: {mime, taille}, sujet?, courseId? }`.
+`POST /api/corrections/preparer` — `{ copie: {mime, taille}, pages?, sujet?,
+courseId?, typeEpreuve?, bareme? }`. `pages` : jusqu'à trois pages de plus,
+signées en `champ: 'page'` dans l'ordre (`copie-2`, `copie-3`…).
+`typeEpreuve` (`devoir` | `interrogation` | `partiel` | `examen` | `td`) et
+`bareme` (5 à 100) sont gardés dans `feedback.demande` jusqu'à la
+correction, qui les revalide ; avec `courseId`, la correction est jugée
+d'après ce cours, l'année et la filière de l'étudiant, et rend
+`feedback.chapitres` (`[{id, index, titre}]`, trois au plus) et
+`feedback.notions`. Tous ces champs sont facultatifs : un APK antérieur
+continue de fonctionner.
 Vérifie les droits par `etatAcces()` + `peutCorriger()`, réserve la ligne
 `corrections` **avant** l'envoi — pour que le plafond de cinq par jour tranche
 en 200 ms et non après quarante secondes d'envoi — et signe une URL par

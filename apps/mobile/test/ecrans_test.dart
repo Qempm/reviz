@@ -348,6 +348,7 @@ const _classement = [
 /// avec ses deux listes, et un commentaire long qui doit s'ellipser.
 final _corrigee = Correction(
   id: 'k1',
+  coursId: 'c1',
   statut: 'ready',
   note: 13.5,
   bareme: 20,
@@ -384,6 +385,10 @@ final _corrigee = Correction(
     resume: 'Copie solide, à resserrer sur l’expression.',
     pointsForts: ['Plan clair', 'Bonnes références'],
     aTravailler: ['Orthographe', 'Conclusion trop courte'],
+    chapitres: [
+      ('ch2', 'Le contrôle de constitutionnalité des lois ordinaires'),
+    ],
+    notions: ['Contrôle a priori', 'Saisine du Conseil'],
   ),
   modele: 'deepseek-v4-flash-vision-exp',
   creeLe: null,
@@ -1618,6 +1623,23 @@ void main() {
       // L'étudiant peut fermer : le résultat n'est pas perdu.
       expect(find.textContaining('on garde le résultat'), findsOneWidget);
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('mène aux chapitres à revoir de son cours', (tester) async {
+      await _poser(
+        tester,
+        const EcranCorrection(correctionId: 'k1'),
+        stabiliser: false,
+        remplacements: [
+          correctionProvider('k1').overrideWith((_) async => _corrigee),
+        ],
+      );
+      final bouton = find.text(
+        'Réviser : Le contrôle de constitutionnalité des lois ordinaires',
+      );
+      await tester.scrollUntilVisible(bouton, 300);
+      expect(bouton, findsOneWidget);
+      expect(find.text('Contrôle a priori'), findsOneWidget);
     });
 
     testWidgets('ne déborde pas à 320 px', (tester) async {

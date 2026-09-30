@@ -570,11 +570,19 @@ class RetourCorrection {
     required this.resume,
     required this.pointsForts,
     required this.aTravailler,
+    this.chapitres = const [],
+    this.notions = const [],
   });
 
   final String? resume;
   final List<String> pointsForts;
   final List<String> aTravailler;
+
+  /// Les chapitres de son cours à revoir d'après la copie : `(id, titre)`.
+  final List<(String, String)> chapitres;
+
+  /// Les notions manquées ou confondues.
+  final List<String> notions;
 
   static List<String> _liste(dynamic valeur) {
     if (valeur is! List) return const [];
@@ -588,6 +596,12 @@ class RetourCorrection {
     resume: l['summary'] as String?,
     pointsForts: _liste(l['strengths']),
     aTravailler: _liste(l['improvements']),
+    chapitres: [
+      for (final c in (l['chapitres'] as List?) ?? const [])
+        if (c is Map && c['id'] is String)
+          (c['id'] as String, c['titre'] as String? ?? ''),
+    ],
+    notions: _liste(l['notions']),
   );
 }
 
@@ -607,9 +621,13 @@ class Correction {
     required this.modele,
     required this.creeLe,
     required this.motifIllisible,
+    this.coursId,
   });
 
   final String id;
+
+  /// Le cours rattaché, s'il y en a un : c'est lui qu'on révise ensuite.
+  final String? coursId;
 
   /// `pending` | `processing` | `ready` | `failed`, tel quel.
   final String statut;
@@ -660,6 +678,7 @@ class Correction {
 
     return Correction(
       id: id,
+      coursId: l['course_id'] as String?,
       statut: l['status'] as String? ?? 'pending',
       note: (l['grade'] as num?)?.toDouble(),
       bareme: (l['max_grade'] as num?)?.toDouble(),
@@ -689,7 +708,7 @@ class FichierAEnvoyer {
     required this.typeMime,
   });
 
-  /// `copie` ou `sujet`.
+  /// `copie` (la première page), `page` (les suivantes) ou `sujet`.
   final String champ;
   final List<int> octets;
   final String typeMime;

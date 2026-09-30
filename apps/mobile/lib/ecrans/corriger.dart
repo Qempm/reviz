@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import '../composants/bouton.dart';
 import '../composants/carte.dart';
 import '../composants/chargement.dart';
+import '../composants/champ_recherche.dart';
 import '../composants/coquille.dart';
 import '../composants/etat_vide.dart';
 import '../composants/mascotte.dart';
@@ -43,8 +44,19 @@ class _EcranCorrigerState extends ConsumerState<EcranCorriger> {
   static const _largeurMax = 2000.0;
   static const _qualite = 85;
 
-  _Photo? _copie;
+  /// Les pages de la copie, dans l'ordre. Quatre au plus : la première
+  /// part en `copie`, les suivantes en `page`.
+  final List<_Photo> _pages = [];
   _Photo? _sujet;
+
+  /// Le cours choisi à la main ; tant qu'il ne l'est pas, celui dont
+  /// l'examen approche est pré-choisi (`_coursParDefaut`).
+  String? _coursId;
+  bool _coursTouche = false;
+  String? _type;
+  int _bareme = 20;
+
+  static const _pagesMax = 4;
 
   bool _envoi = false;
   double _part = 0;
@@ -53,6 +65,7 @@ class _EcranCorrigerState extends ConsumerState<EcranCorriger> {
   Future<void> _choisir({
     required bool estCopie,
     required ImageSource source,
+    int? index,
   }) async {
     final choisie = await ImagePicker().pickImage(
       source: source,
@@ -72,7 +85,11 @@ class _EcranCorrigerState extends ConsumerState<EcranCorriger> {
         typeMime: _typeMime(choisie.name, choisie.mimeType),
       );
       if (estCopie) {
-        _copie = photo;
+        if (index != null && index < _pages.length) {
+          _pages[index] = photo;
+        } else if (_pages.length < _pagesMax) {
+          _pages.add(photo);
+        }
       } else {
         _sujet = photo;
       }
@@ -89,9 +106,30 @@ class _EcranCorrigerState extends ConsumerState<EcranCorriger> {
     return 'image/jpeg';
   }
 
+  /// Le cours dont l'examen est le plus proche, sinon le plus récent : c'est
+  /// presque toujours celui de la copie qu'on photographie.
+  static String? _coursParDefaut(List<ApercuCours> cours) {
+    final prets = cours.where((c) => c.pret && !c.demo).toList();
+    if (prets.isEmpty) return null;
+    final hier = DateTime.now().subtract(const Duration(days: 1));
+    final avecExamen =
+        prets
+            .where(
+              (c) =>
+                  DateTime.tryParse(c.dateExamen ?? '')?.isAfter(hier) ?? false,
+            )
+            .toList()
+          ..sort((a, b) => a.dateExamen!.compareTo(b.dateExamen!));
+    return (avecExamen.isNotEmpty ? avecExamen.first : prets.first).id;
+  }
+
+  String? _coursRetenu(List<ApercuCours> cours) =>
+      _coursTouche ? _coursId : _coursParDefaut(cours);
+
   Future<void> _envoyer() async {
-    final copie = _copie;
-    if (copie == null) return;
+    if (_pages.isEmpty) return;
+    final copie = _pages.first;
+    final coursId = _coursRetenu(ref.read(coursProvider).value ?? const []);
 
     setState(() {
       _envoi = true;
@@ -99,25 +137,36 @@ class _EcranCorrigerState extends ConsumerState<EcranCorriger> {
       _erreur = null;
     });
 
-    final reponse = await ref.read(depotCorrectionsProvider).deposer(
-      api: ref.read(apiProvider),
-      fichiers: [
-        FichierAEnvoyer(
-          champ: 'copie',
-          octets: copie.octets,
-          typeMime: copie.typeMime,
-        ),
-        if (_sujet != null)
-          FichierAEnvoyer(
-            champ: 'sujet',
-            octets: _sujet!.octets,
-            typeMime: _sujet!.typeMime,
-          ),
-      ],
-      progression: (part) {
-        if (mounted) setState(() => _part = part);
-      },
-    );
+    final reponse = await ref
+        .read(depotCorrectionsProvider)
+        .deposer(
+          api: ref.read(apiProvider),
+          fichiers: [
+            FichierAEnvoyer(
+              champ: 'copie',
+              octets: copie.octets,
+              typeMime: copie.typeMime,
+            ),
+            for (final p in _pages.skip(1))
+              FichierAEnvoyer(
+                champ: 'page',
+                octets: p.octets,
+                typeMime: p.typeMime,
+              ),
+            if (_sujet != null)
+              FichierAEnvoyer(
+                champ: 'sujet',
+                octets: _sujet!.octets,
+                typeMime: _sujet!.typeMime,
+              ),
+          ],
+          coursId: coursId,
+          typeEpreuve: _type,
+          bareme: _bareme,
+          progression: (part) {
+            if (mounted) setState(() => _part = part);
+          },
+        );
 
     if (!mounted) return;
 
@@ -140,6 +189,7 @@ class _EcranCorrigerState extends ConsumerState<EcranCorriger> {
     final profil = ref.watch(profilProvider);
     final acces = ref.watch(accesCorrectionProvider);
     final historique = ref.watch(correctionsProvider);
+    final cours = ref.watch(coursProvider).value ?? const <ApercuCours>[];
 
     return Coquille(
       serie: switch (profil) {
@@ -172,12 +222,30 @@ class _EcranCorrigerState extends ConsumerState<EcranCorriger> {
                 switch (acces) {
                   AsyncData(:final value) => _Depot(
                     acces: value,
-                    copie: _copie,
+                    pages: _pages,
+                    pagesMax: _pagesMax,
                     sujet: _sujet,
                     erreur: _erreur,
                     onChoisir: _choisir,
+                    onRetirerPage: (i) => setState(() => _pages.removeAt(i)),
                     onRetirerSujet: () => setState(() => _sujet = null),
                     onEnvoyer: _envoyer,
+                    precisions: _Precisions(
+                      cours: [
+                        for (final c in cours)
+                          if (c.pret && !c.demo) (c.id, c.titre ?? '—'),
+                      ],
+                      coursId: _coursRetenu(cours),
+                      onCours: (id) => setState(() {
+                        _coursTouche = true;
+                        _coursId = id;
+                      }),
+                      type: _type,
+                      onType: (t) =>
+                          setState(() => _type = _type == t ? null : t),
+                      bareme: _bareme,
+                      onBareme: (b) => setState(() => _bareme = b),
+                    ),
                   ),
                   AsyncError() => Carte(
                     enfants: [
@@ -238,25 +306,32 @@ class _Photo {
 class _Depot extends StatelessWidget {
   const _Depot({
     required this.acces,
-    required this.copie,
+    required this.pages,
+    required this.pagesMax,
     required this.sujet,
     required this.erreur,
     required this.onChoisir,
+    required this.onRetirerPage,
     required this.onRetirerSujet,
     required this.onEnvoyer,
+    required this.precisions,
   });
 
   final EtatAcces acces;
-  final _Photo? copie;
+  final List<_Photo> pages;
+  final int pagesMax;
   final _Photo? sujet;
   final String? erreur;
   final Future<void> Function({
     required bool estCopie,
     required ImageSource source,
+    int? index,
   })
   onChoisir;
+  final void Function(int index) onRetirerPage;
   final VoidCallback onRetirerSujet;
   final VoidCallback onEnvoyer;
+  final Widget precisions;
 
   /// Ce qui empêche de corriger, ou `null` si rien.
   String? get _blocage => switch (acces) {
@@ -306,7 +381,7 @@ class _Depot extends StatelessWidget {
           icone: Icons.fact_check_outlined,
         ),
 
-        if (copie == null)
+        if (pages.isEmpty)
           Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             mainAxisSize: MainAxisSize.min,
@@ -314,20 +389,16 @@ class _Depot extends StatelessWidget {
               Bouton(
                 libelle: Fr.correction.prendrePhoto,
                 icone: Icons.photo_camera,
-                onTap: () => onChoisir(
-                  estCopie: true,
-                  source: ImageSource.camera,
-                ),
+                onTap: () =>
+                    onChoisir(estCopie: true, source: ImageSource.camera),
               ),
               const SizedBox(height: Espaces.x8),
               Bouton(
                 libelle: Fr.correction.choisirGalerie,
                 icone: Icons.photo_library_outlined,
                 variante: VarianteBouton.secondaire,
-                onTap: () => onChoisir(
-                  estCopie: true,
-                  source: ImageSource.gallery,
-                ),
+                onTap: () =>
+                    onChoisir(estCopie: true, source: ImageSource.gallery),
               ),
               const SizedBox(height: Espaces.x8),
               Text(
@@ -342,25 +413,39 @@ class _Depot extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             mainAxisSize: MainAxisSize.min,
             children: [
-              _Apercu(
-                libelle: Fr.correction.copie,
-                photo: copie!,
-                onRemplacer: () => onChoisir(
-                  estCopie: true,
-                  source: ImageSource.camera,
+              for (var i = 0; i < pages.length; i++) ...[
+                _Apercu(
+                  libelle: pages.length == 1
+                      ? Fr.correction.copie
+                      : Fr.correction.page(i + 1),
+                  photo: pages[i],
+                  onRemplacer: () => onChoisir(
+                    estCopie: true,
+                    source: ImageSource.camera,
+                    index: i,
+                  ),
+                  onRetirer: i == 0 ? null : () => onRetirerPage(i),
                 ),
-              ),
-              const SizedBox(height: Espaces.x12),
+                const SizedBox(height: Espaces.x8),
+              ],
+              if (pages.length < pagesMax) ...[
+                Bouton(
+                  libelle: Fr.correction.ajouterPage,
+                  icone: Icons.add_a_photo_outlined,
+                  variante: VarianteBouton.secondaire,
+                  onTap: () =>
+                      onChoisir(estCopie: true, source: ImageSource.camera),
+                ),
+                const SizedBox(height: Espaces.x12),
+              ],
 
               if (sujet == null)
                 Bouton(
                   libelle: Fr.correction.sujetFacultatif,
                   icone: Icons.description_outlined,
                   variante: VarianteBouton.secondaire,
-                  onTap: () => onChoisir(
-                    estCopie: false,
-                    source: ImageSource.camera,
-                  ),
+                  onTap: () =>
+                      onChoisir(estCopie: false, source: ImageSource.camera),
                 )
               else
                 _Apercu(
@@ -374,7 +459,9 @@ class _Depot extends StatelessWidget {
                 Fr.correction.aideSujet,
                 style: Typo.labelSm.copyWith(color: Couleurs.attenue),
               ),
-              const SizedBox(height: Espaces.x16),
+              const SizedBox(height: Espaces.x20),
+              precisions,
+              const SizedBox(height: Espaces.x20),
 
               Bouton(
                 libelle: Fr.correction.envoyer,
@@ -547,12 +634,137 @@ class _LigneHistorique extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            const Icon(
-              Icons.chevron_right,
-              size: 24,
-              color: Couleurs.attenue,
-            ),
+            const Icon(Icons.chevron_right, size: 24, color: Couleurs.attenue),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Ce qui calibre la correction : le cours, le type d'épreuve, le barème.
+class _Precisions extends StatelessWidget {
+  const _Precisions({
+    required this.cours,
+    required this.coursId,
+    required this.onCours,
+    required this.type,
+    required this.onType,
+    required this.bareme,
+    required this.onBareme,
+  });
+
+  final List<(String, String)> cours;
+  final String? coursId;
+  final void Function(String id) onCours;
+  final String? type;
+  final void Function(String type) onType;
+  final int bareme;
+  final void Function(int bareme) onBareme;
+
+  static const _types = ['devoir', 'interrogation', 'partiel', 'examen', 'td'];
+  static const _baremes = [10, 20, 40, 100];
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(Fr.correction.precisions, style: Typo.headlineSm),
+        const SizedBox(height: Espaces.x12),
+        if (cours.isNotEmpty) ...[
+          ChampRecherche(
+            libelle: Fr.correction.coursConcerne,
+            marqueur: Fr.correction.marqueurCours,
+            valeur: coursId,
+            entrees: cours,
+            onChoisir: (id, _) => onCours(id),
+          ),
+          const SizedBox(height: Espaces.x4),
+          Text(
+            Fr.correction.aideCours,
+            style: Typo.labelSm.copyWith(color: Couleurs.attenue),
+          ),
+          const SizedBox(height: Espaces.x16),
+        ],
+        Text(Fr.correction.typeEpreuve, style: Typo.labelMd),
+        const SizedBox(height: Espaces.x8),
+        Wrap(
+          spacing: Espaces.x8,
+          children: [
+            for (final t in _types)
+              _Choix(
+                libelle: Fr.correction.nomEpreuve(t),
+                choisi: type == t,
+                onTap: () => onType(t),
+              ),
+          ],
+        ),
+        const SizedBox(height: Espaces.x8),
+        Text(Fr.correction.noteSur, style: Typo.labelMd),
+        const SizedBox(height: Espaces.x8),
+        Wrap(
+          spacing: Espaces.x8,
+          children: [
+            for (final b in _baremes)
+              _Choix(
+                libelle: '$b',
+                choisi: bareme == b,
+                onTap: () => onBareme(b),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+/// Une pastille qu'on choisit : jaune quand elle l'est. La pastille fait
+/// 36 px, sa zone tactile 48.
+class _Choix extends StatelessWidget {
+  const _Choix({
+    required this.libelle,
+    required this.choisi,
+    required this.onTap,
+  });
+
+  final String libelle;
+  final bool choisi;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      selected: choisi,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: Mesures.zoneTactile),
+          child: Center(
+            widthFactor: 1,
+            child: AnimatedContainer(
+              duration: MediaQuery.disableAnimationsOf(context)
+                  ? Duration.zero
+                  : Mouvement.appui,
+              padding: const EdgeInsets.symmetric(
+                horizontal: Espaces.x16,
+                vertical: Espaces.x8,
+              ),
+              decoration: BoxDecoration(
+                color: choisi ? Couleurs.jaune : Couleurs.surfaceConteneur,
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                libelle,
+                style: Typo.labelMd.copyWith(
+                  color: choisi ? Couleurs.surJaune : Couleurs.encre,
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );

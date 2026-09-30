@@ -385,6 +385,29 @@ class _Correction {
       'Avec le sujet, la correction sait ce qui était demandé.';
   final String retirerSujet = 'Retirer le sujet';
   final String envoyer = 'Envoyer pour correction';
+
+  // Plusieurs pages, et ce qui calibre la correction.
+  String page(int n) => 'Page $n';
+  final String ajouterPage = 'Ajouter une page';
+  final String retirerPage = 'Retirer cette page';
+  final String precisions = 'Pour une correction à ta mesure';
+  final String coursConcerne = 'Le cours de cette copie';
+  final String marqueurCours = 'Choisis le cours (conseillé)';
+  final String aideCours =
+      'Ta copie sera jugée d’après ce cours et ton année, pas d’après ce '
+      'que ton professeur n’a jamais enseigné.';
+  final String typeEpreuve = 'Type d’épreuve';
+  String nomEpreuve(String code) => switch (code) {
+    'devoir' => 'Devoir',
+    'interrogation' => 'Interro',
+    'partiel' => 'Partiel',
+    'examen' => 'Examen',
+    _ => 'TD',
+  };
+  final String noteSur = 'Noté sur';
+  final String aRevoirCours = 'À revoir dans ton cours';
+  String reviserChapitre(String titre) => 'Réviser : $titre';
+  final String notionsManquees = 'Notions à reprendre';
   final String conseilPhoto =
       'Une photo bien éclairée, à plat, sans ombre sur le texte.';
 
