@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../composants/bouton.dart';
 import '../composants/carte.dart';
 import '../composants/chargement.dart';
+import '../composants/chemin.dart';
 import '../composants/etat_vide.dart';
 import '../composants/mascotte.dart';
 import '../composants/progression.dart';
@@ -12,6 +13,7 @@ import '../composants/puce.dart';
 import '../donnees/modeles.dart';
 import '../etat/fournisseurs.dart';
 import '../i18n/fr.dart';
+import '../metier/maitrise.dart';
 import '../metier/examen.dart';
 import '../routage.dart';
 import '../theme/jetons.dart';
@@ -48,8 +50,7 @@ class _EcranCoursState extends ConsumerState<EcranCours> {
   /// s'enchaîne lui-même (`lancerJobMaintenant`), ce sondage ne fait plus
   /// avancer le cours — il dit où il en est, et relance au besoin une chaîne
   /// qui se serait arrêtée.
-  static Duration _delai(int tour) =>
-      Duration(seconds: tour < 45 ? 4 : 10);
+  static Duration _delai(int tour) => Duration(seconds: tour < 45 ? 4 : 10);
 
   Timer? _minuteur;
   int _tour = 0;
@@ -106,6 +107,7 @@ class _EcranCoursState extends ConsumerState<EcranCours> {
       // Fixé : les chapitres, la page et la liste doivent se relire.
       ref.invalidate(unCoursProvider(widget.coursId));
       ref.invalidate(chapitresProvider(widget.coursId));
+      ref.invalidate(cheminProvider(widget.coursId));
       ref.invalidate(coursProvider);
       return;
     }
@@ -193,10 +195,14 @@ class _Contenu extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (cours.echoue) return _Echec(cours: cours);
-    if (!cours.pret) return _EnTraitement(cours: cours, onRafraichir: onRafraichir);
+    if (!cours.pret) {
+      return _EnTraitement(cours: cours, onRafraichir: onRafraichir);
+    }
 
-    final chapitres = ref.watch(chapitresProvider(cours.id));
-    final jours = cours.dateExamen == null ? null : joursAvant(cours.dateExamen!);
+    final chemin = ref.watch(cheminProvider(cours.id));
+    final jours = cours.dateExamen == null
+        ? null
+        : joursAvant(cours.dateExamen!);
 
     return ListView(
       padding: const EdgeInsets.symmetric(
@@ -266,7 +272,10 @@ class _Contenu extends ConsumerWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        Fr.cours.progression(cours.nbTentees, cours.nbQuestions),
+                        Fr.cours.progression(
+                          cours.nbTentees,
+                          cours.nbQuestions,
+                        ),
                         style: Typo.labelLg,
                       ),
                       const SizedBox(height: Espaces.x4),
@@ -304,10 +313,17 @@ class _Contenu extends ConsumerWidget {
         ),
         const SizedBox(height: Espaces.x24),
 
-        Text(Fr.cours.chapitres, style: Typo.headlineLg),
-        const SizedBox(height: Espaces.x12),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Expanded(child: Text(Fr.cours.chemin, style: Typo.headlineLg)),
+            if (chemin case AsyncData(:final value) when value.isNotEmpty)
+              _TotalCouronnes(chemin: value),
+          ],
+        ),
+        const SizedBox(height: Espaces.x16),
 
-        switch (chapitres) {
+        switch (chemin) {
           AsyncData(:final value) when value.isEmpty => Carte(
             enfants: [
               EtatVide(
@@ -317,19 +333,19 @@ class _Contenu extends ConsumerWidget {
               ),
             ],
           ),
-          AsyncData(:final value) => Column(
-            children: [
-              for (final ch in value) ...[
-                _LigneChapitre(chapitre: ch),
-                const SizedBox(height: Espaces.x8),
-              ],
-            ],
+          AsyncData(:final value) => CheminChapitres(
+            chapitres: value,
+            onOuvrir: (c) => c.maitrise.etat == EtatChapitre.sansQcm
+                ? context.descendre(Chemins.fiches(cours.id))
+                : context.descendre(
+                    Chemins.session(cours.id, chapitre: c.chapitre.id),
+                  ),
           ),
           AsyncError() => Text(
             Fr.erreurs.chargementImpossible,
             style: Typo.labelSm.copyWith(color: Couleurs.danger),
           ),
-          _ => const Chargement.bloc(hauteur: 160),
+          _ => const Chargement.bloc(hauteur: 240),
         },
 
         const SizedBox(height: Espaces.x32),
@@ -338,65 +354,30 @@ class _Contenu extends ConsumerWidget {
   }
 }
 
-class _LigneChapitre extends StatelessWidget {
-  const _LigneChapitre({required this.chapitre});
+/// « 7 couronnes sur 36 » : la somme du chemin, en tête.
+class _TotalCouronnes extends StatelessWidget {
+  const _TotalCouronnes({required this.chemin});
 
-  final ApercuChapitre chapitre;
+  final List<ChapitreDuChemin> chemin;
 
   @override
   Widget build(BuildContext context) {
-    return Carte(
-      petite: true,
-      enfants: [
-        Row(
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: Couleurs.jauneDoux,
-                borderRadius: BorderRadius.circular(Rayons.normal),
-              ),
-              child: Text(
-                '${chapitre.index}',
-                style: Typo.labelLg.copyWith(color: Couleurs.texteAccent),
-              ),
-            ),
-            const SizedBox(width: Espaces.x12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    chapitre.titre ?? '—',
-                    style: Typo.labelLg,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  Text(
-                    Fr.cours.decompteChapitre(
-                      chapitre.nbQuestions,
-                      chapitre.nbFiches,
-                    ),
-                    style: Typo.labelSm.copyWith(color: Couleurs.attenue),
-                  ),
-                ],
-              ),
-            ),
-            if (chapitre.aRevoir)
-              Puce(
-                libelle: Fr.tableauDeBord.pointFaible,
-                ton: TonPuce.danger,
-                icone: Icons.priority_high,
-              )
-            else if (chapitre.taux != null)
-              Text(
-                '${(chapitre.taux! * 100).round()} %',
-                style: Typo.labelMd.copyWith(color: Couleurs.attenue),
-              ),
-          ],
+    final avecQcm = [
+      for (final c in chemin)
+        if (c.maitrise.etat != EtatChapitre.sansQcm) c,
+    ];
+    final gagnees = avecQcm.fold<int>(0, (s, c) => s + c.maitrise.couronnes);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const IconeCouronne(taille: 20, couleur: Couleurs.jaune),
+        const SizedBox(width: Espaces.x4),
+        Text(
+          Fr.cours.couronnes(gagnees, avecQcm.length * 3),
+          style: Typo.labelMd.copyWith(
+            color: Couleurs.attenue,
+            fontFeatures: const [FontFeature.tabularFigures()],
+          ),
         ),
       ],
     );

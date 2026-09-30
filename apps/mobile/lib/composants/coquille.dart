@@ -8,6 +8,7 @@ import '../routage.dart';
 import '../theme/jetons.dart';
 import '../theme/typographie.dart';
 import 'chiffre_anime.dart';
+import 'niveau.dart';
 
 /// Page d'un onglet : l'en-tête de l'onglet, puis son contenu.
 ///
@@ -20,12 +21,7 @@ import 'chiffre_anime.dart';
 /// L'en-tête, lui, reste par onglet — comme les grands titres d'iOS, qui
 /// appartiennent à leur page et changent avec elle.
 class Coquille extends StatelessWidget {
-  const Coquille({
-    super.key,
-    required this.enfant,
-    this.serie,
-    this.xpTotal,
-  });
+  const Coquille({super.key, required this.enfant, this.serie, this.xpTotal});
 
   final Widget enfant;
 
@@ -101,8 +97,11 @@ class _EnTete extends StatelessWidget {
             ombre: Ombres.cartePetite,
           ),
           const SizedBox(width: Espaces.x8),
+          // Le niveau dans son anneau, puis l'XP : on voit d'un coup d'œil
+          // où l'on en est, et combien il reste jusqu'au prochain.
           _Badge(
             icone: Icons.bolt_rounded,
+            devant: AnneauNiveau(xp: xpTotal ?? 0, taille: 20),
             valeur: xpTotal ?? 0,
             suffixe: 'XP',
             fond: Couleurs.jaune,
@@ -149,9 +148,13 @@ class _Badge extends StatelessWidget {
     required this.teinteIcone,
     required this.teinteTexte,
     this.ombre = const [],
+    this.devant,
   });
 
   final IconData icone;
+
+  /// Remplace l'icône quand il est fourni.
+  final Widget? devant;
   final int valeur;
   final String suffixe;
   final Color fond;
@@ -162,9 +165,13 @@ class _Badge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: Espaces.x12,
-        vertical: 6,
+      // L'anneau porte déjà son propre blanc : moins de marge à gauche, et
+      // l'en-tête tient encore à 320 px.
+      padding: EdgeInsets.fromLTRB(
+        devant == null ? Espaces.x12 : 6,
+        6,
+        Espaces.x12,
+        6,
       ),
       decoration: BoxDecoration(
         color: fond,
@@ -174,7 +181,7 @@ class _Badge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icone, size: 16, color: teinteIcone),
+          devant ?? Icon(icone, size: 16, color: teinteIcone),
           const SizedBox(width: Espaces.x4),
           // L'XP gagnée monte sous les yeux, au retour d'une session.
           ChiffreAnime(
@@ -338,61 +345,64 @@ class NavBasse extends StatelessWidget {
             ),
           ),
           child: SafeArea(
-        top: false,
-        // `SizedBox` **avant** le `Center`, et non après : `Align` — donc
-        // `Center` — s'étend pour remplir ses contraintes quand elles sont
-        // bornées. Placé à l'extérieur, il prenait presque tout l'écran et
-        // laissait au corps une hauteur nulle. Attrapé par le test de rendu.
-        child: SizedBox(
-          height: Mesures.hauteurNav,
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: Mesures.largeurApp),
-              child: LayoutBuilder(
-                builder: (context, contraintes) {
-                  final largeurOnglet = contraintes.maxWidth / onglets.length;
+            top: false,
+            // `SizedBox` **avant** le `Center`, et non après : `Align` — donc
+            // `Center` — s'étend pour remplir ses contraintes quand elles sont
+            // bornées. Placé à l'extérieur, il prenait presque tout l'écran et
+            // laissait au corps une hauteur nulle. Attrapé par le test de rendu.
+            child: SizedBox(
+              height: Mesures.hauteurNav,
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    maxWidth: Mesures.largeurApp,
+                  ),
+                  child: LayoutBuilder(
+                    builder: (context, contraintes) {
+                      final largeurOnglet =
+                          contraintes.maxWidth / onglets.length;
 
-                  return Stack(
-                    children: [
-                      AnimatedPositioned(
-                        duration: reduit ? Duration.zero : Mouvement.glisse,
-                        curve: Mouvement.courbeGlisse,
-                        top: _hautIcone,
-                        left:
-                            largeurOnglet * indexActif +
-                            (largeurOnglet - _largeurPilule) / 2,
-                        width: _largeurPilule,
-                        height: _hauteurPilule,
-                        child: const DecoratedBox(
-                          key: ValueKey('nav-pilule'),
-                          decoration: BoxDecoration(
-                            color: Couleurs.jaune,
-                            borderRadius: BorderRadius.all(
-                              Radius.circular(999),
-                            ),
-                          ),
-                        ),
-                      ),
-                      Row(
+                      return Stack(
                         children: [
-                          for (var i = 0; i < onglets.length; i++)
-                            Expanded(
-                              child: _OngletNav(
-                                onglet: onglets[i],
-                                actif: i == indexActif,
-                                onTap: () => onChoisir(i),
+                          AnimatedPositioned(
+                            duration: reduit ? Duration.zero : Mouvement.glisse,
+                            curve: Mouvement.courbeGlisse,
+                            top: _hautIcone,
+                            left:
+                                largeurOnglet * indexActif +
+                                (largeurOnglet - _largeurPilule) / 2,
+                            width: _largeurPilule,
+                            height: _hauteurPilule,
+                            child: const DecoratedBox(
+                              key: ValueKey('nav-pilule'),
+                              decoration: BoxDecoration(
+                                color: Couleurs.jaune,
+                                borderRadius: BorderRadius.all(
+                                  Radius.circular(999),
+                                ),
                               ),
                             ),
+                          ),
+                          Row(
+                            children: [
+                              for (var i = 0; i < onglets.length; i++)
+                                Expanded(
+                                  child: _OngletNav(
+                                    onglet: onglets[i],
+                                    actif: i == indexActif,
+                                    onTap: () => onChoisir(i),
+                                  ),
+                                ),
+                            ],
+                          ),
                         ],
-                      ),
-                    ],
-                  );
-                },
+                      );
+                    },
+                  ),
+                ),
               ),
             ),
           ),
-        ),
-      ),
         ),
       ),
     );

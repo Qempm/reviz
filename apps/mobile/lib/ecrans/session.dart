@@ -11,11 +11,13 @@ import '../composants/mascotte.dart';
 import '../composants/option_qcm.dart';
 import '../composants/progression.dart';
 import '../composants/puce.dart';
+import '../composants/niveau.dart';
 import '../donnees/api.dart';
 import '../donnees/modeles.dart';
 import '../etat/fournisseurs.dart';
 import '../i18n/fr.dart';
 import '../metier/selection.dart';
+import '../metier/niveaux.dart';
 import '../routage.dart';
 import '../theme/jetons.dart';
 import '../theme/typographie.dart';
@@ -131,6 +133,7 @@ class _SessionState extends ConsumerState<_Session> {
   );
 
   ResultatSession? _resultat;
+  int? _xpAvant;
   String? _erreurEnvoi;
 
   QuestionQcm get _question => widget.questions[_index];
@@ -159,21 +162,28 @@ class _SessionState extends ConsumerState<_Session> {
 
     setState(() => _enCours = true);
 
-    final reponse = await ref.read(depotCoursProvider).terminerSession(
-      api: ref.read(apiProvider),
-      coursId: widget.coursId,
-      reponses: _reponses,
-    );
+    final reponse = await ref
+        .read(depotCoursProvider)
+        .terminerSession(
+          api: ref.read(apiProvider),
+          coursId: widget.coursId,
+          reponses: _reponses,
+        );
 
     if (!mounted) return;
 
     switch (reponse) {
       case ReponseSucces(:final data):
+        // L'XP d'avant, lue avant que le profil ne se recharge : la barre de
+        // niveau part de là.
+        _xpAvant = ref.read(profilProvider).value?.xpTotal;
         // Les compteurs ont bougé en base : l'accueil et le cours doivent se
         // relire, sinon l'étudiant revient sur des chiffres périmés.
         ref.invalidate(accueilProvider);
         ref.invalidate(profilProvider);
         ref.invalidate(unCoursProvider(widget.coursId));
+        // Une couronne se gagne — ou se perd — ici.
+        ref.invalidate(cheminProvider(widget.coursId));
         ref.invalidate(coursProvider);
         setState(() {
           _resultat = data;
@@ -196,6 +206,7 @@ class _SessionState extends ConsumerState<_Session> {
         resultat: _resultat,
         erreur: _erreurEnvoi,
         etats: _etats,
+        xpAvant: _xpAvant,
         total: widget.questions.length,
       );
     }
@@ -215,7 +226,10 @@ class _SessionState extends ConsumerState<_Session> {
               child: BarreSegmentee(
                 segments: [
                   for (var i = 0; i < _etats.length; i++)
-                    if (i == _index && !_corrige) EtatSegment.aVenir else _etats[i],
+                    if (i == _index && !_corrige)
+                      EtatSegment.aVenir
+                    else
+                      _etats[i],
                 ],
               ),
             ),
@@ -274,7 +288,9 @@ class _SessionState extends ConsumerState<_Session> {
                   Icon(
                     juste ? Icons.check_circle : Icons.cancel,
                     size: 20,
-                    color: juste ? Couleurs.texteAccent : Couleurs.surDangerDoux,
+                    color: juste
+                        ? Couleurs.texteAccent
+                        : Couleurs.surDangerDoux,
                   ),
                   const SizedBox(width: Espaces.x8),
                   Expanded(
@@ -345,11 +361,15 @@ class _Resultat extends StatefulWidget {
     required this.erreur,
     required this.etats,
     required this.total,
+    this.xpAvant,
   });
 
   final String coursId;
   final String? chapitreId;
   final ResultatSession? resultat;
+
+  /// L'XP totale avant cette session ; `null` si le profil n'était pas lu.
+  final int? xpAvant;
   final String? erreur;
   final List<EtatSegment> etats;
   final int total;
@@ -388,6 +408,22 @@ class _ResultatState extends State<_Resultat> {
     if (_pourcentage >= 60 && !MediaQuery.disableAnimationsOf(context)) {
       _confettis.play();
     }
+
+    // Un niveau franchi se fête par-dessus le résultat, une fois la barre
+    // remplie.
+    final avant = widget.xpAvant;
+    final r = widget.resultat;
+    if (avant != null && r != null) {
+      final numero = niveauDepuisXp(avant + r.xp).numero;
+      if (numero > niveauDepuisXp(avant).numero) {
+        final delai = MediaQuery.disableAnimationsOf(context)
+            ? Duration.zero
+            : const Duration(milliseconds: 1100);
+        Future<void>.delayed(delai, () {
+          if (mounted) montrerNiveauSuperieur(context, numero);
+        });
+      }
+    }
   }
 
   @override
@@ -403,8 +439,7 @@ class _ResultatState extends State<_Resultat> {
       widget.resultat?.bonnes ??
       widget.etats.where((e) => e == EtatSegment.juste).length;
 
-  int get _erreurs =>
-      widget.etats.where((e) => e == EtatSegment.faux).length;
+  int get _erreurs => widget.etats.where((e) => e == EtatSegment.faux).length;
 
   int get _pourcentage =>
       widget.total == 0 ? 0 : (_bonnes / widget.total * 100).round();
@@ -482,6 +517,16 @@ class _ResultatState extends State<_Resultat> {
                         ),
                     ],
                   ),
+                  if (widget.xpAvant != null) ...[
+                    BarreNiveau(
+                      xpAvant: widget.xpAvant!,
+                      xpApres: widget.xpAvant! + r.xp,
+                    ),
+                    const Divider(
+                      height: Espaces.x8,
+                      color: Couleurs.surfaceHaute,
+                    ),
+                  ],
                   for (final g in r.gains)
                     Row(
                       children: [

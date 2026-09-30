@@ -29,8 +29,41 @@ abstract final class Fr {
   static const aide = _Aide();
   static const mascotte = _Mascotte();
   static const referentiel = _Referentiel();
+  static const niveaux = _Niveaux();
   static const depot = _Depot();
   static const erreurs = _Erreurs();
+}
+
+/// Les niveaux de compte (`metier/niveaux.dart`).
+class _Niveaux {
+  const _Niveaux();
+
+  /// Un nom par tranche de niveaux : il change assez souvent pour qu'on
+  /// l'attende, pas à chaque niveau.
+  String nom(int n) => n <= 2
+      ? 'Débutant'
+      : n <= 4
+      ? 'Curieux'
+      : n <= 7
+      ? 'Appliqué'
+      : n <= 11
+      ? 'Assidu'
+      : n <= 16
+      ? 'Brillant'
+      : n <= 23
+      ? 'Major de promo'
+      : n <= 31
+      ? 'Érudit'
+      : 'Légende';
+
+  String niveau(int n) => 'Niveau $n';
+  String titre(int n) => 'Niveau $n · ${nom(n)}';
+  String restants(int xp, int suivant) => '$xp XP avant le niveau $suivant';
+  final String superieur = 'Niveau supérieur !';
+  String superieurDetail(int n) =>
+      'Tu passes au niveau $n. Continue comme ça : chaque bonne réponse compte.';
+  String nouveauNom(String nom) => 'Tu es maintenant « $nom ».';
+  final String continuer = 'Continuer';
 }
 
 /// La recherche d'une école, d'une filière ou d'une matière.
@@ -38,9 +71,11 @@ class _Referentiel {
   const _Referentiel();
 
   final String chercher = 'Tape pour chercher';
-  final String aucunResultat = 'Rien trouvé. Tape le nom en entier pour l’ajouter.';
+  final String aucunResultat =
+      'Rien trouvé. Tape le nom en entier pour l’ajouter.';
   String ajouter(String nom) => 'Ajouter « $nom »';
-  final String ajouterDetail = 'Elle n’est pas encore dans la liste : on l’ajoute pour toi et tes camarades.';
+  final String ajouterDetail =
+      'Elle n’est pas encore dans la liste : on l’ajoute pour toi et tes camarades.';
 }
 
 /// Ce que dit un lecteur d'écran à la place du panthéreau.
@@ -148,9 +183,8 @@ class _Boutique {
   final String activationImpossible =
       'L’activation n’a pas abouti. Réessaie dans un instant.';
 
-  String accesActif(int j) => j <= 1
-      ? 'Ton accès finit aujourd’hui'
-      : 'Accès actif encore $j jours';
+  String accesActif(int j) =>
+      j <= 1 ? 'Ton accès finit aujourd’hui' : 'Accès actif encore $j jours';
 
   String correctionsRestantes(int n) => n == 0
       ? 'Plus de correction disponible'
@@ -174,8 +208,7 @@ class _Gains {
   final String solde = 'Solde disponible';
   final String retraitPossible = 'Tu peux demander un retrait.';
 
-  String resteAvantRetrait(int n) =>
-      'Encore $n F avant de pouvoir retirer.';
+  String resteAvantRetrait(int n) => 'Encore $n F avant de pouvoir retirer.';
 
   final String tonCode = 'Ton code parrain';
   final String aideCode =
@@ -241,8 +274,7 @@ class _Classement {
   final String toi = 'Toi';
 
   String monRang(int r) => 'Tu es $rᵉ de ta faculté';
-  final String premier =
-      'Tu es n° 1 de ta faculté. Personne ne fait mieux !';
+  final String premier = 'Tu es n° 1 de ta faculté. Personne ne fait mieux !';
   final String nonClasse = 'Réponds à une question pour entrer au classement';
   final String aucun = 'Personne n’est encore classé';
   final String aucunDetail =
@@ -277,6 +309,8 @@ class _Profil {
   final String mesChiffres = 'Mes chiffres';
 
   String xp(int n) => '$n XP gagnés';
+  final String cetteSemaine = 'Ces sept derniers jours';
+  String xpSemaine(int n) => '$n XP en sept jours';
 
   String serie(int n) =>
       n <= 1 ? 'Meilleure série : $n jour' : 'Meilleure série : $n jours';
@@ -352,7 +386,6 @@ class _Correction {
   final String aRevoir = 'Il faut reprendre ça';
 
   String lignePoints(String points, String maximum) => '$points / $maximum';
-
 
   // --- Illisible et échec
   final String illisible = 'On n’arrive pas à lire ta copie';
@@ -521,8 +554,7 @@ class _Aide {
   final String contactDetail =
       'On répond sur WhatsApp, en français, dans la journée.';
   final String contactBouton = 'Écrire sur WhatsApp';
-  final String contactMessage =
-      'Bonjour, j’ai une question sur Reviz : ';
+  final String contactMessage = 'Bonjour, j’ai une question sur Reviz : ';
   final String contactAbsent =
       'Le numéro du support n’est pas encore dans cette version de '
       'l’application. En attendant, passe par la personne qui t’a partagé '
@@ -651,8 +683,7 @@ class _Depot {
 
   final String dejaDepose = 'Tu as déjà déposé ce document.';
   final String voirLeCours = 'Voir le cours';
-  final String echec =
-      'Le dépôt n’a pas abouti. Réessaie dans un instant.';
+  final String echec = 'Le dépôt n’a pas abouti. Réessaie dans un instant.';
   final String voirLesPacks = 'Voir les packs';
   final String commencerGratuitement = 'Commencer gratuitement';
   final String packGratuitActive =
@@ -876,6 +907,30 @@ class _Cours {
       ? 'Examen demain'
       : 'J−$j';
   final String examenPasse = 'Examen passé';
+
+  // Le chemin des chapitres.
+  final String chemin = 'Ton chemin';
+  String couronnes(int n, int max) =>
+      '$n couronne${n <= 1 ? '' : 's'} sur $max';
+  final String commencer = 'Commencer';
+  final String continuer = 'Continuer';
+  final String aRevoirChapitre = 'À revoir';
+  String verrouille(int precedent) =>
+      'Gagne une couronne au chapitre $precedent pour ouvrir celui-ci.';
+  final String sansQuestions = 'Pas de questions ici : lis les fiches.';
+
+  /// Le nom de chaque palier de couronnes, de 1 à 3.
+  String palier(int couronnes) => switch (couronnes) {
+    1 => 'Découvert',
+    2 => 'Acquis',
+    _ => 'Maîtrisé',
+  };
+
+  /// Ce que dit un lecteur d'écran d'un nœud du chemin.
+  String noeud(String titre, String etat) => '$titre. $etat';
+  final String etatVerrouille = 'Verrouillé';
+  final String etatADecouvrir = 'À découvrir';
+  final String etatSansQuestions = 'Sans questions';
 }
 
 class _Session {

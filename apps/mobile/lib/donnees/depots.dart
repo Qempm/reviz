@@ -10,6 +10,7 @@ import 'dart:math';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart' show compute;
 import '../metier/acces.dart';
+import '../metier/maitrise.dart';
 import '../metier/selection.dart';
 import 'api.dart';
 import 'modeles.dart';
@@ -57,7 +58,10 @@ class DepotProfil {
   }
 
   Future<List<Universite>> universites() async {
-    final lignes = await supabase.from('universities').select('id, name').order('name');
+    final lignes = await supabase
+        .from('universities')
+        .select('id, name')
+        .order('name');
     return _garder(lignes, Universite.depuis);
   }
 
@@ -185,12 +189,7 @@ class DepotProfil {
   }) {
     return api.poster<(String, String)>(
       '/api/referentiel',
-      corps: {
-        'type': type,
-        'nom': nom,
-        'parentId': ?parentId,
-        'annee': ?annee,
-      },
+      corps: {'type': type, 'nom': nom, 'parentId': ?parentId, 'annee': ?annee},
       depuis: (data) => (data['id'] as String, data['nom'] as String),
     );
   }
@@ -383,6 +382,68 @@ class DepotCours {
         .order('index');
 
     return _garder(lignes, ApercuChapitre.depuis);
+  }
+
+  /// Le chemin d'un cours : chaque chapitre et sa maîtrise, verrous compris.
+  ///
+  /// Les couronnes se calculent ici et non dans la vue : la troisième exige
+  /// « juste deux jours différents », donc toutes les réponses et pas
+  /// seulement la dernière. Trois requêtes légères — les chapitres, l'identité
+  /// des QCM, les réponses de l'étudiant à ces QCM (trois colonnes) — et la
+  /// règle tient dans une fonction pure testée (`metier/maitrise.dart`).
+  Future<List<ChapitreDuChemin>> chemin(String coursId) async {
+    final chapitresDuCours = await chapitres(coursId);
+    if (chapitresDuCours.isEmpty) return const [];
+
+    final lignes = await supabase
+        .from('questions')
+        .select('id, chapter_id, chapters!inner(course_id)')
+        .eq('chapters.course_id', coursId)
+        .eq('type', 'mcq');
+    final qcmParChapitre = <String, List<String>>{};
+    for (final l in lignes) {
+      final id = l['id'] as String?;
+      final chapitre = l['chapter_id'] as String?;
+      if (id == null || chapitre == null) continue;
+      (qcmParChapitre[chapitre] ??= []).add(id);
+    }
+
+    final tentatives = <Tentative>[];
+    final ids = [for (final l in qcmParChapitre.values) ...l];
+    // Par paquets : la liste part dans l'adresse de la requête, et un
+    // paquet de cinquante questions reste sous le plafond de mille lignes
+    // qu'applique PostgREST.
+    for (var i = 0; i < ids.length; i += 50) {
+      final paquet = ids.sublist(i, min(i + 50, ids.length));
+      final reponses = await supabase
+          .from('attempts')
+          .select('question_id, is_correct, answered_at')
+          .inFilter('question_id', paquet);
+      for (final r in reponses) {
+        final id = r['question_id'] as String?;
+        final le = DateTime.tryParse(r['answered_at'] as String? ?? '');
+        if (id == null || le == null) continue;
+        tentatives.add(
+          Tentative(
+            questionId: id,
+            juste: r['is_correct'] as bool? ?? false,
+            le: le,
+          ),
+        );
+      }
+    }
+
+    final maitrises = cheminDuCours([
+      for (final ch in chapitresDuCours)
+        maitriseChapitre(
+          qcm: qcmParChapitre[ch.id] ?? const [],
+          tentatives: tentatives,
+        ),
+    ]);
+    return [
+      for (var i = 0; i < chapitresDuCours.length; i++)
+        ChapitreDuChemin(chapitre: chapitresDuCours[i], maitrise: maitrises[i]),
+    ];
   }
 
   /// Les questions d'une session : QCM seulement, choisies par
@@ -724,7 +785,6 @@ class DepotBoutique {
   }
 }
 
-
 // ----------------------------------------------------------------- Gains
 
 class DepotGains {
@@ -816,7 +876,6 @@ class DepotClassement {
     );
   }
 }
-
 
 // ------------------------------------------------------------ Corrections
 

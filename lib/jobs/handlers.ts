@@ -615,8 +615,16 @@ const generateQuestionsSchema = z.object({
   course_id: z.string().uuid(),
 })
 
-/** Questions par chapitre. */
-const QUESTIONS_PAR_CHAPITRE = 4
+/**
+ * Questions par chapitre.
+ *
+ * Six et non plus quatre : à quatre, une seule erreur faisait tomber un
+ * chapitre à 75 %, et la maîtrise (`lib/metier/maitrise.ts`) ne distinguait
+ * rien. Huit auraient mieux mesuré encore, mais le plafond de 200 questions
+ * par cours (règle 5) n'aurait couvert que 25 chapitres — RIT3 en compte 28.
+ * À six, il en couvre 33.
+ */
+export const QUESTIONS_PAR_CHAPITRE = 6
 
 /** Fiches par chapitre. */
 const FICHES_PAR_CHAPITRE = 4

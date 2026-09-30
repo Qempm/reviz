@@ -69,6 +69,15 @@ final chapitresProvider = FutureProvider.family<List<ApercuChapitre>, String>((
   return ref.read(depotCoursProvider).chapitres(coursId);
 });
 
+/// Le chemin d'un cours, chapitre par chapitre, avec couronnes et verrous.
+/// Invalidé à la fin d'une session : c'est là qu'une couronne se gagne.
+final cheminProvider = FutureProvider.family<List<ChapitreDuChemin>, String>((
+  ref,
+  coursId,
+) {
+  return ref.read(depotCoursProvider).chemin(coursId);
+});
+
 /// Ce qui définit une session : le cours, éventuellement un chapitre, et le
 /// mode (tout, ou seulement les erreurs).
 typedef CleSession = ({String cours, String? chapitre, ModeSession mode});
@@ -79,7 +88,11 @@ final questionsProvider = FutureProvider.autoDispose
     .family<List<QuestionQcm>, CleSession>((ref, cle) {
       return ref
           .read(depotCoursProvider)
-          .questionsDeSession(cle.cours, chapitreId: cle.chapitre, mode: cle.mode);
+          .questionsDeSession(
+            cle.cours,
+            chapitreId: cle.chapitre,
+            mode: cle.mode,
+          );
     });
 
 final fichesProvider = FutureProvider.family<List<Fiche>, String>((

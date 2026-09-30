@@ -30,6 +30,8 @@ import 'package:reviz/donnees/depots.dart';
 import 'package:reviz/donnees/modeles.dart';
 import 'package:reviz/ecrans/accueil.dart';
 import 'package:reviz/ecrans/connexion.dart';
+import 'package:reviz/ecrans/cours.dart';
+import 'package:reviz/metier/maitrise.dart';
 import 'package:reviz/ecrans/galerie.dart';
 import 'package:reviz/ecrans/profil.dart';
 import 'package:reviz/ecrans/reviser.dart';
@@ -245,6 +247,34 @@ Future<void> _photographier(
   );
 }
 
+ChapitreDuChemin _etape(
+  int index,
+  String titre,
+  EtatChapitre etat, {
+  int couronnes = 0,
+  int total = 6,
+  int tentees = 0,
+  int justes = 0,
+}) => ChapitreDuChemin(
+  chapitre: ApercuChapitre(
+    id: 'ch$index',
+    index: index,
+    titre: titre,
+    nbQuestions: total,
+    nbFiches: 4,
+    nbTentees: tentees,
+    taux: null,
+    aRevoir: etat == EtatChapitre.aRevoir,
+  ),
+  maitrise: Maitrise(
+    etat: etat,
+    couronnes: couronnes,
+    total: total,
+    tentees: tentees,
+    justes: justes,
+  ),
+);
+
 void main() {
   setUpAll(_chargerPolices);
 
@@ -261,9 +291,7 @@ void main() {
       statut: 'ready',
       demo: false,
       matiereNom: 'Droit civil',
-      dateExamen: DateTime.now()
-          .add(const Duration(days: 5))
-          .toIso8601String(),
+      dateExamen: DateTime.now().add(const Duration(days: 5)).toIso8601String(),
       nbChapitres: 5,
       nbQuestions: 30,
       nbFiches: 20,
@@ -290,7 +318,9 @@ void main() {
       'chargement',
       _surOnglet(const EcranAccueil(), 0),
       remplacements: [
-        accueilProvider.overrideWith((_) => Completer<DonneesAccueil?>().future),
+        accueilProvider.overrideWith(
+          (_) => Completer<DonneesAccueil?>().future,
+        ),
         profilProvider.overrideWith((_) async => _profil),
       ],
     );
@@ -313,7 +343,60 @@ void main() {
       tester,
       'profil',
       _surOnglet(const EcranProfil(), 4),
-      remplacements: [profilProvider.overrideWith((_) async => _profil)],
+      taille: const Size(390, 1500),
+      remplacements: [
+        profilProvider.overrideWith((_) async => _profil),
+        accueilProvider.overrideWith((_) async => accueil),
+      ],
+    );
+  });
+
+  testWidgets('chemin', (tester) async {
+    final chemin = [
+      _etape(
+        1,
+        'Introduction au droit constitutionnel',
+        EtatChapitre.couronne,
+        couronnes: 3,
+        tentees: 6,
+        justes: 6,
+      ),
+      _etape(
+        2,
+        'La notion de Constitution',
+        EtatChapitre.couronne,
+        couronnes: 2,
+        tentees: 6,
+        justes: 5,
+      ),
+      _etape(
+        3,
+        'Le contrôle de constitutionnalité',
+        EtatChapitre.couronne,
+        couronnes: 1,
+        tentees: 6,
+        justes: 3,
+      ),
+      _etape(
+        4,
+        'La séparation des pouvoirs',
+        EtatChapitre.aDecouvrir,
+        tentees: 2,
+        justes: 2,
+      ),
+      _etape(5, 'Annexes et textes', EtatChapitre.sansQcm, total: 0),
+      _etape(6, 'Le Parlement', EtatChapitre.verrouille),
+      _etape(7, 'Le pouvoir exécutif', EtatChapitre.verrouille),
+    ];
+    await _photographier(
+      tester,
+      'chemin',
+      const EcranCours(coursId: 'c2'),
+      taille: const Size(390, 1900),
+      remplacements: [
+        unCoursProvider('c2').overrideWith((_) async => _cours[1]),
+        cheminProvider('c2').overrideWith((_) async => chemin),
+      ],
     );
   });
 

@@ -6,7 +6,9 @@ import '../composants/carte.dart';
 import '../composants/chargement.dart';
 import '../composants/coquille.dart';
 import '../composants/etat_vide.dart';
+import '../composants/graphique_semaine.dart';
 import '../composants/mascotte.dart';
+import '../composants/niveau.dart';
 import '../composants/podium.dart' show AvatarInitiale;
 import '../composants/puce.dart';
 import '../donnees/modeles.dart';
@@ -126,6 +128,9 @@ class _Contenu extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // La semaine vient des données de l'accueil, déjà chargées la plupart
+    // du temps : pas de requête de plus pour le graphique.
+    final semaine = ref.watch(accueilProvider).value?.semaine;
     final animationsReduites = ref.watch(animationsReduitesProvider);
 
     return ListView(
@@ -163,9 +168,7 @@ class _Contenu extends ConsumerWidget {
                       if (profil.faculteNom != null)
                         Text(
                           profil.faculteNom!,
-                          style: Typo.labelMd.copyWith(
-                            color: Couleurs.attenue,
-                          ),
+                          style: Typo.labelMd.copyWith(color: Couleurs.attenue),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -178,9 +181,7 @@ class _Contenu extends ConsumerWidget {
                             if (profil.anneeEtude != null)
                               Fr.profil.annee(profil.anneeEtude!),
                           ].join(' · '),
-                          style: Typo.labelSm.copyWith(
-                            color: Couleurs.attenue,
-                          ),
+                          style: Typo.labelSm.copyWith(color: Couleurs.attenue),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -245,10 +246,19 @@ class _Contenu extends ConsumerWidget {
         ),
         const SizedBox(height: Espaces.x16),
 
-        // --- Chiffres
+        // --- Chiffres : le niveau, la semaine, puis les records.
         Carte(
           enfants: [
             Text(Fr.profil.mesChiffres, style: Typo.headlineMd),
+            BarreNiveau(xpAvant: profil.xpTotal, xpApres: profil.xpTotal),
+            if (semaine case final jours? when jours.isNotEmpty) ...[
+              const Divider(height: Espaces.x8, color: Couleurs.surfaceHaute),
+              Text(
+                Fr.profil.cetteSemaine,
+                style: Typo.labelMd.copyWith(color: Couleurs.attenue),
+              ),
+              GraphiqueSemaine(jours: jours),
+            ],
             Wrap(
               spacing: Espaces.x8,
               runSpacing: Espaces.x8,

@@ -10,6 +10,8 @@
 /// web.
 library;
 
+import '../metier/maitrise.dart';
+
 /// Le profil de l'étudiant connecté.
 class Profil {
   const Profil({
@@ -311,7 +313,11 @@ class Universite {
 
 /// Une filière.
 class Faculte {
-  const Faculte({required this.id, required this.nom, required this.universiteId});
+  const Faculte({
+    required this.id,
+    required this.nom,
+    required this.universiteId,
+  });
   final String id;
   final String nom;
   final String universiteId;
@@ -464,8 +470,8 @@ class LigneAbonnement {
       debut: DateTime.parse(debut),
       fin: DateTime.parse(fin),
       correctionsRestantes: (l['corrections_left'] as num?)?.toInt() ?? 0,
-      plafondMatieres:
-          ((l['packs'] as Map?)?['subjects_limit'] as num?)?.toInt(),
+      plafondMatieres: ((l['packs'] as Map?)?['subjects_limit'] as num?)
+          ?.toInt(),
     );
   }
 }
@@ -518,7 +524,6 @@ class DonneesGains {
   /// Un filleul ne compte que s'il a payé au moins une fois (règle 2).
   final int filleulsPayants;
 }
-
 
 // ------------------------------------------------------- Correction de copie
 
@@ -573,7 +578,10 @@ class RetourCorrection {
 
   static List<String> _liste(dynamic valeur) {
     if (valeur is! List) return const [];
-    return valeur.whereType<String>().where((t) => t.trim().isNotEmpty).toList();
+    return valeur
+        .whereType<String>()
+        .where((t) => t.trim().isNotEmpty)
+        .toList();
   }
 
   static RetourCorrection depuis(Map<String, dynamic> l) => RetourCorrection(
@@ -795,4 +803,13 @@ class CartePreparee {
     chemin: l['chemin'] as String,
     urlEnvoi: l['uploadUrl'] as String,
   );
+}
+
+/// Un chapitre sur le chemin du cours : ce qu'on en montre, et où en est
+/// l'étudiant (`metier/maitrise.dart`).
+class ChapitreDuChemin {
+  const ChapitreDuChemin({required this.chapitre, required this.maitrise});
+
+  final ApercuChapitre chapitre;
+  final Maitrise maitrise;
 }

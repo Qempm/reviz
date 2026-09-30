@@ -59,8 +59,9 @@ export const MIN_CORPS = 120
 /**
  * Plafond de chapitres par cours.
  *
- * Le plafond SQL est de 200 questions par cours ; à 4 questions par chapitre,
- * 50 chapitres les consomment déjà. Au-delà on ne découpe plus : le document
+ * Le plafond SQL est de 200 questions par cours ; à 6 questions par chapitre,
+ * 33 chapitres les consomment déjà, et les suivants restent sans QCM (ils ne
+ * bloquent pas le chemin, `lib/metier/maitrise.ts`). Au-delà on ne découpe plus : le document
  * est probablement un recueil, pas un cours.
  */
 export const MAX_CHAPITRES = 50

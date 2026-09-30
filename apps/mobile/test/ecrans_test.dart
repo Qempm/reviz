@@ -7,6 +7,7 @@ import 'package:reviz/composants/option_qcm.dart';
 import 'package:reviz/donnees/depots.dart';
 import 'package:reviz/metier/acces.dart';
 import 'package:reviz/metier/selection.dart';
+import 'package:reviz/metier/maitrise.dart';
 import 'package:reviz/donnees/modeles.dart';
 import 'package:reviz/composants/bouton.dart';
 import 'package:reviz/composants/podium.dart';
@@ -69,13 +70,55 @@ String get _hier {
 }
 
 const _semaine = [
-  JourSerie(jourSemaine: 1, questions: 12, xp: 120, valide: true, aujourdhui: false),
-  JourSerie(jourSemaine: 2, questions: 10, xp: 100, valide: true, aujourdhui: false),
-  JourSerie(jourSemaine: 3, questions: 11, xp: 110, valide: true, aujourdhui: false),
-  JourSerie(jourSemaine: 4, questions: 10, xp: 100, valide: true, aujourdhui: false),
-  JourSerie(jourSemaine: 5, questions: 6, xp: 60, valide: false, aujourdhui: true),
-  JourSerie(jourSemaine: 6, questions: 0, xp: 0, valide: false, aujourdhui: false),
-  JourSerie(jourSemaine: 7, questions: 0, xp: 0, valide: false, aujourdhui: false),
+  JourSerie(
+    jourSemaine: 1,
+    questions: 12,
+    xp: 120,
+    valide: true,
+    aujourdhui: false,
+  ),
+  JourSerie(
+    jourSemaine: 2,
+    questions: 10,
+    xp: 100,
+    valide: true,
+    aujourdhui: false,
+  ),
+  JourSerie(
+    jourSemaine: 3,
+    questions: 11,
+    xp: 110,
+    valide: true,
+    aujourdhui: false,
+  ),
+  JourSerie(
+    jourSemaine: 4,
+    questions: 10,
+    xp: 100,
+    valide: true,
+    aujourdhui: false,
+  ),
+  JourSerie(
+    jourSemaine: 5,
+    questions: 6,
+    xp: 60,
+    valide: false,
+    aujourdhui: true,
+  ),
+  JourSerie(
+    jourSemaine: 6,
+    questions: 0,
+    xp: 0,
+    valide: false,
+    aujourdhui: false,
+  ),
+  JourSerie(
+    jourSemaine: 7,
+    questions: 0,
+    xp: 0,
+    valide: false,
+    aujourdhui: false,
+  ),
 ];
 
 const _matieres = [
@@ -121,27 +164,52 @@ const _coursEnCours = ApercuCours(
   nbTentees: 0,
 );
 
-const _chapitres = [
-  ApercuChapitre(
-    id: 'ch1',
-    index: 1,
-    titre: 'La notion de Constitution',
-    nbQuestions: 7,
+ChapitreDuChemin _etape(
+  int index,
+  String titre,
+  EtatChapitre etat, {
+  int couronnes = 0,
+  int total = 6,
+  int tentees = 0,
+  int justes = 0,
+}) => ChapitreDuChemin(
+  chapitre: ApercuChapitre(
+    id: 'ch$index',
+    index: index,
+    titre: titre,
+    nbQuestions: total,
     nbFiches: 4,
-    nbTentees: 5,
-    taux: 0.8,
-    aRevoir: false,
+    nbTentees: tentees,
+    taux: null,
+    aRevoir: etat == EtatChapitre.aRevoir,
   ),
-  ApercuChapitre(
-    id: 'ch2',
-    index: 2,
-    titre: 'Le contrôle de constitutionnalité',
-    nbQuestions: 7,
-    nbFiches: 4,
-    nbTentees: 6,
-    taux: 0.33,
-    aRevoir: true,
+  maitrise: Maitrise(
+    etat: etat,
+    couronnes: couronnes,
+    total: total,
+    tentees: tentees,
+    justes: justes,
   ),
+);
+
+final _chemin = [
+  _etape(
+    1,
+    'La notion de Constitution',
+    EtatChapitre.couronne,
+    couronnes: 2,
+    tentees: 6,
+    justes: 5,
+  ),
+  _etape(
+    2,
+    'Le contrôle de constitutionnalité',
+    EtatChapitre.aRevoir,
+    tentees: 4,
+    justes: 1,
+  ),
+  _etape(3, 'La séparation des pouvoirs', EtatChapitre.verrouille),
+  _etape(4, 'Annexes', EtatChapitre.sansQcm, total: 0),
 ];
 
 const _questions = [
@@ -176,7 +244,6 @@ const _questions = [
     probabilite: 'medium',
   ),
 ];
-
 
 // ----------------------------- Fixtures de la seconde moitié des écrans
 
@@ -244,8 +311,20 @@ List<LigneAbonnement> get _deuxPacksActifs {
 }
 
 const _classement = [
-  LigneClassement(rang: 1, prenom: 'Awa', avatar: null, xp: 4820, estMoi: false),
-  LigneClassement(rang: 2, prenom: 'Koffi', avatar: null, xp: 4310, estMoi: true),
+  LigneClassement(
+    rang: 1,
+    prenom: 'Awa',
+    avatar: null,
+    xp: 4820,
+    estMoi: false,
+  ),
+  LigneClassement(
+    rang: 2,
+    prenom: 'Koffi',
+    avatar: null,
+    xp: 4310,
+    estMoi: true,
+  ),
   LigneClassement(
     rang: 3,
     prenom: 'Mahouénan',
@@ -261,7 +340,6 @@ const _classement = [
     estMoi: false,
   ),
 ];
-
 
 // ------------------------------------------ Fixtures de la correction
 
@@ -279,7 +357,12 @@ final _corrigee = Correction(
       maximum: 5,
       commentaire: 'Tu as bien cerné la question posée.',
     ),
-    LigneBareme(critere: 'Argumentation', points: 3, maximum: 5, commentaire: null),
+    LigneBareme(
+      critere: 'Argumentation',
+      points: 3,
+      maximum: 5,
+      commentaire: null,
+    ),
     LigneBareme(
       critere: 'Exemples et références',
       points: 4.5,
@@ -289,7 +372,12 @@ final _corrigee = Correction(
           'référence à la jurisprudence de 2019 n’est pas datée correctement, '
           'ce qui affaiblit l’ensemble du paragraphe.',
     ),
-    LigneBareme(critere: 'Expression écrite', points: 2, maximum: 4, commentaire: null),
+    LigneBareme(
+      critere: 'Expression écrite',
+      points: 2,
+      maximum: 4,
+      commentaire: null,
+    ),
   ],
   retour: const RetourCorrection(
     resume: 'Copie solide, à resserrer sur l’expression.',
@@ -330,6 +418,7 @@ Future<void> _poser(
   Widget ecran, {
   List<Override> remplacements = const [],
   Size taille = const Size(375, 812),
+
   /// `false` quand l'écran porte une animation sans fin — une roue de
   /// chargement, des confettis, un minuteur de sondage. `pumpAndSettle`
   /// attendrait alors qu'elle s'arrête, ce qu'elle ne fait jamais, et le test
@@ -604,7 +693,10 @@ void main() {
 
       expect(find.text('Exemple'), findsOneWidget);
       expect(find.text('En préparation'), findsOneWidget);
-      expect(find.text('3 chapitres · 20 questions · 12 fiches'), findsOneWidget);
+      expect(
+        find.text('3 chapitres · 20 questions · 12 fiches'),
+        findsOneWidget,
+      );
       // 7 tentées sur 20 → 35 %.
       expect(find.text('35 %'), findsOneWidget);
       expect(tester.takeException(), isNull);
@@ -632,17 +724,39 @@ void main() {
         const EcranCours(coursId: 'c1'),
         remplacements: [
           unCoursProvider('c1').overrideWith((_) async => _coursDemo),
-          chapitresProvider('c1').overrideWith((_) async => _chapitres),
+          cheminProvider('c1').overrideWith((_) async => _chemin),
         ],
       );
 
       expect(find.text('Droit constitutionnel — introduction'), findsOneWidget);
       expect(find.text('7 questions sur 20'), findsOneWidget);
       expect(find.text('La notion de Constitution'), findsOneWidget);
-      // Le chapitre faible est signalé, l'autre montre son taux.
+      // Le chapitre à revoir est le nœud courant : il porte la bulle.
       expect(find.text('À revoir'), findsOneWidget);
-      expect(find.text('80 %'), findsOneWidget);
+      // Deux couronnes gagnées sur trois chapitres qui ont des questions.
+      expect(find.text('2 couronnes sur 9'), findsOneWidget);
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('un chapitre fermé dit comment l’ouvrir', (tester) async {
+      await _poser(
+        tester,
+        const EcranCours(coursId: 'c1'),
+        remplacements: [
+          unCoursProvider('c1').overrideWith((_) async => _coursDemo),
+          cheminProvider('c1').overrideWith((_) async => _chemin),
+        ],
+      );
+
+      final ferme = find.text('La séparation des pouvoirs');
+      await tester.scrollUntilVisible(ferme, 200);
+      await tester.pumpAndSettle();
+      await tester.tap(ferme);
+      await tester.pump();
+      expect(
+        find.text('Gagne une couronne au chapitre 2 pour ouvrir celui-ci.'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('montre l’attente plutôt qu’une page vide', (tester) async {
@@ -654,7 +768,7 @@ void main() {
         stabiliser: false,
         remplacements: [
           unCoursProvider('c2').overrideWith((_) async => _coursEnCours),
-          chapitresProvider('c2').overrideWith((_) async => <ApercuChapitre>[]),
+          cheminProvider('c2').overrideWith((_) async => <ChapitreDuChemin>[]),
         ],
       );
 
@@ -698,7 +812,7 @@ void main() {
         stabiliser: false,
         remplacements: [
           unCoursProvider('c3').overrideWith((_) async => avance),
-          chapitresProvider('c3').overrideWith((_) async => <ApercuChapitre>[]),
+          cheminProvider('c3').overrideWith((_) async => <ChapitreDuChemin>[]),
         ],
       );
 
@@ -728,7 +842,7 @@ void main() {
         stabiliser: false,
         remplacements: [
           unCoursProvider('c4').overrideWith((_) async => un),
-          chapitresProvider('c4').overrideWith((_) async => <ApercuChapitre>[]),
+          cheminProvider('c4').overrideWith((_) async => <ChapitreDuChemin>[]),
         ],
       );
 
@@ -744,7 +858,11 @@ void main() {
         tester,
         const EcranSession(coursId: 'c1'),
         remplacements: [
-          questionsProvider((cours: 'c1', chapitre: null, mode: ModeSession.normal)).overrideWith((_) async => _questions),
+          questionsProvider((
+            cours: 'c1',
+            chapitre: null,
+            mode: ModeSession.normal,
+          )).overrideWith((_) async => _questions),
         ],
       );
 
@@ -779,7 +897,11 @@ void main() {
         tester,
         const EcranSession(coursId: 'c1'),
         remplacements: [
-          questionsProvider((cours: 'c1', chapitre: null, mode: ModeSession.normal)).overrideWith((_) async => _questions),
+          questionsProvider((
+            cours: 'c1',
+            chapitre: null,
+            mode: ModeSession.normal,
+          )).overrideWith((_) async => _questions),
         ],
       );
 
@@ -812,7 +934,11 @@ void main() {
         tester,
         const EcranSession(coursId: 'c1'),
         remplacements: [
-          questionsProvider((cours: 'c1', chapitre: null, mode: ModeSession.normal)).overrideWith((_) async => <QuestionQcm>[]),
+          questionsProvider((
+            cours: 'c1',
+            chapitre: null,
+            mode: ModeSession.normal,
+          )).overrideWith((_) async => <QuestionQcm>[]),
         ],
       );
 
@@ -826,7 +952,9 @@ void main() {
       await _poser(
         tester,
         const EcranFiches(coursId: 'c1'),
-        remplacements: [fichesProvider('c1').overrideWith((_) async => _fiches)],
+        remplacements: [
+          fichesProvider('c1').overrideWith((_) async => _fiches),
+        ],
       );
 
       expect(find.text('Fiche 1 sur 2'), findsOneWidget);
@@ -872,7 +1000,9 @@ void main() {
         tester,
         const EcranFiches(coursId: 'c1'),
         taille: const Size(320, 640),
-        remplacements: [fichesProvider('c1').overrideWith((_) async => _fiches)],
+        remplacements: [
+          fichesProvider('c1').overrideWith((_) async => _fiches),
+        ],
       );
       expect(tester.takeException(), isNull);
     });
@@ -1438,8 +1568,7 @@ void main() {
           correctionProvider('k1').overrideWith(
             (_) async => _correctionAuStatut(
               'failed',
-              motifIllisible:
-                  'La photo est trop floue pour lire ton écriture.',
+              motifIllisible: 'La photo est trop floue pour lire ton écriture.',
             ),
           ),
         ],
@@ -1462,9 +1591,9 @@ void main() {
         tester,
         const EcranCorrection(correctionId: 'k1'),
         remplacements: [
-          correctionProvider('k1').overrideWith(
-            (_) async => _correctionAuStatut('failed'),
-          ),
+          correctionProvider(
+            'k1',
+          ).overrideWith((_) async => _correctionAuStatut('failed')),
         ],
       );
 
@@ -1478,9 +1607,9 @@ void main() {
         const EcranCorrection(correctionId: 'k1'),
         stabiliser: false,
         remplacements: [
-          correctionProvider('k1').overrideWith(
-            (_) async => _correctionAuStatut('processing'),
-          ),
+          correctionProvider(
+            'k1',
+          ).overrideWith((_) async => _correctionAuStatut('processing')),
         ],
       );
 
@@ -1523,7 +1652,10 @@ void main() {
       );
 
       expect(find.text('Ce qui est effacé'), findsOneWidget);
-      expect(find.text('Tes cours déposés, avec leurs questions et leurs fiches'), findsOneWidget);
+      expect(
+        find.text('Tes cours déposés, avec leurs questions et leurs fiches'),
+        findsOneWidget,
+      );
 
       // La seconde moitié compte autant : cacher que la comptabilité reste
       // serait mentir sur ce que fait le bouton.
@@ -1750,18 +1882,12 @@ void main() {
     testWidgets('le hors-ligne dit que les QCM chargés restent jouables', (
       tester,
     ) async {
-      await _poser(
-        tester,
-        const Scaffold(body: BandeauHorsLigne()),
-      );
+      await _poser(tester, const Scaffold(body: BandeauHorsLigne()));
 
       expect(find.text('Pas de connexion'), findsOneWidget);
       // Un bandeau et non une page : couper l'écran serait pire que le
       // manque de réseau.
-      expect(
-        find.textContaining('restent jouables'),
-        findsOneWidget,
-      );
+      expect(find.textContaining('restent jouables'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
@@ -1770,9 +1896,7 @@ void main() {
 
       await _poser(
         tester,
-        Scaffold(
-          body: BandeauVersion(onTelecharger: () => demande++),
-        ),
+        Scaffold(body: BandeauVersion(onTelecharger: () => demande++)),
       );
 
       expect(find.text('Une nouvelle version est là'), findsOneWidget);
@@ -1856,9 +1980,7 @@ void main() {
       expect(tester.widget<Bouton>(bouton).onTap, isNull);
     });
 
-    testWidgets('s’active dès qu’un autre animal est choisi', (
-      tester,
-    ) async {
+    testWidgets('s’active dès qu’un autre animal est choisi', (tester) async {
       await _poser(
         tester,
         const EcranAvatar(),
@@ -2096,10 +2218,7 @@ void main() {
 
       // C'est là qu'on l'attend le plus : un étudiant sans aucun cours.
       expect(find.text('Aucun cours déposé'), findsOneWidget);
-      expect(
-        find.widgetWithText(Bouton, 'Ajouter un cours'),
-        findsNWidgets(2),
-      );
+      expect(find.widgetWithText(Bouton, 'Ajouter un cours'), findsNWidgets(2));
       expect(tester.takeException(), isNull);
     });
   });
@@ -2118,27 +2237,25 @@ void main() {
       statutVerification: statut,
     );
 
-    testWidgets('propose le dépôt, et dit pourquoi une carte ne vaut qu’une fois', (
-      tester,
-    ) async {
-      await _poser(
-        tester,
-        const EcranCarte(),
-        remplacements: [
-          profilProvider.overrideWith((_) async => profilAu('none')),
-        ],
-      );
+    testWidgets(
+      'propose le dépôt, et dit pourquoi une carte ne vaut qu’une fois',
+      (tester) async {
+        await _poser(
+          tester,
+          const EcranCarte(),
+          remplacements: [
+            profilProvider.overrideWith((_) async => profilAu('none')),
+          ],
+        );
 
-      expect(find.text('Prendre la photo'), findsOneWidget);
-      expect(find.text('Choisir dans mes photos'), findsOneWidget);
+        expect(find.text('Prendre la photo'), findsOneWidget);
+        expect(find.text('Choisir dans mes photos'), findsOneWidget);
 
-      // La règle est expliquée, pas subie : c'est ce qui la rend acceptable.
-      expect(
-        find.textContaining('un seul compte'),
-        findsOneWidget,
-      );
-      expect(tester.takeException(), isNull);
-    });
+        // La règle est expliquée, pas subie : c'est ce qui la rend acceptable.
+        expect(find.textContaining('un seul compte'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
 
     testWidgets('n’offre pas un second dépôt à un compte vérifié', (
       tester,
@@ -2204,9 +2321,10 @@ void main() {
     });
   });
 
-
   group('connexion', () {
-    testWidgets('propose Google, mais jamais comme une impasse', (tester) async {
+    testWidgets('propose Google, mais jamais comme une impasse', (
+      tester,
+    ) async {
       // En test, aucun `--dart-define` : `GOOGLE_WEB_CLIENT_ID` est vide.
       // Le bouton doit alors être visible **et** désactivé, avec la raison.
       // Le masquer ferait croire que l’application ne propose pas Google ;
@@ -2220,7 +2338,9 @@ void main() {
       expect(google.onTap, isNull);
 
       expect(
-        find.text('La connexion Google n’est pas configurée dans cette version.'),
+        find.text(
+          'La connexion Google n’est pas configurée dans cette version.',
+        ),
         findsOneWidget,
       );
 
@@ -2238,7 +2358,6 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   });
-
 
   group('aide', () {
     testWidgets('répond d’abord à la question du prélèvement', (tester) async {
@@ -2259,7 +2378,10 @@ void main() {
       await tester.pump();
 
       expect(find.textContaining('Non. Jamais.'), findsOneWidget);
-      expect(find.textContaining('aucun abonnement automatique'), findsOneWidget);
+      expect(
+        find.textContaining('aucun abonnement automatique'),
+        findsOneWidget,
+      );
       expect(tester.takeException(), isNull);
     });
 
@@ -2295,5 +2417,4 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   });
-
 }
