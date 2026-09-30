@@ -13,7 +13,7 @@
  */
 
 /** La version publiée, telle que `pubspec.yaml` la déclare. */
-export const VERSION = '2.4.0'
+export const VERSION = '2.5.0'
 
 /**
  * En dessous, l'application refuse de servir.
@@ -38,9 +38,9 @@ export const VERSION_MINIMALE = '2.0.0'
 export const MAINTENANCE = false
 
 export const NOTES =
-  'Ton école, ta filière ou ta matière se tapent si elles manquent, le ' +
-  'pack gratuit s’active en un appui, et tes séries de questions changent ' +
-  'à chaque fois.'
+  'Tes cours deviennent un chemin à couronnes, tu gagnes des niveaux, tu ' +
+  'joues ta ligue de la semaine, et tes copies sont corrigées d’après ton ' +
+  'cours et ton année.'
 
 /** Date de la publication, au format `AAAA-MM-JJ`. */
 export const DATE = '2026-09-30'
@@ -75,9 +75,9 @@ export type Apk =
 
 export const APK: Apk = {
   publie: true,
-  url: 'https://github.com/Qempm/reviz/releases/download/v2.4.0/reviz-2.4.0.apk',
-  tailleOctets: 60_765_442,
-  sha256: '9eb943b2eb1490b41a8075f9fc1e06f6b7309b7e7ffd2da4253290d83d426b24',
+  url: 'https://github.com/Qempm/reviz/releases/download/v2.5.0/reviz-2.5.0.apk',
+  tailleOctets: 61_404_475,
+  sha256: 'b4b9a3ce1c669709087a97033318fb6cee52ce0b7b77d68b0a22b0713df446d7',
 }
 
 /**
