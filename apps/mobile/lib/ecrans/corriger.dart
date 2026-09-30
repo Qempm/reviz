@@ -568,9 +568,8 @@ class _Envoi extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Le panthéreau lit pendant l'envoi ; la barre dit où en est
-          // la copie.
-          const Mascotte(etat: EtatMascotte.reflexion, taille: 128),
+          // Le panthéreau porte la copie ; la barre dit où elle en est.
+          const Mascotte(etat: EtatMascotte.envoi, taille: 128),
           const SizedBox(height: Espaces.x16),
           Text(
             Fr.correction.envoiPourcent((part * 100).round()),

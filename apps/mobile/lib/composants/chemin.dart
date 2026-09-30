@@ -123,7 +123,7 @@ class _Etape extends StatelessWidget {
     final noeud = _Noeud(maitrise: m, courant: courant);
 
     final tete = courant
-        ? const TeteMascotte(etat: EtatMascotte.salut, taille: 44)
+        ? const TeteMascotte(etat: EtatMascotte.enRoute, taille: 44)
         : const SizedBox(width: 44);
 
     return Semantics(

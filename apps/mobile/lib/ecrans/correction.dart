@@ -66,9 +66,7 @@ class _EcranCorrectionState extends ConsumerState<EcranCorrection> {
     _minuteur?.cancel();
     if (_sondages >= _limiteSondages) return;
 
-    final cadence = _cadences
-        .firstWhere((c) => _sondages < c.jusqua)
-        .secondes;
+    final cadence = _cadences.firstWhere((c) => _sondages < c.jusqua).secondes;
 
     _minuteur = Timer(Duration(seconds: cadence), () {
       if (!mounted) return;
@@ -167,10 +165,15 @@ class _Attente extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Le panthéreau lit la copie. Il respire tant que l'attente dure :
-          // une roue qui tourne trente secondes ressemble à une panne.
+          // Le panthéreau corrige, stylo rouge en main. Il respire tant que
+          // l'attente dure : une roue qui tourne trente secondes ressemble à
+          // une panne.
           if (!epuise)
-            const Mascotte(etat: EtatMascotte.reflexion, taille: 140)
+            const Mascotte(
+              etat: EtatMascotte.stylo,
+              taille: 140,
+              enBoucle: true,
+            )
           else
             // Plus long que prévu : il s'est assoupi en attendant, sans
             // que rien ne soit perdu.

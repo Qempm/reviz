@@ -110,15 +110,29 @@ class _Contenu extends ConsumerWidget {
         // --- Solde
         Carte(
           enfants: [
-            Text(
-              Fr.gains.solde,
-              style: Typo.labelSm.copyWith(color: Couleurs.attenue),
-            ),
-            Text(
-              '$solde F',
-              style: Typo.displayHerosMobile.copyWith(
-                color: Couleurs.texteAccent,
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        Fr.gains.solde,
+                        style: Typo.labelSm.copyWith(color: Couleurs.attenue),
+                      ),
+                      Text(
+                        '$solde F',
+                        style: Typo.displayHerosMobile.copyWith(
+                          color: Couleurs.texteAccent,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Le panthéreau et ses pièces : c'est le portefeuille.
+                const Mascotte(etat: EtatMascotte.pieces, taille: 72),
+              ],
             ),
 
             if (peutRetirer)
@@ -193,7 +207,7 @@ class _Contenu extends ConsumerWidget {
           Carte(
             enfants: [
               EtatVide(
-                mascotte: EtatMascotte.curieux,
+                mascotte: EtatMascotte.amis,
                 titre: Fr.gains.aucunFilleul,
                 description: Fr.gains.aucunFilleulDetail,
               ),
@@ -221,9 +235,7 @@ class _Contenu extends ConsumerWidget {
                         ),
                         Text(
                           Fr.gains.filleulsTotal(donnees.filleuls),
-                          style: Typo.labelSm.copyWith(
-                            color: Couleurs.attenue,
-                          ),
+                          style: Typo.labelSm.copyWith(color: Couleurs.attenue),
                         ),
                       ],
                     ),
@@ -341,12 +353,14 @@ class _FeuilleRetraitState extends ConsumerState<_FeuilleRetrait> {
 
     setState(() => _envoi = true);
 
-    final reponse = await ref.read(depotGainsProvider).demanderRetrait(
-      api: ref.read(apiProvider),
-      montantFcfa: montant!,
-      operateur: _operateur!,
-      telephone: (numero as NumeroNormalise).e164,
-    );
+    final reponse = await ref
+        .read(depotGainsProvider)
+        .demanderRetrait(
+          api: ref.read(apiProvider),
+          montantFcfa: montant!,
+          operateur: _operateur!,
+          telephone: (numero as NumeroNormalise).e164,
+        );
 
     if (!mounted) return;
     setState(() => _envoi = false);
@@ -356,13 +370,15 @@ class _FeuilleRetraitState extends ConsumerState<_FeuilleRetrait> {
         // Le solde a changé : l'écran des gains doit se relire.
         ref.invalidate(gainsProvider);
         Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(Fr.gains.demandeEnvoyee)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(Fr.gains.demandeEnvoyee)));
       case ReponseEchec(:final erreur):
         // Le serveur renvoie désormais un message français prêt à afficher.
         setState(() {
-          _erreurGenerale = erreur.isEmpty ? Fr.gains.demandeImpossible : erreur;
+          _erreurGenerale = erreur.isEmpty
+              ? Fr.gains.demandeImpossible
+              : erreur;
         });
     }
   }

@@ -226,7 +226,7 @@ class _Bilan extends StatelessWidget {
     final (titre, pose) = switch (issue) {
       IssueLigue.monte => (
         Fr.ligue.monte(bilan.division + 1),
-        EtatMascotte.champion,
+        EtatMascotte.medaille,
       ),
       IssueLigue.descend => (
         Fr.ligue.descend(bilan.division - 1),

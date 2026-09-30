@@ -158,6 +158,17 @@ class _Mascotte {
   final String oups = 'Le panthéreau Reviz se gratte la tête';
   final String horsLigne = 'Le panthéreau Reviz tient une prise débranchée';
   final String chantier = 'Le panthéreau Reviz porte un casque de chantier';
+  final String niveau = 'Le panthéreau Reviz lève les bras sous une étoile';
+  final String medaille = 'Le panthéreau Reviz porte une médaille';
+  final String flamme = 'Le panthéreau Reviz tient une petite flamme';
+  final String telephone = 'Le panthéreau Reviz regarde un téléphone';
+  final String cadeau = 'Le panthéreau Reviz te tend un cadeau';
+  final String envoi = 'Le panthéreau Reviz porte un classeur';
+  final String stylo = 'Le panthéreau Reviz corrige une copie';
+  final String enRoute = 'Le panthéreau Reviz montre le chemin';
+  final String amis = 'Deux panthéreaux bras dessus bras dessous';
+  final String pieces = 'Le panthéreau Reviz tient des pièces';
+  final String reveil = 'Le panthéreau Reviz tient un réveil';
 }
 
 class _Fiches {

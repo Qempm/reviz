@@ -126,8 +126,9 @@ class _EcranPaiementState extends ConsumerState<EcranPaiement>
   @override
   Widget build(BuildContext context) {
     final (mascotte, titre, detail) = switch (_etape) {
+      // Il regarde son téléphone : c'est là que l'étudiant doit valider.
       _Etape.attente => (
-        EtatMascotte.reflexion,
+        EtatMascotte.telephone,
         Fr.boutique.attenteTitre,
         Fr.boutique.attenteDetail,
       ),

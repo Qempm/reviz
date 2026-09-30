@@ -501,6 +501,13 @@ class _ResultatState extends State<_Resultat> {
               child: Mascotte(
                 etat: _pourcentage == 100
                     ? EtatMascotte.champion
+                    // La journée vient d'être validée : la flamme de la
+                    // série, plutôt qu'un simple bravo.
+                    : widget.resultat?.gains.any(
+                            (g) => g.motif == 'daily_goal',
+                          ) ??
+                          false
+                    ? EtatMascotte.flamme
                     : _pourcentage >= 60
                     ? EtatMascotte.bravo
                     : EtatMascotte.courage,

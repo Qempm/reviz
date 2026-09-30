@@ -37,7 +37,40 @@ enum EtatMascotte {
   horsLigne,
 
   /// Reviz en entretien : casque de chantier et clé à molette.
-  chantier;
+  chantier,
+
+  /// « Niveau supérieur ! » : bras levés, une étoile au-dessus de la tête.
+  niveau,
+
+  /// Montée de ligue, troisième couronne : une médaille au cou.
+  medaille,
+
+  /// La série, et le rappel de série : il tient une petite flamme.
+  flamme,
+
+  /// Paiement à valider sur le téléphone : il regarde l'écran.
+  telephone,
+
+  /// Pack gratuit, récompense : il tend un paquet cadeau.
+  cadeau,
+
+  /// Envoi d'un cours ou d'une copie : il porte un classeur.
+  envoi,
+
+  /// Correction en cours : il corrige une copie au stylo rouge.
+  stylo,
+
+  /// Le chapitre en cours sur le chemin : il montre la route.
+  enRoute,
+
+  /// Parrainage : bras dessus bras dessous avec un autre panthéreau.
+  amis,
+
+  /// Portefeuille, retrait : il tient des pièces.
+  pieces,
+
+  /// Rappels, examen qui approche : il tient un réveil.
+  reveil;
 
   String get chemin => 'assets/mascotte/$name.webp';
 
@@ -52,6 +85,17 @@ enum EtatMascotte {
     oups => Fr.mascotte.oups,
     horsLigne => Fr.mascotte.horsLigne,
     chantier => Fr.mascotte.chantier,
+    niveau => Fr.mascotte.niveau,
+    medaille => Fr.mascotte.medaille,
+    flamme => Fr.mascotte.flamme,
+    telephone => Fr.mascotte.telephone,
+    cadeau => Fr.mascotte.cadeau,
+    envoi => Fr.mascotte.envoi,
+    stylo => Fr.mascotte.stylo,
+    enRoute => Fr.mascotte.enRoute,
+    amis => Fr.mascotte.amis,
+    pieces => Fr.mascotte.pieces,
+    reveil => Fr.mascotte.reveil,
   };
 }
 

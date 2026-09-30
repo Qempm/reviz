@@ -115,9 +115,7 @@ class _EcranAjouterCoursState extends ConsumerState<EcranAjouterCours> {
       return;
     }
 
-    _retenir(
-      DocumentChoisi(nom: fichier.name, octets: octets, typeMime: mime),
-    );
+    _retenir(DocumentChoisi(nom: fichier.name, octets: octets, typeMime: mime));
   }
 
   Future<void> _prendrePhoto() async {
@@ -204,9 +202,9 @@ class _EcranAjouterCoursState extends ConsumerState<EcranAjouterCours> {
     switch (reponse) {
       case ReponseSucces():
         ref.invalidate(boutiqueProvider);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(Fr.depot.packGratuitActive)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(Fr.depot.packGratuitActive)));
         await _deposer();
       case ReponseEchec(:final erreur):
         setState(() => _erreur = erreur.isEmpty ? Fr.depot.echec : erreur);
@@ -236,16 +234,18 @@ class _EcranAjouterCoursState extends ConsumerState<EcranAjouterCours> {
       _coursExistant = null;
     });
 
-    final reponse = await ref.read(depotCoursProvider).deposer(
-      api: ref.read(apiProvider),
-      document: document,
-      matiereId: matiere,
-      titre: titre,
-      dateExamen: _dateExamen,
-      progression: (part) {
-        if (mounted) setState(() => _part = part);
-      },
-    );
+    final reponse = await ref
+        .read(depotCoursProvider)
+        .deposer(
+          api: ref.read(apiProvider),
+          document: document,
+          matiereId: matiere,
+          titre: titre,
+          dateExamen: _dateExamen,
+          progression: (part) {
+            if (mounted) setState(() => _part = part);
+          },
+        );
 
     if (!mounted) return;
 
@@ -364,8 +364,7 @@ class _EcranAjouterCoursState extends ConsumerState<EcranAjouterCours> {
                                   libelle: Fr.commun.reessayer,
                                   icone: Icons.refresh,
                                   variante: VarianteBouton.secondaire,
-                                  onTap: () =>
-                                      ref.invalidate(matieresProvider),
+                                  onTap: () => ref.invalidate(matieresProvider),
                                 ),
                               ),
                             ],
@@ -390,11 +389,13 @@ class _EcranAjouterCoursState extends ConsumerState<EcranAjouterCours> {
                           // Proposé seulement si le pack gratuit n'a pas
                           // déjà servi.
                           onActiverGratuit:
-                              ref.watch(boutiqueProvider).value
-                                          ?.decouverteUtilisee ==
-                                      false
-                                  ? (_activation ? null : _activerGratuit)
-                                  : null,
+                              ref
+                                      .watch(boutiqueProvider)
+                                      .value
+                                      ?.decouverteUtilisee ==
+                                  false
+                              ? (_activation ? null : _activerGratuit)
+                              : null,
                           activationEnCours: _activation,
                         ),
                       ],
@@ -622,7 +623,8 @@ class _Refus extends StatelessWidget {
             Bouton(
               libelle: Fr.depot.voirLeCours,
               icone: Icons.arrow_forward,
-              onTap: () => context.pushReplacement(Chemins.cours(coursExistant!)),
+              onTap: () =>
+                  context.pushReplacement(Chemins.cours(coursExistant!)),
             ),
           ],
         ],
@@ -644,9 +646,9 @@ class _Envoi extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Le panthéreau lit pendant l'envoi ; la barre dit où en est
-          // le fichier.
-          const Mascotte(etat: EtatMascotte.reflexion, taille: 128),
+          // Le panthéreau porte le cours ; la barre dit où en est le
+          // fichier.
+          const Mascotte(etat: EtatMascotte.envoi, taille: 128),
           const SizedBox(height: Espaces.x16),
           Text(
             part <= 0

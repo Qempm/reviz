@@ -391,11 +391,11 @@ class _CarteExamen extends StatelessWidget {
           ),
           child: Row(
             children: [
-              Icon(
-                Icons.event,
-                size: 24,
-                color: proche ? Couleurs.orangeProfond : Couleurs.texteAccent,
-              ),
+              // À une semaine et moins, le panthéreau sort son réveil.
+              if (proche)
+                const TeteMascotte(etat: EtatMascotte.reveil, taille: 36)
+              else
+                const Icon(Icons.event, size: 24, color: Couleurs.texteAccent),
               const SizedBox(width: Espaces.x12),
               Expanded(
                 child: Column(
@@ -508,7 +508,8 @@ class _CarteGratuitState extends ConsumerState<_CarteGratuit> {
         enfants: [
           Row(
             children: [
-              const Mascotte(etat: EtatMascotte.bravo, taille: 64),
+              // Il tend un cadeau : le pack gratuit.
+              const Mascotte(etat: EtatMascotte.cadeau, taille: 64),
               const SizedBox(width: Espaces.x12),
               Expanded(
                 child: Column(

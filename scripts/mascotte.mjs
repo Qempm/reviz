@@ -40,6 +40,18 @@ const ETATS = [
   'oups',
   'horsLigne',
   'chantier',
+  // Deuxième série (30 septembre 2026) : une pose par moment de l'app.
+  'niveau',
+  'medaille',
+  'flamme',
+  'telephone',
+  'cadeau',
+  'envoi',
+  'stylo',
+  'enRoute',
+  'amis',
+  'pieces',
+  'reveil',
 ]
 
 const SOURCES = 'assets-source/mascotte'

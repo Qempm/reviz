@@ -175,7 +175,7 @@ class _NiveauSuperieur extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Mascotte(etat: EtatMascotte.bravo, taille: 132),
+                  const Mascotte(etat: EtatMascotte.niveau, taille: 132),
                   const SizedBox(height: Espaces.x12),
                   Text(
                     Fr.niveaux.superieur,
