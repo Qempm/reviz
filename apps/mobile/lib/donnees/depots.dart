@@ -335,13 +335,22 @@ class DepotCours {
     };
   }
 
+  /// Les colonnes lues dans la vue `chapter_stats`.
+  ///
+  /// `chapter_id` et non `id` : la vue n'a pas de colonne `id`. La requête
+  /// demandait `id` depuis le portage, Postgres la refusait (42703), et la
+  /// liste des chapitres de **tous** les cours affichait « On n'a pas pu
+  /// charger cette page ». Les tests d'écran fournissaient des données
+  /// factices et ne pouvaient pas le voir : `test/colonnes_vues_test.dart`
+  /// confronte désormais cette liste à la définition SQL de la vue.
+  static const colonnesChapitres =
+      'chapter_id, index, title, nb_questions, nb_fiches, nb_tentees, taux, '
+      'is_weak';
+
   Future<List<ApercuChapitre>> chapitres(String coursId) async {
     final lignes = await supabase
         .from('chapter_stats')
-        .select(
-          'id, index, title, nb_questions, nb_fiches, nb_tentees, taux, '
-          'is_weak',
-        )
+        .select(colonnesChapitres)
         .eq('course_id', coursId)
         .order('index');
 

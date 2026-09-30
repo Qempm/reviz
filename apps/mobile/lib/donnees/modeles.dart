@@ -207,7 +207,8 @@ class ApercuChapitre {
   final bool aRevoir;
 
   static ApercuChapitre? depuis(Map<String, dynamic> l) {
-    final id = l['id'] as String?;
+    // La vue expose `chapter_id` ; `id` reste lu pour une ligne de `chapters`.
+    final id = (l['chapter_id'] ?? l['id']) as String?;
     if (id == null) return null;
     return ApercuChapitre(
       id: id,
