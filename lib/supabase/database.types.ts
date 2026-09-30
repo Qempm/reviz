@@ -449,6 +449,104 @@ export type Database = {
         }
         Relationships: []
       }
+      ligue_groupes: {
+        Row: {
+          cloture: boolean
+          created_at: string
+          division: number
+          id: string
+          semaine: string
+          taille: number
+        }
+        Insert: {
+          cloture?: boolean
+          created_at?: string
+          division: number
+          id?: string
+          semaine: string
+          taille?: number
+        }
+        Update: {
+          cloture?: boolean
+          created_at?: string
+          division?: number
+          id?: string
+          semaine?: string
+          taille?: number
+        }
+        Relationships: []
+      }
+      ligue_joueurs: {
+        Row: {
+          division: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          division?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          division?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ligue_joueurs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ligue_membres: {
+        Row: {
+          derniere_xp: string
+          groupe_id: string
+          issue: string | null
+          rang_final: number | null
+          semaine: string
+          user_id: string
+          xp: number
+        }
+        Insert: {
+          derniere_xp?: string
+          groupe_id: string
+          issue?: string | null
+          rang_final?: number | null
+          semaine: string
+          user_id: string
+          xp?: number
+        }
+        Update: {
+          derniere_xp?: string
+          groupe_id?: string
+          issue?: string | null
+          rang_final?: number | null
+          semaine?: string
+          user_id?: string
+          xp?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ligue_membres_groupe_id_fkey"
+            columns: ["groupe_id"]
+            isOneToOne: false
+            referencedRelation: "ligue_groupes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ligue_membres_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       packs: {
         Row: {
           active_from: string
@@ -1202,14 +1300,24 @@ export type Database = {
       }
       generate_referral_code: { Args: never; Returns: string }
       get_user_rank: { Args: never; Returns: number }
-      job_peut_demarrer: {
-        Args: {
-          at_time?: string
-          created: string
-          job_type: Database["public"]["Enums"]["job_type"]
-        }
-        Returns: boolean
-      }
+      job_peut_demarrer:
+        | {
+            Args: {
+              at_time?: string
+              created: string
+              job_type: Database["public"]["Enums"]["job_type"]
+            }
+            Returns: boolean
+          }
+        | {
+            Args: {
+              at_time?: string
+              created: string
+              job_type: Database["public"]["Enums"]["job_type"]
+              payload: Json
+            }
+            Returns: boolean
+          }
       ligue_lundi: { Args: { t: string }; Returns: string }
       ma_ligue: { Args: never; Returns: Json }
       mon_rang_faculte: { Args: never; Returns: number }
