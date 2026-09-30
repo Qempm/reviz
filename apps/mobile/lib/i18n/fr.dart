@@ -626,7 +626,7 @@ class _Depot {
 
   // --- Refus du serveur
   final String aucunAcces =
-      'Il te faut un pack actif pour déposer un cours.';
+      'Pour ajouter un cours, il te faut un pack. Le premier est gratuit.';
   final String accesExpire =
       'Ton pack est arrivé à terme. Réactive-le pour déposer.';
 
@@ -640,6 +640,9 @@ class _Depot {
   final String echec =
       'Le dépôt n’a pas abouti. Réessaie dans un instant.';
   final String voirLesPacks = 'Voir les packs';
+  final String commencerGratuitement = 'Commencer gratuitement';
+  final String packGratuitActive =
+      'Ton pack gratuit est activé. On envoie ton cours.';
 }
 
 class _Commun {
@@ -776,6 +779,14 @@ class _TableauDeBord {
 
   // Compte à rebours
   final String prochainExamen = 'Ton prochain examen';
+
+  // Pack gratuit
+  final String gratuitTitre = 'Commence gratuitement';
+  final String gratuitDetail =
+      '3 jours pour ajouter tes cours et essayer une correction de copie.';
+  final String gratuitBouton = 'Activer mon pack gratuit';
+  final String gratuitActive =
+      'C’est parti ! Ajoute ton premier cours depuis l’onglet Réviser.';
 }
 
 class _Reviser {
@@ -871,7 +882,12 @@ class _Session {
   String xpGagnes(int n) => '+$n XP';
   final String objectifAtteint = 'Objectif du jour atteint';
   String serie(int j) => j <= 1 ? 'Série lancée' : '$j jours de série';
-  final String refaire = 'Refaire une session';
+  final String refaire = 'Nouvelle série de questions';
+  String revoirErreurs(int n) =>
+      n <= 1 ? 'Revoir mon erreur' : 'Revoir mes $n erreurs';
+  final String aucuneErreur = 'Aucune erreur à revoir';
+  final String aucuneErreurDetail =
+      'Tu as tout juste à ta dernière réponse. Continue comme ça.';
   final String retourCours = 'Retour au cours';
 
   final String echecEnregistrement =

@@ -5,9 +5,12 @@
 // exige un privilège passe par une route Next.js. Les quatre vues sont en
 // `security_invoker`, donc consommables telles quelles.
 
+import 'dart:math';
+
 import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart' show compute;
 import '../metier/acces.dart';
+import '../metier/selection.dart';
 import 'api.dart';
 import 'modeles.dart';
 import 'supabase.dart';
@@ -357,31 +360,78 @@ class DepotCours {
     return _garder(lignes, ApercuChapitre.depuis);
   }
 
-  /// Les questions d'une session : QCM seulement, les plus probables d'abord.
+  /// Les questions d'une session : QCM seulement, choisies par
+  /// `choisirQuestions` (`metier/selection.dart`) — jamais vues d'abord, puis
+  /// ratées, puis chapitres faibles, puis les plus anciennement revues —, et
+  /// leurs propositions mélangées.
   ///
-  /// L'énumération `question_probability` est déclarée (high, medium, low),
-  /// donc l'ordre croissant de Postgres est déjà celui de la promesse produit
-  /// — « les questions qui vont probablement tomber ».
+  /// Avant : `order('probability').limit(10)`, soit les dix mêmes questions à
+  /// chaque session. On lit maintenant toutes les questions du cours (deux
+  /// cents au plus, règle 5) et la dernière réponse de l'étudiant à chacune :
+  /// quelques dizaines de kilo-octets, pour une session qui apprend
+  /// vraiment quelque chose.
   ///
   /// Dix par session, comme `public.daily_goal()` : une session finie doit
-  /// pouvoir valider la journée, sinon la série reste hors d'atteinte de qui
-  /// révise une fois par jour.
+  /// pouvoir valider la journée.
   Future<List<QuestionQcm>> questionsDeSession(
     String coursId, {
+    String? chapitreId,
+    ModeSession mode = ModeSession.normal,
     int combien = 10,
+    Random? hasard,
   }) async {
-    final lignes = await supabase
+    var requete = supabase
         .from('questions')
         .select(
           'id, statement, options, answer, explanation, probability, '
-          'chapters!inner(course_id)',
+          'chapter_id, chapters!inner(course_id)',
         )
         .eq('chapters.course_id', coursId)
-        .eq('type', 'mcq')
-        .order('probability')
-        .limit(combien);
+        .eq('type', 'mcq');
+    if (chapitreId != null) requete = requete.eq('chapter_id', chapitreId);
 
-    return _garder(lignes, QuestionQcm.depuis);
+    final questions = _garder(await requete, QuestionQcm.depuis);
+    if (questions.isEmpty) return questions;
+
+    // La dernière réponse de l'étudiant à chacune. La politique d'`attempts`
+    // ne laisse voir que les siennes.
+    final historique = <String, DerniereReponse>{};
+    try {
+      final reponses = await supabase
+          .from('attempts')
+          .select('question_id, is_correct, answered_at')
+          .inFilter('question_id', [for (final q in questions) q.id])
+          .order('answered_at', ascending: false);
+      for (final r in reponses) {
+        final id = r['question_id'] as String?;
+        final le = DateTime.tryParse(r['answered_at'] as String? ?? '');
+        if (id == null || le == null || historique.containsKey(id)) continue;
+        historique[id] = DerniereReponse(
+          juste: r['is_correct'] as bool? ?? false,
+          le: le,
+        );
+      }
+    } catch (_) {
+      // Sans historique, la sélection reste bonne : tout paraît inédit.
+    }
+
+    final alea = hasard ?? Random();
+    final choisies = choisirQuestions(
+      questions: [
+        for (final q in questions)
+          QuestionAChoisir(
+            valeur: q,
+            id: q.id,
+            chapitreId: q.chapitreId,
+            probabilite: q.probabilite,
+          ),
+      ],
+      historique: historique,
+      mode: mode,
+      combien: combien,
+      hasard: alea,
+    );
+    return [for (final q in choisies) q.avecOptions(melanger(q.options, alea))];
   }
 
   /// Fin de session — par la route : le serveur recorrige depuis

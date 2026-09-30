@@ -11,10 +11,12 @@ import '../composants/etat_vide.dart';
 import '../composants/mascotte.dart';
 import '../composants/progression.dart';
 import '../composants/puce.dart';
+import '../donnees/api.dart';
 import '../donnees/depots.dart';
 import '../donnees/modeles.dart';
 import '../etat/fournisseurs.dart';
 import '../i18n/fr.dart';
+import '../metier/acces.dart';
 import '../metier/examen.dart';
 import '../metier/serie.dart';
 import '../routage.dart';
@@ -143,6 +145,10 @@ class _Contenu extends StatelessWidget {
               cours: donnees.dernierCours,
             ),
           ),
+
+          // Un compte sans pack : le pack gratuit, proposé ici et pas au
+          // fond du profil. Rien ne s'affiche une fois qu'il a servi.
+          const _CarteGratuit(),
 
           if (examen != null && joursExamen != null) ...[
             const SizedBox(height: Espaces.x12),
@@ -437,6 +443,94 @@ class _Panne extends StatelessWidget {
           icone: Icons.refresh,
           onTap: onReessayer,
         ),
+      ),
+    );
+  }
+}
+
+/// « Commence gratuitement » : pour un compte qui n'a jamais eu de pack.
+///
+/// Avant, le pack gratuit n'était proposé nulle part : il fallait aller dans
+/// Profil → packs pour le trouver, et l'étudiant qui voulait déposer son
+/// premier cours se heurtait à un refus. La carte l'active en un appui.
+class _CarteGratuit extends ConsumerStatefulWidget {
+  const _CarteGratuit();
+
+  @override
+  ConsumerState<_CarteGratuit> createState() => _CarteGratuitState();
+}
+
+class _CarteGratuitState extends ConsumerState<_CarteGratuit> {
+  bool _enCours = false;
+
+  Future<void> _activer() async {
+    setState(() => _enCours = true);
+    final reponse = await ref
+        .read(depotBoutiqueProvider)
+        .activerDecouverte(ref.read(apiProvider));
+    if (!mounted) return;
+    setState(() => _enCours = false);
+    switch (reponse) {
+      case ReponseSucces():
+        ref.invalidate(boutiqueProvider);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(Fr.tableauDeBord.gratuitActive)),
+        );
+      case ReponseEchec(:final erreur):
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              erreur.isEmpty ? Fr.boutique.activationImpossible : erreur,
+            ),
+          ),
+        );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final boutique = ref.watch(boutiqueProvider).value;
+    if (boutique == null ||
+        boutique.decouverteUtilisee ||
+        boutique.acces is! AucunAcces) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: Espaces.x12),
+      child: Carte(
+        enfants: [
+          Row(
+            children: [
+              const Mascotte(etat: EtatMascotte.bravo, taille: 64),
+              const SizedBox(width: Espaces.x12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      Fr.tableauDeBord.gratuitTitre,
+                      style: Typo.headlineSm,
+                    ),
+                    const SizedBox(height: Espaces.x2),
+                    Text(
+                      Fr.tableauDeBord.gratuitDetail,
+                      style: Typo.labelSm.copyWith(color: Couleurs.attenue),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          // Secondaire : l'écran garde un seul bouton principal, « Continuer ».
+          Bouton(
+            libelle: Fr.tableauDeBord.gratuitBouton,
+            icone: Icons.card_giftcard,
+            variante: VarianteBouton.secondaire,
+            chargement: _enCours,
+            onTap: _enCours ? null : _activer,
+          ),
+        ],
       ),
     );
   }

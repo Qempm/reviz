@@ -31,6 +31,7 @@ import 'ecrans/profil.dart';
 import 'ecrans/reviser.dart';
 import 'ecrans/suppression.dart';
 import 'ecrans/session.dart';
+import 'metier/selection.dart';
 import 'etat/fournisseurs.dart';
 import 'i18n/fr.dart';
 import 'theme/jetons.dart';
@@ -60,7 +61,15 @@ abstract final class Chemins {
   static const corriger = '/corriger';
 
   static String cours(String id) => '/cours/$id';
-  static String session(String id) => '/cours/$id/session';
+  /// Une session du cours, d'un chapitre, ou de ses seules erreurs.
+  static String session(String id, {String? chapitre, bool erreurs = false}) {
+    final params = {
+      'chapitre': ?chapitre,
+      if (erreurs) 'mode': 'erreurs',
+    };
+    return Uri(path: '/cours/$id/session', queryParameters: params.isEmpty ? null : params)
+        .toString();
+  }
   static String fiches(String id) => '/cours/$id/fiches';
   static String correction(String id) => '/corrections/$id';
   static String paiement(String id) => '/boutique/paiement/$id';
@@ -212,8 +221,13 @@ GoRouter creerRouteur(Ref ref) {
                   GoRoute(
                     path: 'session',
                     parentNavigatorKey: racine,
-                    builder: (_, etat) =>
-                        EcranSession(coursId: etat.pathParameters['id'] ?? ''),
+                    builder: (_, etat) => EcranSession(
+                      coursId: etat.pathParameters['id'] ?? '',
+                      chapitreId: etat.uri.queryParameters['chapitre'],
+                      mode: etat.uri.queryParameters['mode'] == 'erreurs'
+                          ? ModeSession.erreurs
+                          : ModeSession.normal,
+                    ),
                   ),
                   GoRoute(
                     path: 'fiches',

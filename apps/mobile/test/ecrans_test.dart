@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:reviz/composants/option_qcm.dart';
 import 'package:reviz/donnees/depots.dart';
 import 'package:reviz/metier/acces.dart';
+import 'package:reviz/metier/selection.dart';
 import 'package:reviz/donnees/modeles.dart';
 import 'package:reviz/composants/bouton.dart';
 import 'package:reviz/composants/podium.dart';
@@ -743,7 +744,7 @@ void main() {
         tester,
         const EcranSession(coursId: 'c1'),
         remplacements: [
-          questionsProvider('c1').overrideWith((_) async => _questions),
+          questionsProvider((cours: 'c1', chapitre: null, mode: ModeSession.normal)).overrideWith((_) async => _questions),
         ],
       );
 
@@ -778,7 +779,7 @@ void main() {
         tester,
         const EcranSession(coursId: 'c1'),
         remplacements: [
-          questionsProvider('c1').overrideWith((_) async => _questions),
+          questionsProvider((cours: 'c1', chapitre: null, mode: ModeSession.normal)).overrideWith((_) async => _questions),
         ],
       );
 
@@ -811,7 +812,7 @@ void main() {
         tester,
         const EcranSession(coursId: 'c1'),
         remplacements: [
-          questionsProvider('c1').overrideWith((_) async => <QuestionQcm>[]),
+          questionsProvider((cours: 'c1', chapitre: null, mode: ModeSession.normal)).overrideWith((_) async => <QuestionQcm>[]),
         ],
       );
 

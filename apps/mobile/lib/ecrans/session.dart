@@ -15,6 +15,7 @@ import '../donnees/api.dart';
 import '../donnees/modeles.dart';
 import '../etat/fournisseurs.dart';
 import '../i18n/fr.dart';
+import '../metier/selection.dart';
 import '../routage.dart';
 import '../theme/jetons.dart';
 import '../theme/typographie.dart';
@@ -26,13 +27,24 @@ import '../theme/typographie.dart';
 /// que **ce qu'il a choisi**, jamais son verdict — sans quoi une requête
 /// bricolée vaudrait dix bonnes réponses et la première place du classement.
 class EcranSession extends ConsumerWidget {
-  const EcranSession({super.key, required this.coursId});
+  const EcranSession({
+    super.key,
+    required this.coursId,
+    this.chapitreId,
+    this.mode = ModeSession.normal,
+  });
 
   final String coursId;
 
+  /// Donné : la session ne porte que sur ce chapitre.
+  final String? chapitreId;
+  final ModeSession mode;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final questions = ref.watch(questionsProvider(coursId));
+    final questions = ref.watch(
+      questionsProvider((cours: coursId, chapitre: chapitreId, mode: mode)),
+    );
 
     return Scaffold(
       backgroundColor: Couleurs.fond,
@@ -44,9 +56,15 @@ class EcranSession extends ConsumerWidget {
               AsyncData(:final value) when value.isEmpty => Padding(
                 padding: const EdgeInsets.all(Espaces.ecran),
                 child: EtatVide(
-                  mascotte: EtatMascotte.curieux,
-                  titre: Fr.session.aucuneQuestion,
-                  description: Fr.session.aucuneQuestionDetail,
+                  mascotte: mode == ModeSession.erreurs
+                      ? EtatMascotte.bravo
+                      : EtatMascotte.curieux,
+                  titre: mode == ModeSession.erreurs
+                      ? Fr.session.aucuneErreur
+                      : Fr.session.aucuneQuestion,
+                  description: mode == ModeSession.erreurs
+                      ? Fr.session.aucuneErreurDetail
+                      : Fr.session.aucuneQuestionDetail,
                   action: Bouton(
                     libelle: Fr.session.retourCours,
                     icone: Icons.arrow_back,
@@ -57,6 +75,7 @@ class EcranSession extends ConsumerWidget {
               ),
               AsyncData(:final value) => _Session(
                 coursId: coursId,
+                chapitreId: chapitreId,
                 questions: value,
               ),
               AsyncError(:final error) => Padding(
@@ -83,9 +102,14 @@ class EcranSession extends ConsumerWidget {
 }
 
 class _Session extends ConsumerStatefulWidget {
-  const _Session({required this.coursId, required this.questions});
+  const _Session({
+    required this.coursId,
+    required this.questions,
+    this.chapitreId,
+  });
 
   final String coursId;
+  final String? chapitreId;
   final List<QuestionQcm> questions;
 
   @override
@@ -168,6 +192,7 @@ class _SessionState extends ConsumerState<_Session> {
     if (_resultat != null || _erreurEnvoi != null) {
       return _Resultat(
         coursId: widget.coursId,
+        chapitreId: widget.chapitreId,
         resultat: _resultat,
         erreur: _erreurEnvoi,
         etats: _etats,
@@ -315,6 +340,7 @@ class _SessionState extends ConsumerState<_Session> {
 class _Resultat extends StatefulWidget {
   const _Resultat({
     required this.coursId,
+    this.chapitreId,
     required this.resultat,
     required this.erreur,
     required this.etats,
@@ -322,6 +348,7 @@ class _Resultat extends StatefulWidget {
   });
 
   final String coursId;
+  final String? chapitreId;
   final ResultatSession? resultat;
   final String? erreur;
   final List<EtatSegment> etats;
@@ -375,6 +402,9 @@ class _ResultatState extends State<_Resultat> {
   int get _bonnes =>
       widget.resultat?.bonnes ??
       widget.etats.where((e) => e == EtatSegment.juste).length;
+
+  int get _erreurs =>
+      widget.etats.where((e) => e == EtatSegment.faux).length;
 
   int get _pourcentage =>
       widget.total == 0 ? 0 : (_bonnes / widget.total * 100).round();
@@ -485,10 +515,31 @@ class _ResultatState extends State<_Resultat> {
               ),
 
             const SizedBox(height: Espaces.x20),
+            // Des erreurs : les revoir tout de suite, c'est là que s'apprend
+            // le plus. Elles sont enregistrées quand le résultat l'est.
+            if (_erreurs > 0 && widget.resultat != null) ...[
+              Bouton(
+                libelle: Fr.session.revoirErreurs(_erreurs),
+                icone: Icons.replay,
+                onTap: () => context.pushReplacement(
+                  Chemins.session(
+                    widget.coursId,
+                    chapitre: widget.chapitreId,
+                    erreurs: true,
+                  ),
+                ),
+              ),
+              const SizedBox(height: Espaces.x8),
+            ],
             Bouton(
               libelle: Fr.session.refaire,
               icone: Icons.restart_alt,
-              onTap: () => context.pushReplacement(Chemins.session(widget.coursId)),
+              variante: _erreurs > 0 && widget.resultat != null
+                  ? VarianteBouton.secondaire
+                  : VarianteBouton.principal,
+              onTap: () => context.pushReplacement(
+                Chemins.session(widget.coursId, chapitre: widget.chapitreId),
+              ),
             ),
             const SizedBox(height: Espaces.x8),
             Bouton(

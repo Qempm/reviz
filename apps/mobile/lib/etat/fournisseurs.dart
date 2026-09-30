@@ -7,6 +7,7 @@ import '../donnees/reseau.dart';
 import '../donnees/supabase.dart';
 import '../donnees/version.dart';
 import '../metier/acces.dart';
+import '../metier/selection.dart';
 
 /// Fournisseurs Riverpod de l'application.
 ///
@@ -68,12 +69,18 @@ final chapitresProvider = FutureProvider.family<List<ApercuChapitre>, String>((
   return ref.read(depotCoursProvider).chapitres(coursId);
 });
 
-final questionsProvider = FutureProvider.family<List<QuestionQcm>, String>((
-  ref,
-  coursId,
-) {
-  return ref.read(depotCoursProvider).questionsDeSession(coursId);
-});
+/// Ce qui définit une session : le cours, éventuellement un chapitre, et le
+/// mode (tout, ou seulement les erreurs).
+typedef CleSession = ({String cours, String? chapitre, ModeSession mode});
+
+/// `autoDispose` : chaque ouverture d'une session tire de nouvelles
+/// questions. Gardé en cache, « Nouvelle session » rouvrait les mêmes.
+final questionsProvider = FutureProvider.autoDispose
+    .family<List<QuestionQcm>, CleSession>((ref, cle) {
+      return ref
+          .read(depotCoursProvider)
+          .questionsDeSession(cle.cours, chapitreId: cle.chapitre, mode: cle.mode);
+    });
 
 final fichesProvider = FutureProvider.family<List<Fiche>, String>((
   ref,

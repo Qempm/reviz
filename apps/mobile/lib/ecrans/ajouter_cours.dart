@@ -167,6 +167,30 @@ class _EcranAjouterCoursState extends ConsumerState<EcranAjouterCours> {
     if (choisie != null) setState(() => _dateExamen = choisie);
   }
 
+  bool _activation = false;
+
+  /// Le pack gratuit, activé depuis le refus même : l'étudiant n'a pas à
+  /// chercher la boutique au fond du profil. Le dépôt repart aussitôt.
+  Future<void> _activerGratuit() async {
+    setState(() => _activation = true);
+    final reponse = await ref
+        .read(depotBoutiqueProvider)
+        .activerDecouverte(ref.read(apiProvider));
+    if (!mounted) return;
+    setState(() => _activation = false);
+
+    switch (reponse) {
+      case ReponseSucces():
+        ref.invalidate(boutiqueProvider);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(Fr.depot.packGratuitActive)),
+        );
+        await _deposer();
+      case ReponseEchec(:final erreur):
+        setState(() => _erreur = erreur.isEmpty ? Fr.depot.echec : erreur);
+    }
+  }
+
   Future<void> _deposer() async {
     final document = _document;
     final matiere = _matiereId;
@@ -346,6 +370,15 @@ class _EcranAjouterCoursState extends ConsumerState<EcranAjouterCours> {
                           message: _erreur!,
                           motif: _motif,
                           coursExistant: _coursExistant,
+                          // Proposé seulement si le pack gratuit n'a pas
+                          // déjà servi.
+                          onActiverGratuit:
+                              ref.watch(boutiqueProvider).value
+                                          ?.decouverteUtilisee ==
+                                      false
+                                  ? (_activation ? null : _activerGratuit)
+                                  : null,
+                          activationEnCours: _activation,
                         ),
                       ],
 
@@ -516,11 +549,17 @@ class _Refus extends StatelessWidget {
     required this.message,
     required this.motif,
     required this.coursExistant,
+    this.onActiverGratuit,
+    this.activationEnCours = false,
   });
 
   final String message;
   final String? motif;
   final String? coursExistant;
+
+  /// Donné quand le pack gratuit est encore disponible.
+  final VoidCallback? onActiverGratuit;
+  final bool activationEnCours;
 
   @override
   Widget build(BuildContext context) {
@@ -546,11 +585,20 @@ class _Refus extends StatelessWidget {
           ),
           if (manqueAcces) ...[
             const SizedBox(height: Espaces.x12),
-            Bouton(
-              libelle: Fr.depot.voirLesPacks,
-              icone: Icons.shopping_bag_outlined,
-              onTap: () => context.descendre(Chemins.boutique),
-            ),
+            if (motif == 'aucun-acces' &&
+                (onActiverGratuit != null || activationEnCours))
+              Bouton(
+                libelle: Fr.depot.commencerGratuitement,
+                icone: Icons.card_giftcard,
+                chargement: activationEnCours,
+                onTap: onActiverGratuit,
+              )
+            else
+              Bouton(
+                libelle: Fr.depot.voirLesPacks,
+                icone: Icons.shopping_bag_outlined,
+                onTap: () => context.descendre(Chemins.boutique),
+              ),
           ],
           if (deja && coursExistant != null) ...[
             const SizedBox(height: Espaces.x12),

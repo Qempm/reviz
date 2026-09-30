@@ -237,6 +237,7 @@ class QuestionQcm {
     required this.reponse,
     required this.explication,
     required this.probabilite,
+    this.chapitreId,
   });
 
   final String id;
@@ -245,6 +246,18 @@ class QuestionQcm {
   final String reponse;
   final String? explication;
   final String probabilite;
+  final String? chapitreId;
+
+  /// La même question, propositions dans un autre ordre.
+  QuestionQcm avecOptions(List<String> autres) => QuestionQcm(
+    id: id,
+    enonce: enonce,
+    options: autres,
+    reponse: reponse,
+    explication: explication,
+    probabilite: probabilite,
+    chapitreId: chapitreId,
+  );
 
   bool get souventPosee => probabilite == 'high';
 
@@ -271,6 +284,7 @@ class QuestionQcm {
       reponse: reponse,
       explication: l['explanation'] as String?,
       probabilite: (l['probability'] as String?) ?? 'medium',
+      chapitreId: l['chapter_id'] as String?,
     );
   }
 }
