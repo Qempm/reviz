@@ -156,6 +156,7 @@ class DepotProfil {
     required String faculteId,
     required int annee,
     String? codeParrain,
+    String? telephone,
   }) {
     return api.poster<String>(
       '/api/profil',
@@ -166,8 +167,31 @@ class DepotProfil {
         'annee': annee,
         if (codeParrain != null && codeParrain.isNotEmpty)
           'codeParrain': codeParrain,
+        if (telephone != null && telephone.isNotEmpty) 'telephone': telephone,
       },
       depuis: (data) => data['id'] as String,
+    );
+  }
+
+  /// Ajoute une école, une filière ou une matière absente — ou rend celle
+  /// qui existe déjà sous un nom « le même » (« F.S.E.G » = « FSEG »).
+  /// `type` : `universite`, `filiere` ou `matiere`.
+  Future<Reponse<(String, String)>> ajouterAuCatalogue(
+    ApiReviz api, {
+    required String type,
+    required String nom,
+    String? parentId,
+    int? annee,
+  }) {
+    return api.poster<(String, String)>(
+      '/api/referentiel',
+      corps: {
+        'type': type,
+        'nom': nom,
+        'parentId': ?parentId,
+        'annee': ?annee,
+      },
+      depuis: (data) => (data['id'] as String, data['nom'] as String),
     );
   }
 }

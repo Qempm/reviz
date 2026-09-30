@@ -28,8 +28,19 @@ abstract final class Fr {
   static const carte = _Carte();
   static const aide = _Aide();
   static const mascotte = _Mascotte();
+  static const referentiel = _Referentiel();
   static const depot = _Depot();
   static const erreurs = _Erreurs();
+}
+
+/// La recherche d'une école, d'une filière ou d'une matière.
+class _Referentiel {
+  const _Referentiel();
+
+  final String chercher = 'Tape pour chercher';
+  final String aucunResultat = 'Rien trouvé. Tape le nom en entier pour l’ajouter.';
+  String ajouter(String nom) => 'Ajouter « $nom »';
+  final String ajouterDetail = 'Elle n’est pas encore dans la liste : on l’ajoute pour toi et tes camarades.';
 }
 
 /// Ce que dit un lecteur d'écran à la place du panthéreau.
@@ -606,6 +617,7 @@ class _Depot {
   final String aideTitre = 'C’est ce que tu verras dans ta liste.';
   final String matiere = 'La matière';
   final String choisirMatiere = 'Choisis la matière';
+  final String marqueurMatiere = 'Cherche ou ajoute ta matière';
   final String aucuneMatiere =
       'Aucune matière pour ta faculté. Préviens-nous, on l’ajoute.';
   final String dateExamen = 'Date de l’examen (facultatif)';
@@ -737,6 +749,12 @@ class _Inscription {
   final String terminer = 'Terminer mon inscription';
   final String choisirUniversite = 'Choisis ton université';
   final String choisirFiliere = 'Choisis ta filière';
+  final String marqueurUniversite = 'Cherche ou ajoute ton école';
+  final String marqueurFiliere = 'Cherche ou ajoute ta filière';
+  final String prenomManquant = 'Entre ton prénom.';
+  final String labelTelephone = 'Ton numéro WhatsApp (facultatif)';
+  final String aideTelephone =
+      'Pour recevoir tes rappels de révision. Personne d’autre ne le voit.';
 }
 
 class _TableauDeBord {

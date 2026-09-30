@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import '../composants/bouton.dart';
 import '../composants/carte.dart';
 import '../composants/champ.dart';
+import '../composants/champ_recherche.dart';
 import '../composants/chargement.dart';
 import '../composants/etat_vide.dart';
 import '../composants/mascotte.dart';
@@ -169,6 +170,27 @@ class _EcranAjouterCoursState extends ConsumerState<EcranAjouterCours> {
 
   bool _activation = false;
 
+  /// Une matière absente du catalogue, ajoutée pour l'étudiant et ses
+  /// camarades de filière, à son année d'étude.
+  Future<Reponse<(String, String)>> _ajouterMatiere(String nom) async {
+    final profil = await ref.read(profilProvider.future);
+    final faculte = profil?.faculteId;
+    if (faculte == null) {
+      return Reponse.echec(Fr.depot.echec);
+    }
+    final r = await ref
+        .read(depotProfilProvider)
+        .ajouterAuCatalogue(
+          ref.read(apiProvider),
+          type: 'matiere',
+          nom: nom,
+          parentId: faculte,
+          annee: profil?.anneeEtude,
+        );
+    if (r is ReponseSucces) ref.invalidate(matieresProvider);
+    return r;
+  }
+
   /// Le pack gratuit, activé depuis le refus même : l'étudiant n'a pas à
   /// chercher la boutique au fond du profil. Le dépôt repart aussitôt.
   Future<void> _activerGratuit() async {
@@ -322,21 +344,16 @@ class _EcranAjouterCoursState extends ConsumerState<EcranAjouterCours> {
                         const SizedBox(height: Espaces.x16),
 
                         switch (matieres) {
-                          AsyncData(:final value) when value.isEmpty =>
-                            Carte(
-                              enfants: [
-                                EtatVide(
-                                  mascotte: EtatMascotte.curieux,
-                                  titre: Fr.depot.aucuneMatiere,
-                                ),
-                              ],
-                            ),
-                          AsyncData(:final value) => ChampListe<String>(
+                          // Plus d'impasse « aucune matière » : l'étudiant
+                          // l'ajoute lui-même.
+                          AsyncData(:final value) => ChampRecherche(
                             libelle: Fr.depot.matiere,
                             valeur: _matiereId,
-                            marqueur: Fr.depot.choisirMatiere,
+                            marqueur: Fr.depot.marqueurMatiere,
                             entrees: [for (final m in value) (m.id, m.nom)],
-                            onChange: (v) => setState(() => _matiereId = v),
+                            onChoisir: (id, _) =>
+                                setState(() => _matiereId = id),
+                            onAjouter: _ajouterMatiere,
                           ),
                           AsyncError() => Carte(
                             enfants: [

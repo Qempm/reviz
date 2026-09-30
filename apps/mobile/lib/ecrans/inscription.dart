@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../composants/bouton.dart';
 import '../composants/champ.dart';
+import '../composants/champ_recherche.dart';
 import '../donnees/api.dart';
 import '../etat/fournisseurs.dart';
 import '../i18n/fr.dart';
@@ -23,6 +24,7 @@ class EcranInscription extends ConsumerStatefulWidget {
 class _EcranInscriptionState extends ConsumerState<EcranInscription> {
   final _prenom = TextEditingController();
   final _parrain = TextEditingController();
+  final _telephone = TextEditingController();
 
   String? _universiteId;
   String? _faculteId;
@@ -35,13 +37,14 @@ class _EcranInscriptionState extends ConsumerState<EcranInscription> {
   void dispose() {
     _prenom.dispose();
     _parrain.dispose();
+    _telephone.dispose();
     super.dispose();
   }
 
   Future<void> _terminer() async {
     final prenom = _prenom.text.trim();
     if (prenom.length < 2) {
-      return setState(() => _erreur = 'Entre ton prénom.');
+      return setState(() => _erreur = Fr.inscription.prenomManquant);
     }
     if (_universiteId == null) {
       return setState(() => _erreur = Fr.inscription.choisirUniversite);
@@ -62,6 +65,7 @@ class _EcranInscriptionState extends ConsumerState<EcranInscription> {
       faculteId: _faculteId!,
       annee: _annee,
       codeParrain: _parrain.text.trim(),
+      telephone: _telephone.text.trim(),
     );
 
     if (!mounted) return;
@@ -112,18 +116,29 @@ class _EcranInscriptionState extends ConsumerState<EcranInscription> {
                 const SizedBox(height: Espaces.x16),
 
                 switch (universites) {
-                  AsyncData(:final value) => ChampListe<String>(
+                  AsyncData(:final value) => ChampRecherche(
                     libelle: Fr.inscription.labelUniversite,
-                    marqueur: Fr.inscription.choisirUniversite,
+                    marqueur: Fr.inscription.marqueurUniversite,
                     valeur: _universiteId,
                     actif: !_enCours,
                     entrees: [for (final u in value) (u.id, u.nom)],
-                    onChange: (v) => setState(() {
-                      _universiteId = v;
+                    onChoisir: (id, _) => setState(() {
+                      _universiteId = id;
                       // Changer d'université invalide la filière choisie :
                       // les filières n'existent que sous leur université.
                       _faculteId = null;
                     }),
+                    onAjouter: (nom) async {
+                      final r = await ref
+                          .read(depotProfilProvider)
+                          .ajouterAuCatalogue(
+                            ref.read(apiProvider),
+                            type: 'universite',
+                            nom: nom,
+                          );
+                      if (r is ReponseSucces) ref.invalidate(universitesProvider);
+                      return r;
+                    },
                   ),
                   AsyncError() => Text(
                     Fr.erreurs.chargementImpossible,
@@ -140,13 +155,28 @@ class _EcranInscriptionState extends ConsumerState<EcranInscription> {
                         facultesProvider(_universiteId!),
                       );
                       return switch (facultes) {
-                        AsyncData(:final value) => ChampListe<String>(
+                        AsyncData(:final value) => ChampRecherche(
                           libelle: Fr.inscription.labelFiliere,
-                          marqueur: Fr.inscription.choisirFiliere,
+                          marqueur: Fr.inscription.marqueurFiliere,
                           valeur: _faculteId,
                           actif: !_enCours,
                           entrees: [for (final f in value) (f.id, f.nom)],
-                          onChange: (v) => setState(() => _faculteId = v),
+                          onChoisir: (id, _) => setState(() => _faculteId = id),
+                          onAjouter: (nom) async {
+                            final universite = _universiteId!;
+                            final r = await ref
+                                .read(depotProfilProvider)
+                                .ajouterAuCatalogue(
+                                  ref.read(apiProvider),
+                                  type: 'filiere',
+                                  nom: nom,
+                                  parentId: universite,
+                                );
+                            if (r is ReponseSucces) {
+                              ref.invalidate(facultesProvider(universite));
+                            }
+                            return r;
+                          },
                         ),
                         AsyncError() => Text(
                           Fr.erreurs.chargementImpossible,
@@ -166,6 +196,15 @@ class _EcranInscriptionState extends ConsumerState<EcranInscription> {
                     for (var n = 1; n <= 7; n++) (n, Fr.inscription.annee(n)),
                   ],
                   onChange: (v) => setState(() => _annee = v ?? 1),
+                ),
+                const SizedBox(height: Espaces.x16),
+
+                Champ(
+                  libelle: Fr.inscription.labelTelephone,
+                  aide: Fr.inscription.aideTelephone,
+                  controleur: _telephone,
+                  typeClavier: TextInputType.phone,
+                  actif: !_enCours,
                 ),
                 const SizedBox(height: Espaces.x16),
 
