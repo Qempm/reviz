@@ -383,12 +383,16 @@ class Fiche {
     required this.recto,
     required this.verso,
     required this.chapitre,
+    this.indexChapitre = 0,
   });
 
   final String id;
   final String recto;
   final String verso;
   final String? chapitre;
+
+  /// Rang du chapitre dans le cours, pour présenter le paquet dans l'ordre.
+  final int indexChapitre;
 
   static Fiche? depuis(Map<String, dynamic> l) {
     final id = l['id'] as String?;
@@ -400,6 +404,7 @@ class Fiche {
       recto: recto,
       verso: verso,
       chapitre: (l['chapters'] as Map?)?['title'] as String?,
+      indexChapitre: ((l['chapters'] as Map?)?['index'] as num?)?.toInt() ?? 0,
     );
   }
 }

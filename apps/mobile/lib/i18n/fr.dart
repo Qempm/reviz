@@ -908,6 +908,8 @@ class _TableauDeBord {
   final String serieRompue =
       'Ta série s’est arrêtée. Une session aujourd’hui suffit à en relancer '
       'une.';
+  final String seriePremiere =
+      'Réponds à tes premières questions aujourd’hui : ta série commence.';
 
   String serieEnJeu(int reste) => reste <= 1
       ? 'Encore une question et ta série tient un jour de plus.'

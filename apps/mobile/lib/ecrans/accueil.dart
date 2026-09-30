@@ -85,8 +85,12 @@ class _Contenu extends StatelessWidget {
     final repondues = aujourdhui?.questions ?? 0;
 
     // Un seul message, choisi par ce qui est en jeu maintenant.
+    // « Ta série s'est arrêtée » ne se dit qu'à qui en a eu une : une
+    // nouvelle inscrite n'a rien perdu, elle commence.
     final message = serie.rompue
-        ? Fr.tableauDeBord.serieRompue
+        ? (donnees.profil.dernierJourValide == null
+              ? Fr.tableauDeBord.seriePremiere
+              : Fr.tableauDeBord.serieRompue)
         : serie.enJeu
         ? Fr.tableauDeBord.serieEnJeu(
             resteAvantObjectif(repondues, donnees.objectif),

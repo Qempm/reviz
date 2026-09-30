@@ -61,7 +61,7 @@ class DepotProfil {
     final lignes = await supabase
         .from('universities')
         .select('id, name')
-        .order('name');
+        .order('name', ascending: true);
     return _garder(lignes, Universite.depuis);
   }
 
@@ -70,7 +70,7 @@ class DepotProfil {
         .from('faculties')
         .select('id, name, university_id')
         .eq('university_id', universiteId)
-        .order('name');
+        .order('name', ascending: true);
     return _garder(lignes, Faculte.depuis);
   }
 
@@ -379,7 +379,10 @@ class DepotCours {
         .from('chapter_stats')
         .select(colonnesChapitres)
         .eq('course_id', coursId)
-        .order('index');
+        // Croissant **explicite** : en Dart, `order()` trie par défaut en
+        // ordre décroissant (l'inverse du client JavaScript). Le chemin
+        // commençait par le dernier chapitre.
+        .order('index', ascending: true);
 
     return _garder(lignes, ApercuChapitre.depuis);
   }
@@ -533,7 +536,7 @@ class DepotCours {
         .from('subjects')
         .select('id, name, faculty_id')
         .eq('faculty_id', faculteId)
-        .order('name');
+        .order('name', ascending: true);
 
     return _garder(lignes, Matiere.depuis);
   }
@@ -659,9 +662,13 @@ class DepotFiches {
         .from('flashcards')
         .select('id, front, back, chapters!inner(title, index, course_id)')
         .eq('chapters.course_id', coursId)
-        .order('id');
+        .order('id', ascending: true);
 
-    return _garder(lignes, Fiche.depuis);
+    // Chapitre par chapitre, dans l'ordre du cours : PostgREST ne trie pas
+    // les lignes par une colonne de la table jointe, on le fait ici.
+    final fiches = _garder(lignes, Fiche.depuis);
+    fiches.sort((a, b) => a.indexChapitre.compareTo(b.indexChapitre));
+    return fiches;
   }
 }
 
@@ -703,7 +710,7 @@ class DepotBoutique {
               'code, label, description, price_fcfa, duration_days, '
               'corrections_included, subjects_limit',
             )
-            .order('price_fcfa'),
+            .order('price_fcfa', ascending: true),
       ),
       Future<dynamic>.value(
         supabase
