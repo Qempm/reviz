@@ -145,24 +145,5 @@ export async function POST(request: Request) {
     )
   }
 
-  const { error: erreurJob } = await admin.from('jobs').insert({
-    type: 'notify',
-    payload: {
-      phone,
-      template: 'withdrawal_requested',
-      variables: { amount_fcfa: amount_fcfa.toString(), operator },
-    },
-    status: 'queued',
-    attempts: 0,
-    run_after: new Date().toISOString(),
-    created_at: new Date().toISOString(),
-  })
-
-  if (erreurJob) {
-    // La notification n'est pas la demande : on la journalise et on rend la
-    // demande, qui est bien enregistrée.
-    console.error('Retrait — notification non enfilée :', erreurJob)
-  }
-
   return Response.json({ ok: true, data: { id: demande.id } })
 }

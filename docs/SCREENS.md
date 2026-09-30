@@ -18,7 +18,7 @@ ouvrait le site.
 | Chemin | Écran | Ce qu'il fait |
 | --- | --- | --- |
 | `/connexion` | `connexion.dart` | Code à chiffres par e-mail, en deux temps. Le bouton Google est désactivé faute d'identifiants OAuth. |
-| `/inscription` | `inscription.dart` | Prénom, université, filière (cherchées, ou ajoutées si absentes), année, WhatsApp facultatif, code parrain. Passe par `POST /api/profil` — jamais d'insertion directe. |
+| `/inscription` | `inscription.dart` | Prénom, université, filière (cherchées, ou ajoutées si absentes), année, numéro Mobile Money facultatif, code parrain. Passe par `POST /api/profil` — jamais d'insertion directe. |
 | `/` | `accueil.dart` | Série de sept jours, objectif du jour, pack gratuit à un appui, carte « ta ligue », quatre matières. Reprogramme les rappels du téléphone. |
 | `/reviser` | `reviser.dart` | Liste des cours, démonstration épinglée. |
 | `/reviser/ajouter` | `ajouter_cours.dart` | Dépôt d'un PDF, d'un .docx ou d'une photo, par URL signée. Empreinte SHA-256 calculée sur l'appareil. |

@@ -16,9 +16,9 @@ export type Reponse<T> =
  * Client Supabase injecté : la Server Action et `/api/profil` partagent cette
  * implémentation.
  *
- * Le numéro est facultatif depuis le passage à Google/email : il ne sert
- * qu'aux notifications WhatsApp, il n'est ni obligatoire ni vérifié
- * (CLAUDE.md, règle métier 3).
+ * Le numéro est facultatif depuis le passage à Google/email : c'est le
+ * numéro Mobile Money, qui pré-remplit le paiement. Il n'est ni obligatoire
+ * ni vérifié (CLAUDE.md, règle métier 3).
  */
 
 export const entreeProfil = z.object({

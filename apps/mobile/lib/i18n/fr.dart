@@ -883,9 +883,9 @@ class _Inscription {
   final String marqueurUniversite = 'Cherche ou ajoute ton école';
   final String marqueurFiliere = 'Cherche ou ajoute ta filière';
   final String prenomManquant = 'Entre ton prénom.';
-  final String labelTelephone = 'Ton numéro WhatsApp (facultatif)';
+  final String labelTelephone = 'Ton numéro Mobile Money (facultatif)';
   final String aideTelephone =
-      'Pour recevoir tes rappels de révision. Personne d’autre ne le voit.';
+      'Pour préremplir tes paiements. Personne d’autre ne le voit.';
 }
 
 class _TableauDeBord {

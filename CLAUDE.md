@@ -27,10 +27,10 @@ Distribution : **APK Flutter** partagé par lien et WhatsApp. Le Play Store vien
   - Détails d'appel dans `docs/STACK-IA.md`.
 - **File de traitement** : table `jobs` dans Supabase + route `/api/jobs/run`. Pas de Redis au MVP. Un cours se prépare **par lots de 5 chapitres en parallèle**, et la chaîne **s'enchaîne d'elle-même** (`lancerJobMaintenant` → `/api/jobs/run?cours=`), sans attendre le sondage de l'écran. **Le cron ne tourne qu'une fois par jour** (22:00 UTC) : c'est la seule cadence de l'offre Hobby. Les traitements que l'étudiant attend ne l'utilisent donc pas — ils partent de l'invocation déjà authentifiée du dépôt (`lib/jobs/immediat.ts`), et `generate_questions` avance à chaque interrogation de `GET /api/cours/:id`. Le cron est le filet pour qui a fermé l'application.
 - **Paiement Mobile Money** : abstraction `lib/payments/provider.ts` avec une première implémentation FedaPay (Bénin, Togo, Côte d'Ivoire) et un webhook `/api/payments/webhook`. Prévoir Moneroo ou KkiaPay comme seconde implémentation, même interface.
-- **WhatsApp** : notifications via webhook n8n (`N8N_WHATSAPP_WEBHOOK_URL`). Reviz n'appelle jamais l'API WhatsApp directement.
+- **Pas de notifications WhatsApp** (arbitrage du 30 septembre 2026). L'étudiant est prévenu dans l'application et par des rappels locaux (`flutter_local_notifications`). WhatsApp ne sert plus qu'au partage du lien de parrainage et au contact du support. Le traitement `notify` reste enregistré mais plus rien ne l'enfile.
 - **Flutter 3.44 / Dart 3.12** dans `apps/mobile/` : `supabase_flutter`, `dio`, `go_router`, `flutter_riverpod`. Police Nunito Sans **embarquée** et non téléchargée : le public a un forfait data limité.
 
-Variables d'environnement attendues dans `.env.local` (jamais commitées) : `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `DEEPSEEK_API_KEY`, `DASHSCOPE_API_KEY`, `ZAI_API_KEY`, `FEDAPAY_SECRET_KEY`, `FEDAPAY_WEBHOOK_SECRET`, `N8N_WHATSAPP_WEBHOOK_URL`, `CRON_SECRET`.
+Variables d'environnement attendues dans `.env.local` (jamais commitées) : `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `DEEPSEEK_API_KEY`, `DASHSCOPE_API_KEY`, `ZAI_API_KEY`, `FEDAPAY_SECRET_KEY`, `FEDAPAY_WEBHOOK_SECRET`, `CRON_SECRET` (et, pour les essais locaux seulement, `FEDAPAY_SANDBOX_SECRET_KEY`).
 
 ## Design system
 
@@ -57,7 +57,7 @@ choix ; en cas de doute, c'est lui qu'on ouvre, et on ne réinvente pas une vale
 
 ## Modèle de données (Supabase, schéma `public`)
 
-- `profiles` : id (= auth.users.id), phone (**facultatif et non vérifié** : sert aux notifications WhatsApp, pas d'identité ; unique quand renseigné), first_name, university_id, faculty_id, study_year, avatar_key, verification_status (`none` | `pending` | `verified` | `rejected`), verified_until, referral_code (unique), referred_by, is_ambassador, xp_total, current_streak, longest_streak, last_validated_on, created_at.
+- `profiles` : id (= auth.users.id), phone (**facultatif et non vérifié** : le numéro Mobile Money, qui pré-remplit le paiement, pas une identité ; unique quand renseigné), first_name, university_id, faculty_id, study_year, avatar_key, verification_status (`none` | `pending` | `verified` | `rejected`), verified_until, referral_code (unique), referred_by, is_ambassador, xp_total, current_streak, longest_streak, last_validated_on, created_at.
 - `universities`, `faculties` (university_id, name), `subjects` (faculty_id, name).
 - `courses` : id, owner_id, subject_id, title, file_hash (unique par owner), storage_path, page_count, status (`uploaded` | `processing` | `ready` | `failed`), shared_with_faculty (bool), exam_date, created_at.
 - `chapters` : course_id, index, title, text, token_count, embedding (vector).

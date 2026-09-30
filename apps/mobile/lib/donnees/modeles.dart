@@ -50,8 +50,8 @@ class Profil {
   final String statutVerification;
   final int? anneeEtude;
 
-  /// Au format E.164, facultatif et non vérifié : il sert aux notifications
-  /// WhatsApp, et à pré-remplir le numéro de paiement.
+  /// Au format E.164, facultatif et non vérifié : le numéro Mobile Money, qui
+  /// pré-remplit le paiement.
   final String? telephone;
 
   /// La plus longue série tenue. « Meilleure série » affichait la série en

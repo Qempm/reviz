@@ -214,22 +214,9 @@ export async function traiterTransaction(
     )
   }
 
-  // 6. Prévenir l'étudiant de **son** paiement. Envoi direct et non par un
-  //    job `notify` : le cron de l'offre Hobby ne tourne qu'une fois par
-  //    jour, et une confirmation de paiement ne peut pas attendre demain.
-  const n8n = process.env.N8N_WHATSAPP_WEBHOOK_URL
-  if (n8n) {
-    fetch(n8n, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        type: 'payment_success',
-        user_id: paiement.user_id,
-        pack_code: paiement.pack_code,
-        amount: paiement.amount_fcfa,
-      }),
-    }).catch((e) => console.error('Paiement : notification non partie', e))
-  }
+  // L'étudiant est prévenu dans l'application : l'écran de paiement suit
+  // l'issue (`/api/payments/status`). Plus de message WhatsApp depuis le
+  // 30 septembre 2026.
 
   return { ok: true, motif: 'traite' }
 }
