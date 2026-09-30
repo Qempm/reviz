@@ -46,7 +46,8 @@ class DepotProfil {
         .select(
           'id, first_name, xp_total, current_streak, last_validated_on, '
           'faculty_id, referral_code, avatar_key, verification_status, '
-          'study_year, phone, universities(name), faculties(name)',
+          'study_year, phone, longest_streak, universities(name), '
+          'faculties(name)',
         )
         .eq('id', id)
         .maybeSingle();

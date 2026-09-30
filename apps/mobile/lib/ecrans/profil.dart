@@ -59,12 +59,12 @@ class EcranProfil extends ConsumerWidget {
             ),
           ),
         ),
-        AsyncError(:final error) => Padding(
+        AsyncError() => Padding(
           padding: const EdgeInsets.all(Espaces.ecran),
           child: EtatVide(
             mascotte: EtatMascotte.oups,
             titre: Fr.erreurs.chargementImpossible,
-            description: '$error',
+            description: Fr.erreurs.chargementDetail,
             action: Bouton(
               libelle: Fr.commun.reessayer,
               icone: Icons.refresh,
@@ -259,7 +259,13 @@ class _Contenu extends ConsumerWidget {
                   icone: Icons.bolt,
                 ),
                 Puce(
-                  libelle: Fr.profil.serie(profil.serieCourante),
+                  // La série en cours peut dépasser le record enregistré le
+                  // jour même : on montre la plus grande des deux.
+                  libelle: Fr.profil.serie(
+                    profil.meilleureSerie > profil.serieCourante
+                        ? profil.meilleureSerie
+                        : profil.serieCourante,
+                  ),
                   ton: TonPuce.orange,
                   icone: Icons.local_fire_department,
                 ),

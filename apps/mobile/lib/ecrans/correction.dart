@@ -131,12 +131,12 @@ class _EcranCorrectionState extends ConsumerState<EcranCorrection> {
                 epuise: _sondages >= _limiteSondages,
                 onActualiser: _relancerASonRythme,
               ),
-              AsyncError(:final error) => Padding(
+              AsyncError() => Padding(
                 padding: const EdgeInsets.all(Espaces.ecran),
                 child: EtatVide(
                   mascotte: EtatMascotte.oups,
                   titre: Fr.erreurs.chargementImpossible,
-                  description: '$error',
+                  description: Fr.erreurs.chargementDetail,
                   action: Bouton(
                     libelle: Fr.commun.reessayer,
                     icone: Icons.refresh,
@@ -348,12 +348,6 @@ class _ResultatState extends ConsumerState<_Resultat> {
                   textAlign: TextAlign.center,
                 ),
                 BarreProgression(valeur: c.taux),
-                if (c.modele != null)
-                  Text(
-                    '${Fr.correction.corrigePar} ${c.modele}',
-                    style: Typo.caption.copyWith(color: Couleurs.attenue),
-                    textAlign: TextAlign.center,
-                  ),
               ],
             ),
 

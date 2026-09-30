@@ -46,12 +46,12 @@ class EcranReviser extends ConsumerWidget {
           cours: value,
           onRafraichir: () => ref.invalidate(coursProvider),
         ),
-        AsyncError(:final error) => Padding(
+        AsyncError() => Padding(
           padding: const EdgeInsets.all(Espaces.ecran),
           child: EtatVide(
             mascotte: EtatMascotte.oups,
             titre: Fr.erreurs.chargementImpossible,
-            description: '$error',
+            description: Fr.erreurs.chargementDetail,
             action: Bouton(
               libelle: Fr.commun.reessayer,
               icone: Icons.refresh,

@@ -15,7 +15,7 @@ export async function POST(request: Request) {
 
   const corps = await request.json().catch(() => null)
   if (corps === null) {
-    return Response.json({ ok: false, error: 'Corps de requête illisible.' }, { status: 400 })
+    return Response.json({ ok: false, error: 'Ta demande n’a pas pu partir. Réessaie.' }, { status: 400 })
   }
 
   const resultat = await enregistrerSession(

@@ -28,7 +28,7 @@ export async function POST(request: Request) {
   const parse = corpsSchema.safeParse(await request.json().catch(() => null))
   if (!parse.success) {
     return Response.json(
-      { ok: false, error: 'Chemin de photo invalide.' },
+      { ok: false, error: 'Cette photo n’a pas pu être envoyée. Reprends-la.' },
       { status: 400 },
     )
   }

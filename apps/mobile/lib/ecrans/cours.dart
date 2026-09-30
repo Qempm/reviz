@@ -139,12 +139,12 @@ class _EcranCoursState extends ConsumerState<EcranCours> {
                 onRafraichir: _rafraichirMaintenant,
               ),
               AsyncData() => _Absent(),
-              AsyncError(:final error) => Padding(
+              AsyncError() => Padding(
                 padding: const EdgeInsets.all(Espaces.ecran),
                 child: EtatVide(
                   mascotte: EtatMascotte.oups,
                   titre: Fr.erreurs.chargementImpossible,
-                  description: '$error',
+                  description: Fr.erreurs.chargementDetail,
                   action: Bouton(
                     libelle: Fr.commun.retour,
                     icone: Icons.arrow_back,
@@ -169,7 +169,7 @@ class _Absent extends StatelessWidget {
       padding: const EdgeInsets.all(Espaces.ecran),
       child: EtatVide(
         mascotte: EtatMascotte.curieux,
-        titre: 'Ce cours est introuvable',
+        titre: Fr.erreurs.coursIntrouvable,
         description:
             'Il a peut-être été supprimé, ou il n’est pas partagé avec ta '
             'faculté.',

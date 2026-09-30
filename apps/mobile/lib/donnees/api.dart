@@ -122,7 +122,24 @@ class ApiReviz {
   }
 
   /// Le corps commun : rejeu unique sur 401, puis dépliage de l'enveloppe.
+  ///
+  /// Une coupure réseau devient un échec lisible au lieu d'une exception :
+  /// sur une 3G qui décroche, c'est le cas ordinaire, pas l'exception.
   Future<Reponse<T>> _appeler<T>(
+    Future<Response<dynamic>> Function() envoyer,
+    T Function(Map<String, dynamic>)? depuis,
+  ) async {
+    try {
+      return await _appelerSansFilet(envoyer, depuis);
+    } on DioException {
+      return const Reponse.echec(
+        'Pas de connexion pour l’instant. Vérifie ton réseau et réessaie.',
+        motif: 'reseau',
+      );
+    }
+  }
+
+  Future<Reponse<T>> _appelerSansFilet<T>(
     Future<Response<dynamic>> Function() envoyer,
     T Function(Map<String, dynamic>)? depuis,
   ) async {
@@ -142,7 +159,7 @@ class ApiReviz {
     final donnees = reponse.data;
     if (donnees is! Map) {
       return const Reponse.echec(
-        'Réponse inattendue du serveur. Réessaie dans un instant.',
+        'Quelque chose a coincé. Réessaie dans un instant.',
       );
     }
 

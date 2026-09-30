@@ -35,7 +35,7 @@ export async function PUT(request: Request) {
     brut = await request.json()
   } catch {
     return Response.json(
-      { ok: false, error: 'Corps de requête illisible.', motif: 'invalide' },
+      { ok: false, error: 'Ta demande n’a pas pu partir. Réessaie.', motif: 'invalide' },
       { status: 400 },
     )
   }

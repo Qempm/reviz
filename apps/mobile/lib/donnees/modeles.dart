@@ -26,6 +26,7 @@ class Profil {
     this.statutVerification = 'none',
     this.anneeEtude,
     this.telephone,
+    this.meilleureSerie = 0,
   });
 
   final String id;
@@ -51,6 +52,10 @@ class Profil {
   /// WhatsApp, et à pré-remplir le numéro de paiement.
   final String? telephone;
 
+  /// La plus longue série tenue. « Meilleure série » affichait la série en
+  /// cours, qui retombe à zéro au premier jour manqué.
+  final int meilleureSerie;
+
   bool get verifie => statutVerification == 'verified';
   bool get verificationEnCours => statutVerification == 'pending';
 
@@ -73,6 +78,7 @@ class Profil {
     statutVerification: l['verification_status'] as String? ?? 'none',
     anneeEtude: (l['study_year'] as num?)?.toInt(),
     telephone: l['phone'] as String?,
+    meilleureSerie: (l['longest_streak'] as num?)?.toInt() ?? 0,
   );
 }
 

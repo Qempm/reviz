@@ -45,7 +45,7 @@ export async function GET(
   const parse = z.string().uuid().safeParse(id)
   if (!parse.success) {
     return Response.json(
-      { ok: false, error: 'Identifiant de cours invalide.' },
+      { ok: false, error: 'On ne retrouve pas ce cours.' },
       { status: 400 },
     )
   }

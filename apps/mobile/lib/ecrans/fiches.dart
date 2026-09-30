@@ -44,10 +44,10 @@ class EcranFiches extends ConsumerWidget {
                   coursId: coursId,
                   fiches: value,
                 ),
-                AsyncError(:final error) => EtatVide(
+                AsyncError() => EtatVide(
                   mascotte: EtatMascotte.oups,
                   titre: Fr.erreurs.chargementImpossible,
-                  description: '$error',
+                  description: Fr.erreurs.chargementDetail,
                   action: Bouton(
                     libelle: Fr.session.retourCours,
                     icone: Icons.arrow_back,

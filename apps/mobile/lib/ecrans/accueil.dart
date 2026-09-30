@@ -54,8 +54,8 @@ class EcranAccueil extends ConsumerWidget {
           serie: serie!,
           onRafraichir: () => ref.invalidate(accueilProvider),
         ),
-        AsyncError(:final error) => _Panne(
-          message: '$error',
+        AsyncError() => _Panne(
+          message: Fr.erreurs.chargementDetail,
           onReessayer: () => ref.invalidate(accueilProvider),
         ),
         _ => const Chargement.liste(),

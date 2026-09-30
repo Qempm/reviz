@@ -50,12 +50,12 @@ class EcranBoutique extends ConsumerWidget {
                 donnees: value,
                 onRafraichir: () => ref.invalidate(boutiqueProvider),
               ),
-              AsyncError(:final error) => Padding(
+              AsyncError() => Padding(
                 padding: const EdgeInsets.all(Espaces.ecran),
                 child: EtatVide(
                   mascotte: EtatMascotte.oups,
                   titre: Fr.erreurs.chargementImpossible,
-                  description: '$error',
+                  description: Fr.erreurs.chargementDetail,
                   action: Bouton(
                     libelle: Fr.commun.reessayer,
                     icone: Icons.refresh,

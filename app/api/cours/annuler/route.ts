@@ -18,7 +18,7 @@ export async function POST(request: Request) {
 
   const parse = corpsSchema.safeParse(await request.json().catch(() => null))
   if (!parse.success) {
-    return Response.json({ ok: false, error: 'Identifiant de cours invalide.' }, { status: 400 })
+    return Response.json({ ok: false, error: 'On ne retrouve pas ce cours.' }, { status: 400 })
   }
 
   await annulerDepot(appelant.supabase, appelant.user.id, parse.data.courseId)

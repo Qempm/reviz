@@ -323,6 +323,17 @@ export const correctCopyHandler = async (
     })
   }
 
+  // Les 40 XP de la correction, au barème depuis le début et jamais
+  // attribués. On n'arrive ici qu'une fois par correction réussie : le job
+  // est clos juste après, et un job clos n'est pas repris.
+  const { attribuerXp } = await import('@/lib/xp/attribuer')
+  const { BAREME } = await import('@/lib/xp/attribution')
+  await attribuerXp({
+    userId: user_id,
+    gains: [{ reason: 'correction_done', amount: BAREME.correction_done }],
+    referenceId: correction_id,
+  })
+
   ctx.log('copie corrigée', {
     correction_id,
     note: correction.grade,

@@ -131,7 +131,7 @@ class _Boutique {
   final String retourPacks = 'Revenir aux packs';
   final String longTitre = 'Toujours en attente';
   final String longDetail =
-      'FedaPay n’a pas encore confirmé. Si tu as bien payé, ton pack '
+      'Le paiement n’est pas encore confirmé. Si tu as bien payé, ton pack '
       's’activera tout seul : tu peux fermer cet écran et revenir plus tard.';
   final String verifier = 'Vérifier maintenant';
   final String activationImpossible =
@@ -175,7 +175,9 @@ class _Gains {
   final String partager = 'Partager sur WhatsApp';
 
   String messagePartage(String code) =>
-      'Rejoins-moi sur Reviz pour réviser : utilise mon code $code.';
+      'Rejoins-moi sur Reviz pour réviser tes cours en QCM. Télécharge '
+      'l’application sur reviz-eight.vercel.app/app et entre mon code $code '
+      'à l’inscription.';
 
   final String aucunFilleul = 'Aucun filleul pour l’instant';
   final String aucunFilleulDetail =
@@ -340,7 +342,6 @@ class _Correction {
 
   String lignePoints(String points, String maximum) => '$points / $maximum';
 
-  final String corrigePar = 'Corrigé par';
 
   // --- Illisible et échec
   final String illisible = 'On n’arrive pas à lire ta copie';
@@ -425,7 +426,7 @@ class _MiseAJour {
   // --- Mise à jour exigée
   final String exigee = 'Il faut mettre Reviz à jour';
   final String exigeeDetail =
-      'Cette version ne peut plus fonctionner avec nos serveurs. La mise à '
+      'Cette version de Reviz est trop ancienne pour fonctionner. La mise à '
       'jour prend moins d’une minute.';
 
   // --- Maintenance
@@ -456,8 +457,9 @@ class _Aide {
       'Est-ce que je serai prélevé chaque mois ?',
       'Non. Jamais. Tu paies un pack une fois, il dure le nombre de jours '
           'annoncé, et il s’arrête. Il n’y a aucun abonnement automatique et '
-          'rien à résilier. À la fin, tes cours et ton historique restent '
-          'lisibles ; pour refaire des QCM, tu reprends un pack.',
+          'rien à résilier. À la fin, tes cours restent à toi : tu continues '
+          'à réviser tes questions et tes fiches gratuitement. Tu reprends '
+          'un pack pour ajouter un cours ou faire corriger une copie.',
     ),
     (
       'Pourquoi vous demandez ma carte étudiante ?',
@@ -490,7 +492,7 @@ class _Aide {
     ),
     (
       'Ma note de correction me paraît fausse.',
-      'Elle est donnée par une IA qui lit ta photo : une écriture serrée ou '
+      'Elle est donnée à partir de ta photo : une écriture serrée ou '
           'une page mal éclairée peuvent lui faire manquer des lignes. '
           'Reprends la photo à plat et bien éclairée. Et écris-nous : une '
           'note clairement à côté nous sert à corriger le barème.',
@@ -608,7 +610,7 @@ class _Depot {
       'Aucune matière pour ta faculté. Préviens-nous, on l’ajoute.';
   final String dateExamen = 'Date de l’examen (facultatif)';
   final String aideDateExamen =
-      'Reviz s’en sert pour te dire ce qui va probablement tomber.';
+      'Reviz affiche le compte à rebours et te pousse à réviser à temps.';
   final String choisirDate = 'Choisir une date';
   final String retirerDate = 'Retirer la date';
 
@@ -700,7 +702,7 @@ class _Connexion {
       'La connexion Google n’est pas encore prête de notre côté. Utilise ton '
       'email pour l’instant, ça marche.';
   final String googleRefuse =
-      'Google a répondu, mais notre serveur n’a pas accepté. On est prévenus. '
+      'La connexion avec Google n’a pas abouti de notre côté. On est prévenus. '
       'Utilise ton email en attendant.';
   final String googleInterrompu =
       'La connexion Google a été interrompue. Réessaie.';
@@ -920,6 +922,9 @@ class _Erreurs {
   final String inconnue = 'Quelque chose a coincé de notre côté. Réessaie.';
   final String chargementImpossible =
       'On n’a pas pu charger cette page. Réessaie.';
+  final String chargementDetail =
+      'Vérifie ta connexion. Si ça continue, réessaie un peu plus tard.';
+  final String coursIntrouvable = 'Ce cours est introuvable';
 
   /// Configuration absente au build — une erreur de développeur, pas
   /// d'étudiant, mais qui doit se lire quand elle arrive.

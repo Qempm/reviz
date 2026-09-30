@@ -31,7 +31,7 @@ export async function POST(request: Request) {
   const parse = corpsSchema.safeParse(await request.json().catch(() => null))
   if (!parse.success) {
     return Response.json(
-      { ok: false, error: 'Identifiant de correction invalide.' },
+      { ok: false, error: 'On ne retrouve pas cette correction.' },
       { status: 400 },
     )
   }

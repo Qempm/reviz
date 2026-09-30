@@ -78,12 +78,12 @@ class EcranSession extends ConsumerWidget {
                 chapitreId: chapitreId,
                 questions: value,
               ),
-              AsyncError(:final error) => Padding(
+              AsyncError() => Padding(
                 padding: const EdgeInsets.all(Espaces.ecran),
                 child: EtatVide(
                   mascotte: EtatMascotte.oups,
                   titre: Fr.erreurs.chargementImpossible,
-                  description: '$error',
+                  description: Fr.erreurs.chargementDetail,
                   action: Bouton(
                     libelle: Fr.session.retourCours,
                     icone: Icons.arrow_back,

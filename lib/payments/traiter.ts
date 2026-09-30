@@ -190,6 +190,19 @@ export async function traiterTransaction(
     return { ok: true, motif: 'deja-traite' }
   }
 
+  // Le premier paiement d'un filleul vaut 500 XP à son parrain : au barème
+  // depuis le début, jamais attribués. Le premier seulement — ensuite, la
+  // commission suffit.
+  if (decision.commission && parrainage && parrainage.firstPaymentAt === null) {
+    const { attribuerXp } = await import('@/lib/xp/attribuer')
+    const { BAREME } = await import('@/lib/xp/attribution')
+    await attribuerXp({
+      userId: decision.commission.parrainId,
+      gains: [{ reason: 'referral', amount: BAREME.referral }],
+      referenceId: paiement.id,
+    })
+  }
+
   if (
     decision.motifSansCommission &&
     decision.motifSansCommission !== 'aucun-parrainage'
