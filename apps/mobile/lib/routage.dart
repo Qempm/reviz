@@ -24,6 +24,7 @@ import 'ecrans/correction.dart';
 import 'ecrans/corriger.dart';
 import 'ecrans/cours.dart';
 import 'ecrans/fiches.dart';
+import 'ecrans/ligue.dart';
 import 'ecrans/gains.dart';
 import 'ecrans/galerie.dart';
 import 'ecrans/inscription.dart';
@@ -52,6 +53,7 @@ abstract final class Chemins {
   static const boutique = '/boutique';
   static const gains = '/gains';
   static const classement = '/classement';
+  static const ligue = '/ligue';
   static const profil = '/profil';
   static const suppression = '/profil/supprimer-compte';
   static const avatar = '/profil/avatar';
@@ -61,15 +63,16 @@ abstract final class Chemins {
   static const corriger = '/corriger';
 
   static String cours(String id) => '/cours/$id';
+
   /// Une session du cours, d'un chapitre, ou de ses seules erreurs.
   static String session(String id, {String? chapitre, bool erreurs = false}) {
-    final params = {
-      'chapitre': ?chapitre,
-      if (erreurs) 'mode': 'erreurs',
-    };
-    return Uri(path: '/cours/$id/session', queryParameters: params.isEmpty ? null : params)
-        .toString();
+    final params = {'chapitre': ?chapitre, if (erreurs) 'mode': 'erreurs'};
+    return Uri(
+      path: '/cours/$id/session',
+      queryParameters: params.isEmpty ? null : params,
+    ).toString();
   }
+
   static String fiches(String id) => '/cours/$id/fiches';
   static String correction(String id) => '/corrections/$id';
   static String paiement(String id) => '/boutique/paiement/$id';
@@ -140,7 +143,10 @@ GoRouter creerRouteur(Ref ref) {
     },
     routes: [
       // --- Hors des onglets : pas de barre du bas -------------------------
-      GoRoute(path: Chemins.connexion, builder: (_, _) => const EcranConnexion()),
+      GoRoute(
+        path: Chemins.connexion,
+        builder: (_, _) => const EcranConnexion(),
+      ),
       GoRoute(
         path: Chemins.inscription,
         builder: (_, _) => const EcranInscription(),
@@ -163,8 +169,7 @@ GoRouter creerRouteur(Ref ref) {
             parentNavigatorKey: racine,
             redirect: (_, etat) =>
                 etat.extra is PackBoutique ? null : Chemins.boutique,
-            builder: (_, etat) =>
-                EcranPayer(pack: etat.extra! as PackBoutique),
+            builder: (_, etat) => EcranPayer(pack: etat.extra! as PackBoutique),
           ),
           // Le suivi d'un paiement, au-dessus de l'écran de paiement : le
           // retour y ramène, numéro et opérateur gardés.
@@ -192,6 +197,10 @@ GoRouter creerRouteur(Ref ref) {
               GoRoute(
                 path: Chemins.accueil,
                 builder: (_, _) => const EcranAccueil(),
+              ),
+              GoRoute(
+                path: Chemins.ligue,
+                builder: (_, _) => const EcranLigue(),
               ),
             ],
           ),

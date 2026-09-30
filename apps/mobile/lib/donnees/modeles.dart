@@ -813,3 +813,96 @@ class ChapitreDuChemin {
   final ApercuChapitre chapitre;
   final Maitrise maitrise;
 }
+
+/// La ligue de la semaine, telle que la rend `ma_ligue()`.
+class DonneesLigue {
+  const DonneesLigue({
+    required this.division,
+    required this.fin,
+    required this.membres,
+    this.derniere,
+  });
+
+  final int division;
+
+  /// Lundi suivant, 00:00 UTC.
+  final DateTime fin;
+
+  /// Le groupe de la semaine ; vide tant que l'étudiant n'a rien gagné.
+  final List<LigneClassement> membres;
+
+  /// L'issue de la dernière semaine close, s'il y en a une.
+  final BilanLigue? derniere;
+
+  /// Le bilan, seulement s'il porte sur la semaine qui vient de finir : celui
+  /// d'il y a un mois n'a plus rien à annoncer.
+  BilanLigue? get bilanRecent {
+    final d = derniere;
+    final lundi = DateTime.tryParse(d?.semaine ?? '');
+    if (d == null || lundi == null) return null;
+    final precedent = fin.toUtc().subtract(const Duration(days: 14));
+    final memeJour =
+        lundi.year == precedent.year &&
+        lundi.month == precedent.month &&
+        lundi.day == precedent.day;
+    return memeJour ? d : null;
+  }
+
+  LigneClassement? get moi {
+    for (final m in membres) {
+      if (m.estMoi) return m;
+    }
+    return null;
+  }
+
+  static DonneesLigue depuis(Map<String, dynamic> l) {
+    final derniere = l['derniere'];
+    return DonneesLigue(
+      division: (l['division'] as num?)?.toInt() ?? 1,
+      fin:
+          DateTime.tryParse(l['fin'] as String? ?? '') ??
+          DateTime.now().add(const Duration(days: 7)),
+      membres: [
+        for (final m in (l['membres'] as List?) ?? const [])
+          if (m is Map)
+            LigneClassement(
+              rang: (m['rang'] as num?)?.toInt() ?? 0,
+              prenom: m['prenom'] as String?,
+              avatar: m['avatar'] as String?,
+              xp: (m['xp'] as num?)?.toInt() ?? 0,
+              estMoi: m['moi'] as bool? ?? false,
+            ),
+      ],
+      derniere: derniere is Map
+          ? BilanLigue.depuis(Map<String, dynamic>.from(derniere))
+          : null,
+    );
+  }
+}
+
+/// L'issue d'une semaine close.
+class BilanLigue {
+  const BilanLigue({
+    required this.semaine,
+    required this.rang,
+    required this.issue,
+    required this.division,
+  });
+
+  /// Le lundi de la semaine, `AAAA-MM-JJ`.
+  final String semaine;
+  final int rang;
+
+  /// `monte`, `reste` ou `descend`.
+  final String issue;
+
+  /// La division **pendant** cette semaine.
+  final int division;
+
+  static BilanLigue depuis(Map<String, dynamic> l) => BilanLigue(
+    semaine: l['semaine'] as String? ?? '',
+    rang: (l['rang'] as num?)?.toInt() ?? 0,
+    issue: l['issue'] as String? ?? 'reste',
+    division: (l['division'] as num?)?.toInt() ?? 1,
+  );
+}

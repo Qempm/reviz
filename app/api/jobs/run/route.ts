@@ -3,6 +3,7 @@ import { after, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createSupabaseJobStore, handlers, runJobs } from '@/lib/jobs'
 import { lancerJobMaintenant, prochainJobDuCours } from '@/lib/jobs/immediat'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 /**
  * Passage de la file, déclenché par Vercel Cron **une fois par jour** à 22:00
@@ -83,6 +84,12 @@ export async function GET(request: Request) {
   }
 
   const deadline = new Date(Date.now() + maxDuration * 1000 - MARGE_MS)
+
+  // Les ligues de la semaine passée. La première XP d'une semaine les clôt
+  // déjà ; ceci ne sert que si personne n'a joué depuis lundi. Une erreur ici
+  // n'arrête pas la file : ce passage du soir est aussi son filet.
+  const { error: erreurLigues } = await createAdminClient().rpc('cloturer_ligues')
+  if (erreurLigues) console.error('[jobs] clôture des ligues', erreurLigues.message)
 
   try {
     const data = await runJobs({

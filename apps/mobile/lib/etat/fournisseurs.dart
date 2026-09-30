@@ -112,6 +112,11 @@ final gainsProvider = FutureProvider<DonneesGains>((ref) async {
   return ref.read(depotGainsProvider).charger();
 });
 
+/// La ligue de la semaine. Invalidé en fin de session, avec le profil.
+final ligueProvider = FutureProvider<DonneesLigue>((ref) {
+  return ref.read(depotClassementProvider).maLigue();
+});
+
 final classementProvider = FutureProvider<DonneesClassement>((ref) async {
   ref.watch(authProvider);
   return ref.read(depotClassementProvider).charger();

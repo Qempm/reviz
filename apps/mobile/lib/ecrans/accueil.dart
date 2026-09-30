@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../composants/apparition.dart';
+import '../composants/blason_ligue.dart';
 import '../composants/bouton.dart';
 import '../composants/carte.dart';
 import '../composants/carte_serie.dart';
@@ -169,6 +170,10 @@ class _Contenu extends StatelessWidget {
               ),
             ),
           ],
+
+          // La ligue de la semaine : rien tant qu'elle n'a pas répondu, pour
+          // ne pas faire sauter la page au chargement.
+          const _CarteLigue(),
           const SizedBox(height: Espaces.x24),
 
           entre(
@@ -187,9 +192,7 @@ class _Contenu extends StatelessWidget {
                     onPressed: () => context.go(Chemins.reviser),
                     child: Text(
                       Fr.commun.voirTout,
-                      style: Typo.labelMd.copyWith(
-                        color: Couleurs.texteAccent,
-                      ),
+                      style: Typo.labelMd.copyWith(color: Couleurs.texteAccent),
                     ),
                   ),
               ],
@@ -473,9 +476,9 @@ class _CarteGratuitState extends ConsumerState<_CarteGratuit> {
     switch (reponse) {
       case ReponseSucces():
         ref.invalidate(boutiqueProvider);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(Fr.tableauDeBord.gratuitActive)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(Fr.tableauDeBord.gratuitActive)));
       case ReponseEchec(:final erreur):
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -508,10 +511,7 @@ class _CarteGratuitState extends ConsumerState<_CarteGratuit> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      Fr.tableauDeBord.gratuitTitre,
-                      style: Typo.headlineSm,
-                    ),
+                    Text(Fr.tableauDeBord.gratuitTitre, style: Typo.headlineSm),
                     const SizedBox(height: Espaces.x2),
                     Text(
                       Fr.tableauDeBord.gratuitDetail,
@@ -531,6 +531,53 @@ class _CarteGratuitState extends ConsumerState<_CarteGratuit> {
             onTap: _enCours ? null : _activer,
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// « Ligue Argent · tu es 4e » : la porte vers l'écran de la ligue.
+class _CarteLigue extends ConsumerWidget {
+  const _CarteLigue();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ligue = ref.watch(ligueProvider).value;
+    if (ligue == null) return const SizedBox.shrink();
+    final moi = ligue.moi;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: Espaces.x12),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => context.descendre(Chemins.ligue),
+        child: Carte(
+          petite: true,
+          enfants: [
+            Row(
+              children: [
+                BlasonLigue(division: ligue.division, taille: 44),
+                const SizedBox(width: Espaces.x12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(Fr.ligue.nom(ligue.division), style: Typo.labelLg),
+                      Text(
+                        moi == null
+                            ? Fr.ligue.entrer
+                            : Fr.ligue.position(moi.rang, moi.xp),
+                        style: Typo.labelSm.copyWith(color: Couleurs.attenue),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.chevron_right, color: Couleurs.attenue),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

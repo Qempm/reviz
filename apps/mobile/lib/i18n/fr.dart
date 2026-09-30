@@ -30,8 +30,51 @@ abstract final class Fr {
   static const mascotte = _Mascotte();
   static const referentiel = _Referentiel();
   static const niveaux = _Niveaux();
+  static const ligue = _Ligue();
   static const depot = _Depot();
   static const erreurs = _Erreurs();
+}
+
+/// Les ligues de la semaine (`metier/ligues.dart`).
+class _Ligue {
+  const _Ligue();
+
+  final String titre = 'Ta ligue';
+  String division(int d) => switch (d) {
+    1 => 'Bronze',
+    2 => 'Argent',
+    3 => 'Or',
+    4 => 'Saphir',
+    5 => 'Rubis',
+    _ => 'Diamant',
+  };
+  String nom(int d) => 'Ligue ${division(d)}';
+  final String regle =
+      'Les 7 premiers montent, les 5 derniers descendent. Chaque bonne '
+      'réponse te fait gagner des places.';
+  String finDans(Duration reste) {
+    final j = reste.inDays;
+    final h = reste.inHours % 24;
+    if (j >= 1) return 'Fin dans $j j $h h';
+    if (reste.inHours >= 1) return 'Fin dans ${reste.inHours} h';
+    return 'Fin dans moins d’une heure';
+  }
+
+  final String zoneMontee = 'Zone de montée';
+  final String zoneDescente = 'Zone de descente';
+  final String videTitre = 'Ta ligue t’attend';
+  final String videDetail =
+      'Gagne tes premiers XP de la semaine pour entrer dans un groupe de 30 '
+      'étudiants.';
+  final String commencer = 'Réviser maintenant';
+  String rang(int r) => r == 1 ? '1er' : '${r}e';
+  String position(int r, int xp) => 'Tu es ${rang(r)} · $xp XP cette semaine';
+  final String entrer = 'Gagne des XP pour entrer dans ta ligue';
+  String monte(int d) => 'Tu montes en ${nom(d)} !';
+  String descend(int d) => 'Tu redescends en ${nom(d)}.';
+  String reste(int d) => 'Tu restes en ${nom(d)}.';
+  String bilan(int r) => 'La semaine dernière, tu as fini ${rang(r)}.';
+  final String classementFaculte = 'Classement de ma faculté';
 }
 
 /// Les niveaux de compte (`metier/niveaux.dart`).

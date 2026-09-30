@@ -25,6 +25,7 @@ import 'package:reviz/ecrans/correction.dart';
 import 'package:reviz/ecrans/corriger.dart';
 import 'package:reviz/ecrans/cours.dart';
 import 'package:reviz/ecrans/fiches.dart';
+import 'package:reviz/ecrans/ligue.dart';
 import 'package:reviz/ecrans/gains.dart';
 import 'package:reviz/ecrans/profil.dart';
 import 'package:reviz/ecrans/reviser.dart';
@@ -2414,6 +2415,72 @@ void main() {
       );
 
       expect(Fr.aide.questions, hasLength(7));
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('ligue', () {
+    DonneesLigue ligue({int membres = 20, int division = 3}) => DonneesLigue(
+      division: division,
+      fin: DateTime.now().add(const Duration(days: 2, hours: 5)),
+      membres: [
+        for (var r = 1; r <= membres; r++)
+          LigneClassement(
+            rang: r,
+            prenom: 'Étudiant $r',
+            avatar: null,
+            xp: 500 - r * 10,
+            estMoi: r == 4,
+          ),
+      ],
+    );
+
+    testWidgets('montre la division, les zones et le compte à rebours', (
+      tester,
+    ) async {
+      await _poser(
+        tester,
+        const EcranLigue(),
+        remplacements: [ligueProvider.overrideWith((_) async => ligue())],
+      );
+      expect(find.text('Ligue Or'), findsOneWidget);
+      expect(find.text('Zone de montée'), findsOneWidget);
+      expect(find.textContaining('Fin dans 2 j'), findsOneWidget);
+      await tester.scrollUntilVisible(find.text('Zone de descente'), 300);
+      expect(find.text('Zone de descente'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('en Bronze, pas de zone de descente', (tester) async {
+      await _poser(
+        tester,
+        const EcranLigue(),
+        remplacements: [
+          ligueProvider.overrideWith((_) async => ligue(division: 1)),
+        ],
+      );
+      await tester.scrollUntilVisible(find.text('Étudiant 20'), 300);
+      expect(find.text('Zone de descente'), findsNothing);
+    });
+
+    testWidgets('invite à entrer quand le groupe est vide', (tester) async {
+      await _poser(
+        tester,
+        const EcranLigue(),
+        remplacements: [
+          ligueProvider.overrideWith((_) async => ligue(membres: 0)),
+        ],
+      );
+      expect(find.text('Ta ligue t’attend'), findsOneWidget);
+    });
+
+    testWidgets('ne déborde pas à 320 px', (tester) async {
+      await _poser(
+        tester,
+        const EcranLigue(),
+        taille: const Size(320, 640),
+        remplacements: [ligueProvider.overrideWith((_) async => ligue())],
+      );
       expect(tester.takeException(), isNull);
     });
   });

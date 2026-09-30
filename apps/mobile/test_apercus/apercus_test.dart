@@ -31,6 +31,7 @@ import 'package:reviz/donnees/modeles.dart';
 import 'package:reviz/ecrans/accueil.dart';
 import 'package:reviz/ecrans/connexion.dart';
 import 'package:reviz/ecrans/cours.dart';
+import 'package:reviz/ecrans/ligue.dart';
 import 'package:reviz/metier/maitrise.dart';
 import 'package:reviz/ecrans/galerie.dart';
 import 'package:reviz/ecrans/profil.dart';
@@ -396,6 +397,60 @@ void main() {
       remplacements: [
         unCoursProvider('c2').overrideWith((_) async => _cours[1]),
         cheminProvider('c2').overrideWith((_) async => chemin),
+      ],
+    );
+  });
+
+  testWidgets('ligue', (tester) async {
+    const prenoms = [
+      'Koffi',
+      'Aïcha',
+      'Mawuli',
+      'Awa',
+      'Sèna',
+      'Ibrahim',
+      'Fifamè',
+      'Yao',
+      'Rokia',
+      'Edem',
+      'Nafi',
+      'Kossi',
+      'Adjoa',
+      'Moussa',
+    ];
+    await _photographier(
+      tester,
+      'ligue',
+      const EcranLigue(),
+      taille: const Size(390, 1400),
+      remplacements: [
+        ligueProvider.overrideWith(
+          (_) async => DonneesLigue(
+            division: 2,
+            fin: DateTime.now().add(const Duration(days: 3, hours: 4)),
+            derniere: BilanLigue(
+              semaine: DateTime.now()
+                  .add(const Duration(days: 3, hours: 4))
+                  .subtract(const Duration(days: 14))
+                  .toUtc()
+                  .toIso8601String()
+                  .substring(0, 10),
+              rang: 5,
+              issue: 'monte',
+              division: 1,
+            ),
+            membres: [
+              for (var i = 0; i < prenoms.length; i++)
+                LigneClassement(
+                  rang: i + 1,
+                  prenom: prenoms[i],
+                  avatar: 'ton-0${(i % 9) + 1}',
+                  xp: 620 - i * 37,
+                  estMoi: i == 3,
+                ),
+            ],
+          ),
+        ),
       ],
     );
   });

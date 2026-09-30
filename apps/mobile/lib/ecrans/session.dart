@@ -181,6 +181,7 @@ class _SessionState extends ConsumerState<_Session> {
         // relire, sinon l'étudiant revient sur des chiffres périmés.
         ref.invalidate(accueilProvider);
         ref.invalidate(profilProvider);
+        ref.invalidate(ligueProvider);
         ref.invalidate(unCoursProvider(widget.coursId));
         // Une couronne se gagne — ou se perd — ici.
         ref.invalidate(cheminProvider(widget.coursId));

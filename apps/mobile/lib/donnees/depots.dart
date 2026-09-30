@@ -875,6 +875,20 @@ class DepotClassement {
       monRang: (resultats[1] as num?)?.toInt(),
     );
   }
+
+  /// La ligue de la semaine : même contrat que le classement, une fonction
+  /// étroite qui ne rend ni identifiant ni téléphone.
+  Future<DonneesLigue> maLigue() async {
+    final brut = await supabase.rpc('ma_ligue');
+    if (brut is! Map) {
+      return DonneesLigue(
+        division: 1,
+        fin: DateTime.now().add(const Duration(days: 7)),
+        membres: const [],
+      );
+    }
+    return DonneesLigue.depuis(Map<String, dynamic>.from(brut));
+  }
 }
 
 // ------------------------------------------------------------ Corrections

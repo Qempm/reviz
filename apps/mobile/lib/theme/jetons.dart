@@ -85,6 +85,18 @@ abstract final class Couleurs {
   static const jauneProfond = Color(0xFFD9A400);
   static const orangeProfond = Color(0xFFD94E15);
   static const pecheProfond = Color(0xFF802900);
+
+  /// Les six divisions des ligues, de Bronze à Diamant — le blason de
+  /// l'écran Ligue et de la carte d'accueil. Toujours aucun vert ; le rubis
+  /// tire sur le rose pour ne pas se lire comme une erreur.
+  static const divisions = [
+    Color(0xFFB0703C), // Bronze
+    Color(0xFF8E8E96), // Argent
+    Color(0xFFFFC300), // Or
+    Color(0xFF4F7BD9), // Saphir
+    Color(0xFFE0457B), // Rubis
+    Color(0xFF6FA8EE), // Diamant
+  ];
 }
 
 /// Espacements. Les noms reprennent l'échelle du web (`space-4` → 4 px) pour

@@ -1167,6 +1167,7 @@ export type Database = {
           xp_total: number
         }[]
       }
+      cloturer_ligues: { Args: never; Returns: number }
       consommer_correction: { Args: { p_user: string }; Returns: number }
       copier_contenu_cours: {
         Args: { p_cible: string; p_source: string }
@@ -1209,6 +1210,8 @@ export type Database = {
         }
         Returns: boolean
       }
+      ligue_lundi: { Args: { t: string }; Returns: string }
+      ma_ligue: { Args: never; Returns: Json }
       mon_rang_faculte: { Args: never; Returns: number }
       recompute_xp_total: { Args: { target: string }; Returns: number }
       refresh_streak: { Args: { target: string }; Returns: undefined }
