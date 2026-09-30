@@ -13,7 +13,7 @@
  */
 
 /** La version publiée, telle que `pubspec.yaml` la déclare. */
-export const VERSION = '2.3.0'
+export const VERSION = '2.3.1'
 
 /**
  * En dessous, l'application refuse de servir.
@@ -27,7 +27,7 @@ export const VERSION = '2.3.0'
  * télécharger : tout le parc s'arrêterait sans issue. Le test de
  * `publication.test.ts` le vérifie.
  *
- * **Toujours 2.0.0 avec la 2.3.0 publiée**, et c'est voulu : rien n'est cassé
+ * **Toujours 2.0.0 avec la 2.3.1 publiée**, et c'est voulu : rien n'est cassé
  * dans la 2.0.x. Ses utilisateurs voient le bandeau « mise à jour
  * conseillée », pas un écran bloquant — on ne force une mise à jour que pour
  * une version qui ne sert plus.
@@ -38,16 +38,16 @@ export const VERSION_MINIMALE = '2.0.0'
 export const MAINTENANCE = false
 
 export const NOTES =
-  'Le paiement se fait sans quitter l’application, le panthéreau ' +
-  'accompagne chaque attente, et tes cours se préparent plus vite.'
+  'Les chapitres de tes cours s’affichent de nouveau, avec leur ' +
+  'progression.'
 
 /** Date de la publication, au format `AAAA-MM-JJ`. */
-export const DATE = '2026-09-29'
+export const DATE = '2026-09-30'
 
 /**
  * Le fichier, quand il existe.
  *
- * 2.3.0 publiée le 29 septembre 2026, signée par la clé de release (`CN=Reviz`,
+ * 2.3.1 publiée le 30 septembre 2026, signée par la clé de release (`CN=Reviz`,
  * empreinte SHA-1 `AF:A1:F6:E8:…:8A:4A`). L'état `publie: false` existait
  * pour la période sans clé : un APK signé avec celle de débogage est
  * installable mais impossible à remplacer ensuite, et annoncer un lien mort
@@ -74,9 +74,9 @@ export type Apk =
 
 export const APK: Apk = {
   publie: true,
-  url: 'https://github.com/Qempm/reviz/releases/download/v2.3.0/reviz-2.3.0.apk',
+  url: 'https://github.com/Qempm/reviz/releases/download/v2.3.1/reviz-2.3.1.apk',
   tailleOctets: 60_585_090,
-  sha256: '915cafda3ac2d795c2e3b8ce82fc3031d5247bc3f12c9019b915f59df30d6b65',
+  sha256: '4585a73fd3ebb7efeb90aa189c231085f9b6b75c0b9a45e5873929df638e5141',
 }
 
 /**
