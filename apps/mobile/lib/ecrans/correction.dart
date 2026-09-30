@@ -433,15 +433,19 @@ class _ResultatState extends ConsumerState<_Resultat> {
                       ],
                     ),
                   ],
+                  // Le titre entier au-dessus, le verbe dans le bouton :
+                  // « Réviser : Le contrôle de consti… » coupait le titre.
                   if (c.coursId != null)
-                    for (final (id, titre) in retour.chapitres)
+                    for (final (id, titre) in retour.chapitres) ...[
+                      Text(titre, style: Typo.labelLg),
                       Bouton(
-                        libelle: Fr.correction.reviserChapitre(titre),
+                        libelle: Fr.correction.reviserCeChapitre,
                         icone: Icons.bolt,
                         onTap: () => context.descendre(
                           Chemins.session(c.coursId!, chapitre: id),
                         ),
                       ),
+                    ],
                 ],
               ),
             ],

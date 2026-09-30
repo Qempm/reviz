@@ -1634,11 +1634,14 @@ void main() {
           correctionProvider('k1').overrideWith((_) async => _corrigee),
         ],
       );
-      final bouton = find.text(
-        'Réviser : Le contrôle de constitutionnalité des lois ordinaires',
-      );
+      final bouton = find.text('Réviser ce chapitre');
       await tester.scrollUntilVisible(bouton, 300);
       expect(bouton, findsOneWidget);
+      // Le titre entier, et non coupé dans le bouton.
+      expect(
+        find.text('Le contrôle de constitutionnalité des lois ordinaires'),
+        findsOneWidget,
+      );
       expect(find.text('Contrôle a priori'), findsOneWidget);
     });
 

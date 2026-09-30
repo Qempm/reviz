@@ -440,7 +440,7 @@ class _Correction {
   };
   final String noteSur = 'Noté sur';
   final String aRevoirCours = 'À revoir dans ton cours';
-  String reviserChapitre(String titre) => 'Réviser : $titre';
+  final String reviserCeChapitre = 'Réviser ce chapitre';
   final String notionsManquees = 'Notions à reprendre';
   final String conseilPhoto =
       'Une photo bien éclairée, à plat, sans ombre sur le texte.';
@@ -622,10 +622,11 @@ class _Aide {
     ),
     (
       'Ça marche sans réseau ?',
-      'Les QCM déjà chargés, oui : tu peux réviser dans un endroit sans 3G. '
-          'Il faut du réseau pour déposer un cours, faire corriger une copie '
-          'et enregistrer tes réponses — un bandeau te prévient quand la '
-          'connexion tombe.',
+      'Oui pour réviser : une série finie sans réseau est gardée sur ton '
+          'téléphone et part toute seule quand la connexion revient, avec tes '
+          'XP et ta série. Il faut du réseau pour déposer un cours ou faire '
+          'corriger une copie — un bandeau te prévient quand la connexion '
+          'tombe.',
     ),
     (
       'Mon cours reste « en préparation », c’est normal ?',
