@@ -709,6 +709,48 @@ Rien que du JSON, sans texte avant ni après.`
  */
 export const CHAPITRES_PAR_PASSAGE = 5
 
+/**
+ * « Ton cours est prêt », par WhatsApp.
+ *
+ * Un cours se prépare en une à deux minutes, et l'étudiant a souvent fermé
+ * l'application entre-temps : sans ce message, il ne revient pas. Seulement
+ * s'il a donné son numéro — il est facultatif —, et par n8n, comme toute
+ * notification (CLAUDE.md, Stack).
+ */
+async function prevenirCoursPret(
+  admin: ReturnType<typeof import('@/lib/supabase/admin').createAdminClient>,
+  c: { ownerId: string | null; titre: string | null; coursId: string; questions: number },
+): Promise<void> {
+  if (!c.ownerId) return
+  const { data: profil } = await admin
+    .from('profiles')
+    .select('phone, first_name')
+    .eq('id', c.ownerId)
+    .maybeSingle()
+  const phone = profil?.phone?.replace(/\s+/g, '')
+  if (!phone || !/^\+?[0-9]{8,15}$/.test(phone)) return
+
+  const maintenant = new Date().toISOString()
+  const { error } = await admin.from('jobs').insert({
+    type: 'notify',
+    payload: {
+      phone,
+      template: 'course_ready',
+      variables: {
+        prenom: profil?.first_name ?? '',
+        titre: c.titre ?? 'Ton cours',
+        questions: c.questions,
+        lien: `https://reviz-eight.vercel.app/app?cours=${c.coursId}`,
+      },
+    },
+    status: 'queued',
+    attempts: 0,
+    run_after: maintenant,
+    created_at: maintenant,
+  })
+  if (error) throw new Error(error.message)
+}
+
 type ChapitreAGenerer = { id: string; index: number; title: string; text: string }
 
 export const generateQuestionsHandler = async (
@@ -782,17 +824,36 @@ export const generateQuestionsHandler = async (
   const dejaGenerees = chapitres.reduce((t, c) => t + nbQuestions(c), 0)
   const restants = chapitres.filter((c) => nbQuestions(c) === 0)
 
-  const marquerPret = async () => {
-    const { error } = await admin
+  const marquerPret = async (questions: number) => {
+    // Conditionnel : seul le passage qui fait vraiment basculer le cours
+    // prévient l'étudiant. Deux invocations concurrentes ne lui enverront
+    // pas deux messages.
+    const { data: bascule, error } = await admin
       .from('courses')
       .update({ status: 'ready' })
       .eq('id', course_id)
+      .neq('status', 'ready')
+      .select('id')
     if (error) throw new Error(`Passage en « prêt » impossible : ${error.message}`)
+    if (bascule && bascule.length > 0) {
+      await prevenirCoursPret(admin, {
+        ownerId: cours.owner_id,
+        titre: cours.title,
+        coursId: course_id,
+        questions,
+      }).catch((e: unknown) =>
+        // Le message n'est pas le cours : un échec se journalise, le cours
+        // reste prêt.
+        ctx.log('message « cours prêt » non enfilé', {
+          erreur: e instanceof Error ? e.message : String(e),
+        }),
+      )
+    }
   }
 
   // Tous les chapitres ont leurs questions : le cours est prêt.
   if (restants.length === 0 || dejaGenerees >= PLAFOND_QUESTIONS) {
-    await marquerPret()
+    await marquerPret(dejaGenerees)
     ctx.log('cours prêt', {
       course_id,
       questions: dejaGenerees,
@@ -941,7 +1002,7 @@ export const generateQuestionsHandler = async (
 
   // Fini, ou plafond atteint : prêt tout de suite, sans un passage de plus.
   if (resteApres <= 0 || place <= 0) {
-    await marquerPret()
+    await marquerPret(dejaGenerees + inserees)
     ctx.log('cours prêt', { course_id, questions: dejaGenerees + inserees })
     return
   }

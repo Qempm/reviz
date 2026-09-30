@@ -31,8 +31,31 @@ abstract final class Fr {
   static const referentiel = _Referentiel();
   static const niveaux = _Niveaux();
   static const ligue = _Ligue();
+  static const rappels = _Rappels();
   static const depot = _Depot();
   static const erreurs = _Erreurs();
+}
+
+/// Les rappels du téléphone (`metier/rappels.dart`). Courts : une
+/// notification se lit en une seconde.
+class _Rappels {
+  const _Rappels();
+
+  String serieTitre(int serie) => serie <= 0
+      ? 'Dix questions, et ta série commence'
+      : 'Ta série de $serie ${serie == 1 ? 'jour' : 'jours'} t’attend';
+  final String serieTexte =
+      'Quelques minutes suffisent pour faire ta journée. Le panthéreau compte sur toi.';
+  String examenTitre(String titre, int jours) =>
+      jours <= 1 ? '$titre : c’est demain' : '$titre : dans $jours jours';
+  final String examenTexte =
+      'Revois tes chapitres à revoir : ce sont eux qui font la différence.';
+  final String packTitre = 'Ton pack se termine demain';
+  final String packTexte =
+      'Réactive-le pour garder tes corrections et tes cours sans interruption.';
+  final String canalNom = 'Rappels de révision';
+  final String canalDescription =
+      'Ta série, tes examens qui approchent, la fin de ton pack.';
 }
 
 /// Les ligues de la semaine (`metier/ligues.dart`).
@@ -1001,6 +1024,11 @@ class _Cours {
 
 class _Session {
   const _Session();
+
+  final String gardeeTitre = 'Série gardée sur ton téléphone';
+  final String gardeeDetail =
+      'Pas de réseau pour l’instant. Tes réponses partiront toutes seules '
+      'dès que la connexion revient, avec tes XP et ta série.';
 
   final String valider = 'Valider';
   final String suivante = 'Question suivante';

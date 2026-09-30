@@ -627,11 +627,13 @@ class DepotCours {
     required ApiReviz api,
     required String coursId,
     required List<({String questionId, String? choix})> reponses,
+    String? sessionId,
   }) {
     return api.poster<ResultatSession>(
       '/api/session/terminer',
       corps: {
         'courseId': coursId,
+        'sessionId': ?sessionId,
         'reponses': [
           for (final r in reponses)
             {'questionId': r.questionId, 'choix': r.choix},

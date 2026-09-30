@@ -33,6 +33,9 @@ class EcranAccueil extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Les rappels du téléphone suivent l'état du compte : ils se
+    // reprogramment d'eux-mêmes quand l'accueil se relit.
+    ref.watch(rappelsProvider);
     final accueil = ref.watch(accueilProvider);
 
     final serie = switch (accueil) {

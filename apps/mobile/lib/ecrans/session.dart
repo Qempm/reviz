@@ -13,10 +13,12 @@ import '../composants/progression.dart';
 import '../composants/puce.dart';
 import '../composants/niveau.dart';
 import '../donnees/api.dart';
+import '../donnees/file_hors_ligne.dart';
 import '../donnees/modeles.dart';
 import '../etat/fournisseurs.dart';
 import '../i18n/fr.dart';
 import '../metier/selection.dart';
+import '../metier/identifiant.dart';
 import '../metier/niveaux.dart';
 import '../routage.dart';
 import '../theme/jetons.dart';
@@ -136,6 +138,13 @@ class _SessionState extends ConsumerState<_Session> {
   int? _xpAvant;
   String? _erreurEnvoi;
 
+  /// Tiré au départ : si la série doit attendre le réseau, son renvoi sera
+  /// reconnu par le serveur et ne comptera pas deux fois.
+  final String _sessionId = identifiantAleatoire();
+
+  /// Série finie sans réseau, gardée dans la file (`FileHorsLigne`).
+  bool _gardee = false;
+
   QuestionQcm get _question => widget.questions[_index];
   bool get _derniere => _index == widget.questions.length - 1;
 
@@ -168,9 +177,32 @@ class _SessionState extends ConsumerState<_Session> {
           api: ref.read(apiProvider),
           coursId: widget.coursId,
           reponses: _reponses,
+          sessionId: _sessionId,
         );
 
     if (!mounted) return;
+
+    // Pas de réseau : la série n'est pas perdue, elle attend.
+    if (reponse case ReponseEchec(motif: 'reseau')) {
+      final gardee = await ref
+          .read(fileHorsLigneProvider)
+          .ajouter(
+            SessionEnAttente(
+              sessionId: _sessionId,
+              coursId: widget.coursId,
+              reponses: List.of(_reponses),
+              le: DateTime.now(),
+            ),
+          );
+      if (!mounted) return;
+      if (gardee) {
+        setState(() {
+          _gardee = true;
+          _enCours = false;
+        });
+        return;
+      }
+    }
 
     switch (reponse) {
       case ReponseSucces(:final data):
@@ -186,6 +218,8 @@ class _SessionState extends ConsumerState<_Session> {
         // Une couronne se gagne — ou se perd — ici.
         ref.invalidate(cheminProvider(widget.coursId));
         ref.invalidate(coursProvider);
+        // Le moment où un rappel a du sens : il vient de faire une série.
+        ref.read(serviceRappelsProvider).demanderPermissionUneFois();
         setState(() {
           _resultat = data;
           _enCours = false;
@@ -200,8 +234,9 @@ class _SessionState extends ConsumerState<_Session> {
 
   @override
   Widget build(BuildContext context) {
-    if (_resultat != null || _erreurEnvoi != null) {
+    if (_resultat != null || _erreurEnvoi != null || _gardee) {
       return _Resultat(
+        gardee: _gardee,
         coursId: widget.coursId,
         chapitreId: widget.chapitreId,
         resultat: _resultat,
@@ -363,7 +398,11 @@ class _Resultat extends StatefulWidget {
     required this.etats,
     required this.total,
     this.xpAvant,
+    this.gardee = false,
   });
+
+  /// Série finie hors ligne et gardée : elle partira au retour du réseau.
+  final bool gardee;
 
   final String coursId;
   final String? chapitreId;
@@ -542,6 +581,31 @@ class _ResultatState extends State<_Resultat> {
                         Text('+${g.montant}', style: Typo.labelSm),
                       ],
                     ),
+                ],
+              )
+            else if (widget.gardee)
+              Carte(
+                petite: true,
+                enfants: [
+                  Row(
+                    children: [
+                      const TeteMascotte(
+                        etat: EtatMascotte.horsLigne,
+                        taille: 44,
+                      ),
+                      const SizedBox(width: Espaces.x12),
+                      Expanded(
+                        child: Text(
+                          Fr.session.gardeeTitre,
+                          style: Typo.labelLg,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Text(
+                    Fr.session.gardeeDetail,
+                    style: Typo.labelSm.copyWith(color: Couleurs.attenue),
+                  ),
                 ],
               )
             else

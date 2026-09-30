@@ -6,8 +6,12 @@ import '../donnees/modeles.dart';
 import '../donnees/reseau.dart';
 import '../donnees/supabase.dart';
 import '../donnees/version.dart';
+import '../donnees/file_hors_ligne.dart';
+import '../donnees/rappels.dart';
 import '../metier/acces.dart';
 import '../metier/selection.dart';
+import '../i18n/fr.dart';
+import '../metier/rappels.dart';
 
 /// Fournisseurs Riverpod de l'application.
 ///
@@ -76,6 +80,57 @@ final cheminProvider = FutureProvider.family<List<ChapitreDuChemin>, String>((
   coursId,
 ) {
   return ref.read(depotCoursProvider).chemin(coursId);
+});
+
+/// Les séries finies hors ligne, en attente du réseau. Une seule instance :
+/// elle porte le verrou qui empêche deux renvois simultanés.
+final fileHorsLigneProvider = Provider((_) => FileHorsLigne());
+
+final serviceRappelsProvider = Provider((_) => ServiceRappels());
+
+/// Reprogramme les rappels du téléphone à partir de l'état du compte :
+/// série, examens à venir, fin du pack. Regardé par l'accueil, donc refait à
+/// chaque retour sur l'accueil et après chaque série (qui l'invalide).
+/// Une donnée qui manque retire un rappel, jamais l'écran.
+final rappelsProvider = FutureProvider<void>((ref) async {
+  try {
+    final accueil = await ref.watch(accueilProvider.future);
+    if (accueil == null) return;
+    final aujourdhui = accueil.semaine.where((j) => j.aujourdhui).firstOrNull;
+
+    final cours = await ref
+        .watch(coursProvider.future)
+        .catchError((_) => <ApercuCours>[]);
+    final examens = <ExamenAVenir>[
+      for (final c in cours)
+        if (DateTime.tryParse(c.dateExamen ?? '') case final jour?)
+          (titre: c.titre ?? 'Ton examen', jour: jour),
+    ];
+
+    DateTime? finPack;
+    try {
+      final acces = await ref.watch(accesCorrectionProvider.future);
+      if (acces is AccesActif) finPack = acces.fin;
+    } catch (_) {}
+
+    await ref
+        .read(serviceRappelsProvider)
+        .programmer(
+          planifierRappels(
+            maintenant: DateTime.now(),
+            serie: accueil.profil.serieCourante,
+            journeeFaite: aujourdhui?.valide ?? false,
+            examens: examens,
+            finPack: finPack,
+            titreSerie: Fr.rappels.serieTitre,
+            texteSerie: Fr.rappels.serieTexte,
+            titreExamen: Fr.rappels.examenTitre,
+            texteExamen: Fr.rappels.examenTexte,
+            titrePack: Fr.rappels.packTitre,
+            textePack: Fr.rappels.packTexte,
+          ),
+        );
+  } catch (_) {}
 });
 
 /// Ce qui définit une session : le cours, éventuellement un chapitre, et le

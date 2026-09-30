@@ -19,6 +19,13 @@ import { attribuerXp } from '@/lib/xp/attribuer'
 
 export const entreeSession = z.object({
   courseId: z.string().uuid(),
+  /**
+   * Identifiant tiré par le téléphone pour cette série. Une série finie hors
+   * ligne est renvoyée au retour du réseau, parfois deux fois si la première
+   * réponse s'est perdue : ce numéro rend le renvoi sans effet. Facultatif,
+   * pour les APK antérieurs.
+   */
+  sessionId: z.string().uuid().optional(),
   reponses: z
     .array(
       z.object({
@@ -52,7 +59,7 @@ export async function enregistrerSession(
 ): Promise<ResultatEnregistrement> {
   const parse = entreeSession.safeParse(brut)
   if (!parse.success) return { ok: false, error: 'Requête invalide.' }
-  const { courseId, reponses } = parse.data
+  const { courseId, reponses, sessionId } = parse.data
 
   // Les questions sont relues par le client de l'utilisateur : la RLS
   // garantit qu'elles appartiennent bien à un cours qu'il peut lire, donc
@@ -85,6 +92,33 @@ export async function enregistrerSession(
 
   const bonnes = corrigees.filter((c) => c.is_correct).length
   const total = corrigees.length
+
+  // Déjà enregistrée : un renvoi de la file hors ligne dont la première
+  // réponse s'était perdue. On rend le score sans rien réécrire.
+  if (sessionId) {
+    const { count } = await supabase
+      .from('xp_events')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('reason', 'quiz_completed')
+      .eq('reference_id', sessionId)
+    if ((count ?? 0) > 0) {
+      const { data: profil } = await supabase
+        .from('profiles')
+        .select('current_streak')
+        .eq('id', userId)
+        .maybeSingle()
+      return {
+        ok: true,
+        bonnes,
+        total,
+        gains: [],
+        xp: 0,
+        objectifAtteint: false,
+        serie: profil?.current_streak ?? 0,
+      }
+    }
+  }
 
   // Insertion sous l'identité de l'étudiant : la politique
   // « J'enregistre mes réponses » s'applique, et le trigger
@@ -136,7 +170,9 @@ export async function enregistrerSession(
   const xp = await attribuerXp({
     userId: userId,
     gains: aEcrire,
-    referenceId: courseId,
+    // Le numéro de série quand le téléphone en donne un : c'est lui que
+    // relit la vérification de renvoi ci-dessus.
+    referenceId: sessionId ?? courseId,
   })
 
   return {

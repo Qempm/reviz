@@ -80,6 +80,30 @@ class _Transversal extends ConsumerWidget {
 
     final horsLigne = ref.watch(reseauProvider).value == false;
 
+    // Le réseau revient (ou l'application s'ouvre connectée) : les séries
+    // finies hors ligne partent, et les compteurs se relisent.
+    ref.listen(reseauProvider, (_, suivant) async {
+      if (suivant.value != true) return;
+      final depot = ref.read(depotCoursProvider);
+      final api = ref.read(apiProvider);
+      final parties = await ref
+          .read(fileHorsLigneProvider)
+          .envoyer(
+            (s) => depot.terminerSession(
+              api: api,
+              coursId: s.coursId,
+              reponses: s.reponses,
+              sessionId: s.sessionId,
+            ),
+          );
+      if (parties > 0) {
+        ref.invalidate(accueilProvider);
+        ref.invalidate(profilProvider);
+        ref.invalidate(ligueProvider);
+        ref.invalidate(coursProvider);
+      }
+    });
+
     final conseillee = switch (miseAJour) {
       AsyncData(:final value) =>
         value.exigence == ExigenceVersion.conseillee ? value : null,
