@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 /// Configuration d'exécution, injectée au build.
 ///
 /// Rien n'est codé en dur ici, et surtout **aucune clé de service** : le
@@ -21,15 +23,27 @@ abstract final class Config {
   static const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
   static const supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
 
-  /// Racine des routes REST de Next.js.
-  static const apiBase = String.fromEnvironment(
+  static const _apiBaseCompilee = String.fromEnvironment(
     'API_BASE',
     defaultValue: 'https://reviz-eight.vercel.app',
   );
 
+  /// Racine des routes REST de Next.js.
+  ///
+  /// Dans le navigateur, quand la page est servie par Next.js sous `/web`,
+  /// c'est l'origine de la page elle-même : même domaine, donc pas de CORS,
+  /// et une prévisualisation Vercel parle à son propre serveur plutôt qu'à
+  /// la production. Partout ailleurs, la valeur compilée.
+  static String get apiBase {
+    if (kIsWeb && Uri.base.path.startsWith('/web')) return Uri.base.origin;
+    return _apiBaseCompilee;
+  }
+
   /// Client OAuth **Web** de Google, exigé par `signInWithIdToken` même sur
   /// Android : c'est l'audience du jeton d'identité que Supabase vérifie.
-  static const googleWebClientId = String.fromEnvironment('GOOGLE_WEB_CLIENT_ID');
+  static const googleWebClientId = String.fromEnvironment(
+    'GOOGLE_WEB_CLIENT_ID',
+  );
 
   /// Numéro WhatsApp du support, au format international sans `+` ni espace
   /// (ex. `22990000000`). Facultatif : sans lui, l'écran d'aide ne propose

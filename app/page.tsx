@@ -251,6 +251,11 @@ export default async function Accueil() {
                 Voir comment ça marche
               </a>
             </div>
+            {/* L'APK ne s'installe que sur Android : un ordinateur ou un
+                iPhone ouvre la même application dans le navigateur. */}
+            <a href="/web" className="text-[15px] font-extrabold text-papier-encre underline underline-offset-4">
+              Sur ordinateur ou iPhone ? Ouvre Reviz dans ton navigateur
+            </a>
             <ul className="flex flex-wrap gap-2.5">
               {['Gratuit pour commencer', 'Sans abonnement', 'Paiement Mobile Money'].map((t) => (
                 <li key={t} className={PUCE}>
@@ -501,6 +506,9 @@ export default async function Accueil() {
               <Link href="/app" className="text-sm font-bold text-papier-sable underline underline-offset-4">
                 Comment installer l’application
               </Link>
+              <a href="/web" className="text-sm font-bold text-papier-sable underline underline-offset-4">
+                Ou l’ouvrir dans le navigateur
+              </a>
             </div>
           </div>
         </section>

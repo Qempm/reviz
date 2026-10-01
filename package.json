@@ -12,6 +12,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "apk": "node scripts/apk.mjs",
+    "web": "node scripts/web.mjs",
     "db:link": "supabase link --project-ref",
     "db:push": "supabase db push",
     "db:push:dry": "supabase db push --dry-run",

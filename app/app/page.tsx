@@ -44,6 +44,25 @@ export default function Telechargement() {
         </p>
       </header>
 
+      {/* L'APK ne s'installe que sur Android. Avant d'expliquer comment
+          l'installer, on dit à qui n'en a pas où aller. */}
+      <section className="rounded-card bg-reviz-card p-space-16 shadow-card">
+        <h2 className="text-headline-md text-reviz-ink">
+          Sur ordinateur ou sur iPhone
+        </h2>
+        <p className="mt-space-8 text-body-md text-reviz-muted">
+          Pas besoin d’installer quoi que ce soit : Reviz s’ouvre dans ton
+          navigateur, avec le même compte. Sur iPhone, « Partager » puis « Sur
+          l’écran d’accueil » le garde à portée de main.
+        </p>
+        <a
+          href="/web"
+          className="mt-space-12 flex h-12 items-center justify-center rounded-xl border-2 border-reviz-ink bg-reviz-card text-label-lg text-reviz-ink"
+        >
+          Ouvrir Reviz dans le navigateur
+        </a>
+      </section>
+
       {/* Ce que l'étudiant obtient. Le dépôt de cours y est entré quand les
           traitements `ingest_course` et `generate_questions` ont existé : cette
           liste ne promet que ce qui marche. */}

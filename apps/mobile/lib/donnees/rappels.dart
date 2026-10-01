@@ -14,6 +14,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/timezone.dart' as tz;
 import '../i18n/fr.dart';
+import '../metier/plateforme.dart';
 import '../metier/rappels.dart';
 import '../theme/jetons.dart';
 
@@ -22,10 +23,13 @@ const String clePermissionRappelsDemandee = 'reviz.permission-rappels-demandee';
 class ServiceRappels {
   ServiceRappels();
 
-  final _greffon = FlutterLocalNotificationsPlugin();
+  // Paresseux : dans un navigateur, le greffon n'existe pas, et on ne le
+  // construit même pas (`rappelsDisponibles`).
+  late final _greffon = FlutterLocalNotificationsPlugin();
   Future<bool>? _initialisation;
 
   Future<bool> _pret() => _initialisation ??= () async {
+    if (!rappelsDisponibles) return false;
     try {
       final ok = await _greffon.initialize(
         settings: const InitializationSettings(
@@ -49,6 +53,7 @@ class ServiceRappels {
   /// première série réussie, quand le rappel a du sens pour l'étudiant, et
   /// non à l'ouverture de l'application.
   Future<void> demanderPermissionUneFois() async {
+    if (!rappelsDisponibles) return;
     try {
       final prefs = await SharedPreferences.getInstance();
       if (prefs.getBool(clePermissionRappelsDemandee) ?? false) return;

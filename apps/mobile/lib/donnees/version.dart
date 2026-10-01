@@ -7,6 +7,7 @@ library;
 
 import 'package:dio/dio.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import '../metier/plateforme.dart';
 import '../metier/version.dart';
 import 'config.dart';
 
@@ -60,8 +61,13 @@ class DepotVersion {
       return EtatMiseAJour(exigence: ExigenceVersion.aJour, locale: paquet);
     }
 
+    final exigence = etatVersion(locale: paquet, distante: distante);
     return EtatMiseAJour(
-      exigence: etatVersion(locale: paquet, distante: distante),
+      // Sur le web, rien à télécharger : la page est toujours la dernière
+      // version. Seul un entretien annoncé y vaut encore.
+      exigence: versionAInstaller || exigence == ExigenceVersion.maintenance
+          ? exigence
+          : ExigenceVersion.aJour,
       locale: paquet,
       distante: distante,
     );

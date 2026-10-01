@@ -303,6 +303,43 @@ if (existsSync(path.dirname(IOS))) {
   )
 }
 
+// --- Web (`npm run web`) -------------------------------------------------
+//
+// Quatre usages, quatre règles :
+//  - `Icon-192/512` (« any ») : affichées telles quelles par Chrome sur un
+//    bureau ou dans le lanceur d'apps — squircle complet, comme la boutique ;
+//  - `Icon-maskable-*` : Android les découpe en cercle ou en goutte. La zone
+//    sûre est un disque de 80 % : le dessin y entre par sa diagonale, d'où
+//    0,52 du côté ;
+//  - `apple-touch-icon` (180 px) : l'iPhone l'arrondit lui-même et noircit
+//    la transparence — plein cadre, sans alpha ;
+//  - `favicon.png` (32 px) : l'onglet, en squircle.
+const WEB = path.join(RACINE, 'apps', 'mobile', 'web')
+if (existsSync(WEB)) {
+  const icones = path.join(WEB, 'icons')
+  mkdirSync(icones, { recursive: true })
+  const squircle = async (c) =>
+    masquer(await poser(c, 0.62, JAUNE), await masque(c, arrondi(c)))
+  const ecrire = (chemin, octets, note) => {
+    writeFileSync(chemin, octets)
+    ecrits.push(`${path.relative(RACINE, chemin)} (${note})`)
+  }
+  for (const c of [192, 512]) {
+    ecrire(path.join(icones, `Icon-${c}.png`), await squircle(c), `${c}, squircle`)
+    ecrire(
+      path.join(icones, `Icon-maskable-${c}.png`),
+      await sharp(await poser(c, 0.52, JAUNE)).removeAlpha().png().toBuffer(),
+      `${c}, découpable`,
+    )
+  }
+  ecrire(
+    path.join(icones, 'apple-touch-icon.png'),
+    await sharp(await poser(180, 0.62, JAUNE)).removeAlpha().png().toBuffer(),
+    '180, plein cadre',
+  )
+  ecrire(path.join(WEB, 'favicon.png'), await squircle(32), '32, squircle')
+}
+
 // --- Aperçu de vérification, sur demande -----------------------------------
 //
 // `--apercu=chemin.png` écrit une planche de trois vignettes : ce que montre

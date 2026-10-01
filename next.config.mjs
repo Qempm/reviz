@@ -7,6 +7,16 @@ const nextConfig = {
     // déployé sur Vercel.
     '*': ['./apps/android/**', './apps/mobile/**'],
   },
+  // La version web de l'application (`npm run web`) vit dans public/web/.
+  // Next.js sert ses fichiers, mais pas l'index d'un dossier : sans ces
+  // réécritures, /web répondrait 404. Les écrans de l'application sont dans
+  // le fragment (#/accueil), donc rien d'autre à réécrire.
+  async rewrites() {
+    return [
+      { source: '/web', destination: '/web/index.html' },
+      { source: '/web/', destination: '/web/index.html' },
+    ]
+  },
 }
 
 export default nextConfig
