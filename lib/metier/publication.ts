@@ -13,7 +13,7 @@
  */
 
 /** La version publiée, telle que `pubspec.yaml` la déclare. */
-export const VERSION = '2.5.2'
+export const VERSION = '2.6.0'
 
 /**
  * En dessous, l'application refuse de servir.
@@ -74,9 +74,9 @@ export type Apk =
 
 export const APK: Apk = {
   publie: true,
-  url: 'https://github.com/Qempm/reviz/releases/download/v2.5.2/reviz-2.5.2.apk',
-  tailleOctets: 61_693_446,
-  sha256: 'f5eeb2754e968a38f769202b951827a7a3ffc5d526bb64fa5e897ec888d32d56',
+  url: 'https://github.com/Qempm/reviz/releases/download/v2.6.0/reviz-2.6.0.apk',
+  tailleOctets: 62_372_617,
+  sha256: '81bc3b38e0892e68fc29277488600726950e905609aaab75d63d4e2f01001501',
 }
 
 /**
