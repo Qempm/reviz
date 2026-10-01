@@ -361,7 +361,9 @@ class _Classement {
   final String sousTitre = 'Ta faculté, par expérience gagnée.';
   final String toi = 'Toi';
 
-  String monRang(int r) => 'Tu es $rᵉ de ta faculté';
+  // « 4e » et non « 4ᵉ » : Nunito Sans n'a pas le ᵉ en exposant, et le
+  // téléphone le prenait dans une autre police.
+  String monRang(int r) => 'Tu es ${r == 1 ? '1re' : '${r}e'} de ta faculté';
   final String premier = 'Tu es n° 1 de ta faculté. Personne ne fait mieux !';
   final String nonClasse = 'Réponds à une question pour entrer au classement';
   final String aucun = 'Personne n’est encore classé';

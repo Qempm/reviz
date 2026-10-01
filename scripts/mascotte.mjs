@@ -2,7 +2,10 @@
 /**
  * Produit les états du panthéreau pour l'application.
  *
- *   node scripts/mascotte.mjs [--apercu=chemin.png]
+ *   node scripts/mascotte.mjs [--apercu=chemin.png] [--png=dossier]
+ *
+ * `--png` écrit en plus chaque état en PNG transparent de 1024 px, même
+ * échelle et même pied : pour une vidéo ou un visuel, pas pour l'application.
  *
  * Entrée : `assets-source/mascotte/<etat>-source.jpg`, dessins générés dans
  * Flow sur fond magenta, **tous à partir du même dessin de référence** (l'état
@@ -65,6 +68,11 @@ const apercu = process.argv
   .find((a) => a.startsWith('--apercu='))
   ?.split('=')[1]
 
+const dossierPng = process.argv
+  .find((a) => a.startsWith('--png='))
+  ?.split('=')[1]
+if (dossierPng) mkdirSync(dossierPng, { recursive: true })
+
 const temporaire = mkdtempSync(path.join(os.tmpdir(), 'reviz-mascotte-'))
 mkdirSync(SORTIE, { recursive: true })
 
@@ -116,6 +124,13 @@ try {
       .resize(COTE, COTE)
       .webp({ quality: 88, alphaQuality: 100, effort: 6 })
       .toFile(fichier)
+
+    if (dossierPng) {
+      await sharp(pose)
+        .resize(1024, 1024)
+        .png({ compressionLevel: 9 })
+        .toFile(path.join(dossierPng, `${s.etat}.png`))
+    }
 
     const ko = (statSync(fichier).size / 1024).toFixed(0)
     console.log(`${s.etat.padEnd(10)} ${s.largeur}×${s.hauteur} → ${fichier} (${ko} ko)`)

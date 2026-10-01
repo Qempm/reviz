@@ -76,3 +76,7 @@ supabase/.branches/
 # Banc d aperçu Flutter : des photos à regarder, pas des références.
 # Le rendu des polices varie d une machine à l autre.
 apps/mobile/test_apercus/goldens/
+
+# Captures pour la vidéo (test_apercus/studio_test.dart), régénérables
+captures-video/
+apps/mobile/test_apercus/studio/

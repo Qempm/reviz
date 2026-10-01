@@ -1247,7 +1247,7 @@ void main() {
       // Sa propre ligne dit « Toi » et non son prénom.
       expect(find.text('Toi'), findsOneWidget);
       expect(find.text('Koffi'), findsNothing);
-      expect(find.text('Tu es 2ᵉ de ta faculté'), findsOneWidget);
+      expect(find.text('Tu es 2e de ta faculté'), findsOneWidget);
       // Le 4ᵉ est dans la liste, pas sur le podium.
       expect(find.text('Sènankpon'), findsOneWidget);
       expect(tester.takeException(), isNull);
