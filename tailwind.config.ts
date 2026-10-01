@@ -156,6 +156,33 @@ const config: Config = {
         'error-container': stitch.errorContainer,
         'on-error-container': stitch.onErrorContainer,
 
+        // --- Landing page (arbitrage du 1er octobre 2026) ----------------
+        // La page d'accueil publique a son propre habit, repris de la
+        // maquette « Page Tarifs » : papier crème, encre, bordures franches.
+        // Il ne sert qu'à `app/page.tsx` ; l'application garde ses neutres.
+        papier: {
+          creme: '#FFF6DE',
+          encre: '#1C1A14',
+          /** Texte secondaire sur le crème ou le blanc. */
+          sourdine: '#5C5442',
+          /** Texte tertiaire, légendes. */
+          pale: '#6B6250',
+          /** Texte secondaire sur le jaune. */
+          brun: '#3B3424',
+          /** Texte secondaire sur l'encre. */
+          sable: '#D8D0BC',
+          bord: '#E9DDBE',
+          'bord-doux': '#E2D5B2',
+          pointille: '#D9CA9F',
+          puce: '#FFF3D1',
+          'puce-bord': '#EADBAE',
+          /** Ombre portée sous les téléphones. */
+          ombre: '#E2D2A6',
+          jaune: '#FFC83D',
+          /** Ombre du bouton jaune posé sur l'encre. */
+          'jaune-ombre': '#8A6A00',
+        },
+
         // --- 2. Alias métier reviz.* (contrat CLAUDE.md) -----------------
         reviz: {
           /**

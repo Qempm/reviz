@@ -1,6 +1,17 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { dureeLisible, FAQ, PACK_CONSEILLE, PACKS_DE_REPLI, prixLisible } from './offre'
+import {
+  dureeLisible,
+  FAQ,
+  meilleurPrixParJour,
+  nombreLisible,
+  objectifDe,
+  PACK_CONSEILLE,
+  PACKS_DE_REPLI,
+  phraseConseil,
+  prixLisible,
+  prixParJour,
+} from './offre'
 
 describe('offre publique', () => {
   it('la grille de repli est celle de la graine SQL', () => {
@@ -31,5 +42,27 @@ describe('offre publique', () => {
   it('la FAQ parle d’argent en premier, et ne promet plus de WhatsApp', () => {
     expect(FAQ[0].question).toMatch(/prélevé/)
     for (const q of FAQ) expect(q.reponse).not.toMatch(/WhatsApp/)
+  })
+
+  it('le prix par jour ne ment pas sur l’arrondi', () => {
+    expect(prixParJour(1500, 30)).toBe('50 F par jour')
+    expect(prixParJour(500, 7)).toBe('≈ 71 F par jour')
+    expect(prixParJour(2000, 30)).toBe('≈ 67 F par jour')
+    expect(prixParJour(3500, 120)).toBe('≈ 29 F par jour')
+    expect(nombreLisible(3500)).toBe('3 500')
+  })
+
+  it('le meilleur prix par jour est le Semestre, et jamais le pack gratuit', () => {
+    expect(meilleurPrixParJour(PACKS_DE_REPLI)).toBe('semestre')
+    expect(meilleurPrixParJour(PACKS_DE_REPLI.filter((p) => p.prixFcfa === 0))).toBeNull()
+  })
+
+  it('chaque pack payant a son objectif et sa phrase de conseil', () => {
+    const partiel = PACKS_DE_REPLI.find((p) => p.code === 'partiel')!
+    expect(phraseConseil(partiel)).toBe(
+      'Pour tes partiels, prends le pack Partiel : 1 mois, 5 matières, 10 corrections.',
+    )
+    const inconnu = { ...partiel, code: 'vacances', label: 'Vacances' }
+    expect(objectifDe(inconnu).bouton).toBe('Vacances')
   })
 })

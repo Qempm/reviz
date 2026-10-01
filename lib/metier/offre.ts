@@ -118,6 +118,64 @@ export function dureeLisible(jours: number): string {
   return `${jours} jours`
 }
 
+/** « 1 500 », le nombre seul, pour les grands chiffres de la grille. */
+export function nombreLisible(n: number): string {
+  return n.toLocaleString('fr-FR').replace(/\s/g, ' ')
+}
+
+/**
+ * Ce que coûte un jour d'accès : « 50 F par jour », et « ≈ 71 F par jour »
+ * quand la division ne tombe pas juste — un prix exact qui serait faux
+ * ferait douter de tous les autres.
+ */
+export function prixParJour(fcfa: number, jours: number): string {
+  const exact = fcfa / jours
+  const approche = Number.isInteger(exact) ? '' : '≈ '
+  return `${approche}${nombreLisible(Math.round(exact))} F par jour`
+}
+
+/** Le pack payant le moins cher par jour, ou `null` s'il n'y en a pas. */
+export function meilleurPrixParJour(packs: PackPublic[]): string | null {
+  const payants = packs.filter((p) => p.prixFcfa > 0 && p.jours > 0)
+  if (payants.length === 0) return null
+  return payants.reduce((a, b) => (b.prixFcfa / b.jours < a.prixFcfa / a.jours ? b : a)).code
+}
+
+export function matieresLisibles(n: number | null): string {
+  if (n === null) return 'Toutes tes matières'
+  return n <= 1 ? `${n} matière` : `${n} matières`
+}
+
+export function correctionsLisibles(n: number): string {
+  return n <= 1 ? `${n} correction` : `${n} corrections`
+}
+
+/**
+ * Ce qu'un étudiant prépare, et le pack qui y répond : le sélecteur
+ * « Tu prépares quoi en ce moment ? » de la page d'accueil. Un pack que
+ * cette table ne connaît pas (ajouté en base plus tard) reste proposé, sous
+ * son propre nom.
+ */
+export const OBJECTIFS: Record<string, { bouton: string; phrase: string }> = {
+  controle: { bouton: 'Un contrôle continu', phrase: 'un contrôle continu' },
+  partiel: { bouton: 'Mes partiels', phrase: 'tes partiels' },
+  rattrapage: { bouton: 'Le rattrapage', phrase: 'le rattrapage' },
+  semestre: { bouton: 'Tout le semestre', phrase: 'tout le semestre' },
+}
+
+export function objectifDe(p: PackPublic): { bouton: string; phrase: string } {
+  return OBJECTIFS[p.code] ?? { bouton: p.label, phrase: p.label.toLowerCase() }
+}
+
+/** « Pour tes partiels, prends le pack Partiel : 1 mois, 5 matières, 10 corrections. » */
+export function phraseConseil(p: PackPublic): string {
+  return (
+    `Pour ${objectifDe(p).phrase}, prends le pack ${p.label} : ` +
+    `${dureeLisible(p.jours)}, ${matieresLisibles(p.matieres).toLowerCase()}, ` +
+    `${correctionsLisibles(p.corrections)}.`
+  )
+}
+
 /**
  * La FAQ, l'argent en premier — comme l'écran d'aide de l'application
  * (`apps/mobile/lib/i18n/fr.dart`, `_Aide`), à jour de la 2.5.
