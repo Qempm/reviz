@@ -159,6 +159,34 @@ class _SessionState extends ConsumerState<_Session> {
     });
   }
 
+  /// Quitter une série entamée la perd : on le dit avant, pas après.
+  Future<void> _quitter() async {
+    if (_reponses.isEmpty) {
+      context.remonter(Chemins.cours(widget.coursId));
+      return;
+    }
+    final quitter = await showDialog<bool>(
+      context: context,
+      builder: (contexte) => AlertDialog(
+        title: Text(Fr.session.quitterTitre),
+        content: Text(Fr.session.quitterDetail),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(contexte).pop(false),
+            child: Text(Fr.session.quitterNon),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(contexte).pop(true),
+            child: Text(Fr.session.quitterOui),
+          ),
+        ],
+      ),
+    );
+    if (quitter == true && mounted) {
+      context.remonter(Chemins.cours(widget.coursId));
+    }
+  }
+
   Future<void> _suivant() async {
     if (!_derniere) {
       setState(() {
@@ -271,7 +299,7 @@ class _SessionState extends ConsumerState<_Session> {
             ),
             const SizedBox(width: Espaces.x12),
             IconButton(
-              onPressed: () => context.remonter(Chemins.cours(widget.coursId)),
+              onPressed: _quitter,
               icon: const Icon(Icons.close),
               color: Couleurs.attenue,
               tooltip: Fr.session.retourCours,

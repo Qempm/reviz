@@ -669,6 +669,7 @@ Règles :
 - chaque question a 4 propositions, dont une seule est juste ;
 - la réponse juste doit figurer mot pour mot dans les propositions ;
 - tu ne poses de question que sur ce qui est écrit dans le chapitre — tu n'ajoutes rien ;
+- l'énoncé se suffit à lui-même, comme à l'examen : jamais « selon le chapitre », « d'après le texte » ni « dans ce cours » — pose la question directement ;
 - l'explication dit pourquoi la réponse est juste, en une ou deux phrases ;
 - \`probability\` dit la chance que la notion tombe à l'examen : "high" pour ce que le chapitre met en avant — une définition, un principe, une méthode, une formule, une date ou un auteur central, ce qu'un professeur interroge volontiers ; "medium" pour une notion utile mais secondaire ; "low" pour un détail ou un exemple ;
 - ajuste la difficulté au niveau de l'étudiant ;

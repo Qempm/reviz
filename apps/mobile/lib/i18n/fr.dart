@@ -90,13 +90,14 @@ class _Ligue {
       'Gagne tes premiers XP de la semaine pour entrer dans un groupe de 30 '
       'étudiants.';
   final String commencer = 'Réviser maintenant';
-  String rang(int r) => r == 1 ? '1er' : '${r}e';
-  String position(int r, int xp) => 'Tu es ${rang(r)} · $xp XP cette semaine';
+  String rang(int r) => r == 1 ? '1re place' : '${r}e place';
+  String position(int r, int xp) =>
+      'Tu es à la ${rang(r)} · $xp XP cette semaine';
   final String entrer = 'Gagne des XP pour entrer dans ta ligue';
   String monte(int d) => 'Tu montes en ${nom(d)} !';
   String descend(int d) => 'Tu redescends en ${nom(d)}.';
   String reste(int d) => 'Tu restes en ${nom(d)}.';
-  String bilan(int r) => 'La semaine dernière, tu as fini ${rang(r)}.';
+  String bilan(int r) => 'La semaine dernière, tu as fini à la ${rang(r)}.';
   final String classementFaculte = 'Classement de ma faculté';
 }
 
@@ -285,7 +286,8 @@ class _Gains {
   final String solde = 'Solde disponible';
   final String retraitPossible = 'Tu peux demander un retrait.';
 
-  String resteAvantRetrait(int n) => 'Encore $n F avant de pouvoir retirer.';
+  String resteAvantRetrait(int n) =>
+      'Encore ${milliers(n)} F avant de pouvoir retirer.';
 
   final String tonCode = 'Ton code parrain';
   final String aideCode =
@@ -1044,6 +1046,12 @@ class _Session {
       'Pas de réseau pour l’instant. Tes réponses partiront toutes seules '
       'dès que la connexion revient, avec tes XP et ta série.';
 
+  final String quitterTitre = 'Quitter la série ?';
+  final String quitterDetail =
+      'Les réponses de cette série ne seront pas comptées.';
+  final String quitterOui = 'Quitter';
+  final String quitterNon = 'Continuer la série';
+
   final String valider = 'Valider';
   final String suivante = 'Question suivante';
   final String voirResultat = 'Voir mon résultat';
@@ -1112,4 +1120,16 @@ class _Erreurs {
   String configurationManquante(List<String> variables) =>
       'Configuration incomplète : ${variables.join(', ')}. '
       'Voir apps/mobile/lib/donnees/config.dart.';
+}
+
+/// « 3 000 » : les milliers séparés par une espace fine insécable, comme on
+/// écrit les montants en français.
+String milliers(int n) {
+  final signe = n < 0 ? '-' : '';
+  final chiffres = n.abs().toString();
+  final groupes = <String>[];
+  for (var i = chiffres.length; i > 0; i -= 3) {
+    groupes.insert(0, chiffres.substring(i - 3 < 0 ? 0 : i - 3, i));
+  }
+  return signe + groupes.join('\u202f');
 }

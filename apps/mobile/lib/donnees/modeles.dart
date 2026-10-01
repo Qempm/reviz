@@ -798,7 +798,8 @@ class DocumentChoisi {
         .replaceAll(RegExp(r'[_\-]+'), ' ')
         .replaceAll(RegExp(r'\s+'), ' ')
         .trim();
-    return propre.isEmpty ? nom : propre;
+    if (propre.isEmpty) return nom;
+    return propre[0].toUpperCase() + propre.substring(1);
   }
 }
 

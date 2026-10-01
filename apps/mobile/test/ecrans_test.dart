@@ -1136,7 +1136,7 @@ void main() {
 
       expect(find.text('1800 F'), findsOneWidget);
       expect(
-        find.text('Encore 1200 F avant de pouvoir retirer.'),
+        find.text('Encore 1 200 F avant de pouvoir retirer.'),
         findsOneWidget,
       );
 
@@ -2179,7 +2179,7 @@ void main() {
         octets: [],
         typeMime: 'application/pdf',
       );
-      expect(doc.titreSuggere, 'cours droit const L1');
+      expect(doc.titreSuggere, 'Cours droit const L1');
     });
 
     test('retire l’extension, pas le reste du nom', () {
@@ -2197,7 +2197,7 @@ void main() {
         octets: [],
         typeMime: 'application/pdf',
       );
-      expect(doc.titreSuggere, 'polycopié');
+      expect(doc.titreSuggere, 'Polycopié');
     });
 
     test('ne rend jamais une chaîne vide', () {
