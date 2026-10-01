@@ -83,6 +83,38 @@ export type Database = {
           },
         ]
       }
+      appareils: {
+        Row: {
+          created_at: string
+          plateforme: string
+          token: string
+          user_id: string
+          vu_le: string
+        }
+        Insert: {
+          created_at?: string
+          plateforme: string
+          token: string
+          user_id: string
+          vu_le?: string
+        }
+        Update: {
+          created_at?: string
+          plateforme?: string
+          token?: string
+          user_id?: string
+          vu_le?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appareils_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       attempts: {
         Row: {
           answered_at: string
@@ -547,6 +579,47 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          created_at: string
+          data: Json
+          id: string
+          kind: string
+          push_sent_at: string | null
+          read_at: string | null
+          reference_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          data?: Json
+          id?: string
+          kind: string
+          push_sent_at?: string | null
+          read_at?: string | null
+          reference_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json
+          id?: string
+          kind?: string
+          push_sent_at?: string | null
+          read_at?: string | null
+          reference_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       packs: {
         Row: {
           active_from: string
@@ -654,6 +727,7 @@ export type Database = {
           is_ambassador: boolean
           last_validated_on: string | null
           longest_streak: number
+          notifications: Json
           phone: string | null
           referral_code: string
           referred_by: string | null
@@ -674,6 +748,7 @@ export type Database = {
           is_ambassador?: boolean
           last_validated_on?: string | null
           longest_streak?: number
+          notifications?: Json
           phone?: string | null
           referral_code?: string
           referred_by?: string | null
@@ -694,6 +769,7 @@ export type Database = {
           is_ambassador?: boolean
           last_validated_on?: string | null
           longest_streak?: number
+          notifications?: Json
           phone?: string | null
           referral_code?: string
           referred_by?: string | null
@@ -1320,9 +1396,38 @@ export type Database = {
           }
       ligue_lundi: { Args: { t: string }; Returns: string }
       ma_ligue: { Args: never; Returns: Json }
+      marquer_notifications_lues: { Args: { ids?: string[] }; Returns: number }
       mon_rang_faculte: { Args: never; Returns: number }
+      notifier: {
+        Args: {
+          p_data?: Json
+          p_kind: string
+          p_reference: string
+          p_user: string
+        }
+        Returns: undefined
+      }
       recompute_xp_total: { Args: { target: string }; Returns: number }
       refresh_streak: { Args: { target: string }; Returns: undefined }
+      reserver_notifications_a_pousser: {
+        Args: { p_limite?: number; p_user?: string }
+        Returns: {
+          created_at: string
+          data: Json
+          id: string
+          kind: string
+          push_sent_at: string | null
+          read_at: string | null
+          reference_id: string | null
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "notifications"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       streak_week: {
         Args: { anchor?: string }
         Returns: {

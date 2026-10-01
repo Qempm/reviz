@@ -42,6 +42,8 @@ import 'package:reviz/ecrans/gains.dart';
 import 'package:reviz/ecrans/inscription.dart';
 import 'package:reviz/ecrans/ligue.dart';
 import 'package:reviz/ecrans/mise_a_jour.dart';
+import 'package:reviz/ecrans/notifications.dart';
+import 'package:reviz/ecrans/notifications_reglages.dart';
 import 'package:reviz/ecrans/paiement.dart';
 import 'package:reviz/ecrans/payer.dart';
 import 'package:reviz/ecrans/profil.dart';
@@ -50,6 +52,7 @@ import 'package:reviz/ecrans/session.dart';
 import 'package:reviz/etat/fournisseurs.dart';
 import 'package:reviz/metier/acces.dart';
 import 'package:reviz/metier/maitrise.dart';
+import 'package:reviz/metier/notifications.dart';
 import 'package:reviz/metier/rappels.dart';
 import 'package:reviz/metier/selection.dart';
 import 'package:reviz/metier/version.dart';
@@ -642,6 +645,51 @@ final _correctionEnCours = Correction(
   motifIllisible: null,
 );
 
+// ---------------------------------------------------------- Notifications
+
+final _ilYa = DateTime.now();
+
+NotificationReviz _notif(
+  String id,
+  String kind,
+  Map<String, dynamic> data, {
+  bool lue = false,
+  Duration il = const Duration(minutes: 3),
+}) => NotificationReviz(
+  id: id,
+  kind: kind,
+  referenceId: 'r$id',
+  data: data,
+  lue: lue,
+  creeLe: _ilYa.subtract(il),
+);
+
+final _notifications = [
+  _notif('1', 'cours_pret', {'titre': 'Droit des obligations'}),
+  _notif('2', 'correction_prete', {
+    'note': 27.5,
+    'bareme': 40,
+  }, il: const Duration(minutes: 42)),
+  _notif('3', 'commission_recue', {
+    'montant': 375,
+  }, il: const Duration(hours: 2)),
+  _notif(
+    '4',
+    'ligue_cloturee',
+    {'issue': 'monte', 'rang': 2, 'division': 3},
+    lue: true,
+    il: const Duration(days: 1, hours: 2),
+  ),
+  _notif(
+    '5',
+    'paiement_reussi',
+    {'montant': 1500, 'pack': 'partiel'},
+    lue: true,
+    il: const Duration(days: 9),
+  ),
+  _notif('6', 'carte_verifiee', {}, lue: true, il: const Duration(days: 12)),
+];
+
 // -------------------------------------------------------- Dépôts factices
 
 class _DepotCoursFactice extends DepotCours {
@@ -699,6 +747,9 @@ List<Override> get _socle => [
   accesCorrectionProvider.overrideWith((_) async => _acces),
   serviceRappelsProvider.overrideWithValue(_RappelsFactices()),
   depotCoursProvider.overrideWithValue(const _DepotCoursFactice()),
+  notificationsProvider.overrideWith((_) async => _notifications),
+  pushDisponibleProvider.overrideWith((_) async => true),
+  prefsPushProvider.overrideWith((_) async => const PrefsPush(ligue: false)),
 ];
 
 // ---------------------------------------------------------------- Habillage
@@ -1371,6 +1422,20 @@ void main() {
           ),
         ),
       ),
+    ),
+  );
+
+  testWidgets(
+    '30-notifications',
+    (t) => _cliche(t, '30-notifications', const EcranNotifications()),
+  );
+
+  testWidgets(
+    '31-reglages-notifications',
+    (t) => _cliche(
+      t,
+      '31-reglages-notifications',
+      const EcranReglagesNotifications(),
     ),
   );
 }

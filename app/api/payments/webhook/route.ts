@@ -33,12 +33,13 @@
  * règle est dans `lib/metier/paiement.ts`, testée sans base.
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import { after, NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { validateWebhookSignature } from '@/lib/payments/provider'
 import { traiterTransaction } from '@/lib/payments/traiter'
 import { statutDepuisFedaPay } from '@/lib/metier/paiement'
+import { pousserNotifications } from '@/lib/notifications/envoyer'
 
 /**
  * Un événement FedaPay : `name` (`transaction.approved`…) et `entity`, l'objet
@@ -113,6 +114,10 @@ export async function POST(request: NextRequest) {
       statut: statutDepuisFedaPay(evenement.entity.status),
       brut: evenement,
     })
+
+    // Le paiement et la commission du parrain ont laissé leurs
+    // notifications : elles partent après l'accusé de réception.
+    if (issue.ok) after(() => pousserNotifications())
 
     // Une erreur de base mérite un nouvel essai de FedaPay : un 500 le
     // déclenche. Tout le reste est accusé.

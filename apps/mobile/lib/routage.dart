@@ -25,6 +25,8 @@ import 'ecrans/corriger.dart';
 import 'ecrans/cours.dart';
 import 'ecrans/fiches.dart';
 import 'ecrans/ligue.dart';
+import 'ecrans/notifications.dart';
+import 'ecrans/notifications_reglages.dart';
 import 'ecrans/gains.dart';
 import 'ecrans/galerie.dart';
 import 'ecrans/inscription.dart';
@@ -54,6 +56,8 @@ abstract final class Chemins {
   static const gains = '/gains';
   static const classement = '/classement';
   static const ligue = '/ligue';
+  static const notifications = '/notifications';
+  static const reglagesNotifications = '/profil/notifications';
   static const profil = '/profil';
   static const suppression = '/profil/supprimer-compte';
   static const avatar = '/profil/avatar';
@@ -202,6 +206,10 @@ GoRouter creerRouteur(Ref ref) {
                 path: Chemins.ligue,
                 builder: (_, _) => const EcranLigue(),
               ),
+              GoRoute(
+                path: Chemins.notifications,
+                builder: (_, _) => const EcranNotifications(),
+              ),
             ],
           ),
           StatefulShellBranch(
@@ -281,6 +289,10 @@ GoRouter creerRouteur(Ref ref) {
                 builder: (_, _) => const EcranProfil(),
                 routes: [
                   GoRoute(path: 'aide', builder: (_, _) => const EcranAide()),
+                  GoRoute(
+                    path: 'notifications',
+                    builder: (_, _) => const EcranReglagesNotifications(),
+                  ),
                   GoRoute(
                     path: 'avatar',
                     builder: (_, _) => const EcranAvatar(),

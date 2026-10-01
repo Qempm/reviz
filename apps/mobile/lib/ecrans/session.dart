@@ -247,7 +247,7 @@ class _SessionState extends ConsumerState<_Session> {
         ref.invalidate(cheminProvider(widget.coursId));
         ref.invalidate(coursProvider);
         // Le moment où un rappel a du sens : il vient de faire une série.
-        ref.read(serviceRappelsProvider).demanderPermissionUneFois();
+        ref.read(servicePushProvider).demanderPermissionUneFois();
         setState(() {
           _resultat = data;
           _enCours = false;

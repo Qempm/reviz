@@ -32,7 +32,16 @@ const args = [
   '--base-href',
   '/web/',
   ...defines({
-    sauf: ['GOOGLE_WEB_CLIENT_ID'],
+    // Ni Google ni push dans le navigateur (lib/metier/plateforme.dart).
+    sauf: [
+      'GOOGLE_WEB_CLIENT_ID',
+      'FIREBASE_PROJECT_ID',
+      'FIREBASE_SENDER_ID',
+      'FIREBASE_ANDROID_API_KEY',
+      'FIREBASE_ANDROID_APP_ID',
+      'FIREBASE_IOS_API_KEY',
+      'FIREBASE_IOS_APP_ID',
+    ],
     pourquoi: 'Sans elles, la page s’ouvrirait sur un bandeau « configuration absente ».',
   }),
   ...process.argv.slice(2),

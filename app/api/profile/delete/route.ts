@@ -116,6 +116,19 @@ export async function POST(request: Request) {
 
   const issue = (resultat as { resultat?: string } | null)?.resultat
 
+  // Les notifications et les téléphones enregistrés partent aussi : un
+  // compte supprimé ne reçoit plus rien. Hors de la transaction — une ligne
+  // restée là ne sert plus à personne, et ne bloque pas la suppression.
+  if (issue !== 'inconnu') {
+    const [notifs, appareils] = await Promise.all([
+      admin.from('notifications').delete().eq('user_id', userId),
+      admin.from('appareils').delete().eq('user_id', userId),
+    ])
+    if (notifs.error || appareils.error) {
+      console.error('[compte] notifications restantes', notifs.error?.message, appareils.error?.message)
+    }
+  }
+
   if (issue === 'inconnu') {
     return Response.json(
       {

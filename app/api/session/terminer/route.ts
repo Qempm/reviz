@@ -1,5 +1,7 @@
+import { after } from 'next/server'
 import { authentifier, refusSession } from '@/lib/supabase/jeton'
 import { enregistrerSession } from '@/lib/metier/session'
+import { pousserNotifications } from '@/lib/notifications/envoyer'
 
 /**
  * POST /api/session/terminer
@@ -29,5 +31,10 @@ export async function POST(request: Request) {
   }
 
   const { ok: _ignore, ...donnees } = resultat
+  // La première XP d'une semaine clôt les ligues de la précédente
+  // (`ligue_suivre_xp`) : leurs notifications partent après la réponse. Le
+  // plus souvent, il n'y a rien à pousser, et la requête est indexée.
+  after(() => pousserNotifications())
+
   return Response.json({ ok: true, data: donnees })
 }

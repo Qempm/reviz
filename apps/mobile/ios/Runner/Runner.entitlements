@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyLists-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Notifications push (Firebase → APNs). Exige la capacité « Push
+	     Notifications » sur l'identifiant com.reviz.app côté Apple, sans quoi
+	     la signature échoue (docs/GUIDE-NOTIFICATIONS.md). -->
+	<key>aps-environment</key>
+	<string>production</string>
+</dict>
+</plist>

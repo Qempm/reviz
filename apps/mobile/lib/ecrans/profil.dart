@@ -122,6 +122,13 @@ class _Contenu extends ConsumerWidget {
     // déconnexion ne doit jamais échouer à cause de Google.
     await const ConnexionGoogle().oublier();
 
+    // Ce téléphone ne reçoit plus rien pour ce compte : le jeton de push est
+    // oublié côté serveur (tant que la session existe encore), et les
+    // rappels programmés sont annulés — ceux d'un compte n'ont pas à sonner
+    // pour le suivant.
+    await ref.read(servicePushProvider).desactiver();
+    await ref.read(serviceRappelsProvider).toutAnnuler();
+
     // Le routeur écoute `onAuthStateChange` : la redirection vers l'écran de
     // connexion se fait d'elle-même, aucun `go` n'est nécessaire ici.
     await supabase.auth.signOut();
@@ -316,6 +323,14 @@ class _Contenu extends ConsumerWidget {
           icone: Icons.shopping_bag_outlined,
           variante: VarianteBouton.secondaire,
           onTap: () => context.descendre(Chemins.boutique),
+        ),
+        const SizedBox(height: Espaces.x16),
+
+        Bouton(
+          libelle: Fr.notifications.reglagesEntree,
+          icone: Icons.notifications_outlined,
+          variante: VarianteBouton.secondaire,
+          onTap: () => context.descendre(Chemins.reglagesNotifications),
         ),
         const SizedBox(height: Espaces.x16),
 

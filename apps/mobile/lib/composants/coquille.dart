@@ -8,6 +8,7 @@ import '../routage.dart';
 import '../theme/jetons.dart';
 import '../theme/typographie.dart';
 import 'chiffre_anime.dart';
+import 'cloche.dart';
 import 'niveau.dart';
 
 /// Page d'un onglet : l'en-tête de l'onglet, puis son contenu.
@@ -69,47 +70,78 @@ class _EnTete extends StatelessWidget {
       height: Mesures.hauteurEnTete,
       padding: const EdgeInsets.symmetric(horizontal: Espaces.ecran),
       color: Couleurs.fond,
-      child: Row(
-        children: [
-          // Le logo à côté du nom : la marque vit dans l'application, pas
-          // seulement sur l'écran d'accueil du téléphone.
-          const LogoReviz(taille: 30),
-          const SizedBox(width: Espaces.x8),
-          // `Expanded` et non `Text` + `Spacer` : à 320 px, les deux badges
-          // et le titre ne tiennent pas côte à côte, et c'est le titre qui
-          // doit céder — les compteurs sont l'information.
-          Expanded(
-            child: Text(
-              'Reviz',
-              style: Typo.headlineXl.copyWith(fontSize: 26),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          const SizedBox(width: Espaces.x8),
-          _Badge(
-            icone: Icons.local_fire_department_rounded,
-            valeur: serie?.jours ?? 0,
-            suffixe: 'j',
-            fond: Couleurs.carte,
-            teinteIcone: eteinte ? Couleurs.attenue : Couleurs.orange,
-            teinteTexte: Couleurs.encre,
-            ombre: Ombres.cartePetite,
-          ),
-          const SizedBox(width: Espaces.x8),
-          // Le niveau dans son anneau, puis l'XP : on voit d'un coup d'œil
-          // où l'on en est, et combien il reste jusqu'au prochain.
-          _Badge(
-            icone: Icons.bolt_rounded,
-            devant: AnneauNiveau(xp: xpTotal ?? 0, taille: 20),
-            valeur: xpTotal ?? 0,
-            suffixe: 'XP',
-            fond: Couleurs.jaune,
-            teinteIcone: Couleurs.surJaune,
-            teinteTexte: Couleurs.surJaune,
-            ombre: Ombres.lueurJauneEnfoncee,
-          ),
-        ],
+      // La cloche, les deux compteurs : un groupe qui garde sa taille tant
+      // qu'il tient, et **rétrécit** plutôt que de déborder (une XP à cinq
+      // chiffres sur un écran de 320 px). Le titre prend le reste, au moins
+      // de quoi lire « Rev… ».
+      child: LayoutBuilder(
+        builder: (context, contraintes) {
+          final etroit = contraintes.maxWidth < 330;
+          return Row(
+            children: [
+              // Le logo à côté du nom : la marque vit dans l'application, pas
+              // seulement sur l'écran d'accueil du téléphone. Sur un écran
+              // étroit, il cède sa place : les compteurs et la cloche sont
+              // l'information, le nom suffit à la marque.
+              if (!etroit) ...[
+                const LogoReviz(taille: 30),
+                const SizedBox(width: Espaces.x8),
+              ],
+              Expanded(
+                child: Text(
+                  'Reviz',
+                  style: Typo.headlineXl.copyWith(fontSize: 26),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: Espaces.x8),
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: (contraintes.maxWidth - 64).clamp(
+                    0,
+                    double.infinity,
+                  ),
+                ),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerRight,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _Badge(
+                        icone: Icons.local_fire_department_rounded,
+                        valeur: serie?.jours ?? 0,
+                        suffixe: 'j',
+                        fond: Couleurs.carte,
+                        teinteIcone: eteinte
+                            ? Couleurs.attenue
+                            : Couleurs.orange,
+                        teinteTexte: Couleurs.encre,
+                        ombre: Ombres.cartePetite,
+                      ),
+                      const SizedBox(width: Espaces.x8),
+                      // Le niveau dans son anneau, puis l'XP : on voit d'un
+                      // coup d'œil où l'on en est, et combien il reste.
+                      _Badge(
+                        icone: Icons.bolt_rounded,
+                        devant: AnneauNiveau(xp: xpTotal ?? 0, taille: 20),
+                        valeur: xpTotal ?? 0,
+                        suffixe: 'XP',
+                        fond: Couleurs.jaune,
+                        teinteIcone: Couleurs.surJaune,
+                        teinteTexte: Couleurs.surJaune,
+                        ombre: Ombres.lueurJauneEnfoncee,
+                      ),
+                      const SizedBox(width: Espaces.x4),
+                      const Cloche(),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

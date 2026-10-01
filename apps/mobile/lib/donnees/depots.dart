@@ -11,6 +11,7 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart' show compute;
 import '../metier/acces.dart';
 import '../metier/maitrise.dart';
+import '../metier/notifications.dart';
 import '../metier/selection.dart';
 import 'api.dart';
 import 'modeles.dart';
@@ -1040,3 +1041,68 @@ class DepotCorrections {
 /// Hors de toute classe : `compute` n'accepte qu'une fonction de premier
 /// niveau (ou statique), qu'il puisse envoyer à un autre isolat.
 String _empreinteSha256(List<int> octets) => sha256.convert(octets).toString();
+
+// --------------------------------------------------------- Notifications
+
+/// Le centre de notifications : lu en direct (RLS, ses propres lignes), marqué
+/// comme lu par une fonction qui ne touche que `read_at`. Les préférences de
+/// push passent par une route (schéma validé côté serveur).
+class DepotNotifications {
+  const DepotNotifications();
+
+  Future<List<NotificationReviz>> liste() async {
+    final lignes = await supabase
+        .from('notifications')
+        .select('id, kind, reference_id, data, read_at, created_at')
+        .order('created_at', ascending: false)
+        .limit(50);
+    return _garder(lignes, NotificationReviz.depuis);
+  }
+
+  /// Marque comme lues ces notifications, ou toutes si `ids` est nul.
+  Future<void> marquerLues([List<String>? ids]) async {
+    await supabase.rpc(
+      'marquer_notifications_lues',
+      params: ids == null ? {} : {'ids': ids},
+    );
+  }
+
+  Future<PrefsPush> prefs() async {
+    final id = supabase.auth.currentUser?.id;
+    if (id == null) return const PrefsPush();
+    final ligne = await supabase
+        .from('profiles')
+        .select('notifications')
+        .eq('id', id)
+        .maybeSingle();
+    return PrefsPush.depuis(ligne?['notifications']);
+  }
+
+  Future<Reponse<PrefsPush>> changerPrefs(ApiReviz api, PrefsPush prefs) {
+    return api.mettreAJour<PrefsPush>(
+      '/api/profile/notifications',
+      corps: prefs.versJson(),
+      depuis: PrefsPush.depuis,
+    );
+  }
+
+  Future<Reponse<bool>> enregistrerAppareil(
+    ApiReviz api, {
+    required String token,
+    required String plateforme,
+  }) {
+    return api.poster<bool>(
+      '/api/notifications/appareil',
+      corps: {'token': token, 'plateforme': plateforme},
+      depuis: (_) => true,
+    );
+  }
+
+  Future<Reponse<bool>> oublierAppareil(ApiReviz api, String token) {
+    return api.supprimer<bool>(
+      '/api/notifications/appareil',
+      corps: {'token': token},
+      depuis: (_) => true,
+    );
+  }
+}

@@ -50,6 +50,30 @@ abstract final class Config {
   /// pas de contact plutôt que d'ouvrir un numéro qui ne répond pas.
   static const contactWhatsapp = String.fromEnvironment('CONTACT_WHATSAPP');
 
+  /// Le projet Firebase, pour le push. Facultatif : sans ces valeurs, le
+  /// push est simplement absent (`donnees/push.dart`), le reste marche.
+  ///
+  /// Passées au build plutôt que par `google-services.json` /
+  /// `GoogleService-Info.plist` : un fichier de configuration iOS doit être
+  /// inscrit dans le projet Xcode, ce qui ne se fait pas sans Mac. Rien de
+  /// secret ici — ce sont les identifiants publics du projet, embarqués
+  /// dans toute application Firebase. La clé qui **envoie** les push reste
+  /// sur le serveur (`FIREBASE_SERVICE_ACCOUNT`).
+  static const firebaseProjectId = String.fromEnvironment(
+    'FIREBASE_PROJECT_ID',
+  );
+  static const firebaseSenderId = String.fromEnvironment('FIREBASE_SENDER_ID');
+  static const firebaseAndroidApiKey = String.fromEnvironment(
+    'FIREBASE_ANDROID_API_KEY',
+  );
+  static const firebaseAndroidAppId = String.fromEnvironment(
+    'FIREBASE_ANDROID_APP_ID',
+  );
+  static const firebaseIosApiKey = String.fromEnvironment(
+    'FIREBASE_IOS_API_KEY',
+  );
+  static const firebaseIosAppId = String.fromEnvironment('FIREBASE_IOS_APP_ID');
+
   static bool get estConfiguree =>
       supabaseUrl.isNotEmpty && supabaseAnonKey.isNotEmpty;
 

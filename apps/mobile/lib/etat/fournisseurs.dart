@@ -7,8 +7,12 @@ import '../donnees/reseau.dart';
 import '../donnees/supabase.dart';
 import '../donnees/version.dart';
 import '../donnees/file_hors_ligne.dart';
+import '../donnees/push.dart';
 import '../donnees/rappels.dart';
+import '../donnees/reglages.dart';
 import '../metier/acces.dart';
+import '../metier/notifications.dart';
+import '../metier/plateforme.dart';
 import '../metier/selection.dart';
 import '../i18n/fr.dart';
 import '../metier/rappels.dart';
@@ -93,6 +97,8 @@ final serviceRappelsProvider = Provider((_) => ServiceRappels());
 /// chaque retour sur l'accueil et après chaque série (qui l'invalide).
 /// Une donnée qui manque retire un rappel, jamais l'écran.
 final rappelsProvider = FutureProvider<void>((ref) async {
+  // Avant tout `await` : un changement de réglage reprogramme le téléphone.
+  final options = ref.watch(reglagesRappelsProvider);
   try {
     final accueil = await ref.watch(accueilProvider.future);
     if (accueil == null) return;
@@ -104,7 +110,7 @@ final rappelsProvider = FutureProvider<void>((ref) async {
     final examens = <ExamenAVenir>[
       for (final c in cours)
         if (DateTime.tryParse(c.dateExamen ?? '') case final jour?)
-          (titre: c.titre ?? 'Ton examen', jour: jour),
+          (coursId: c.id, titre: c.titre ?? 'Ton examen', jour: jour),
     ];
 
     DateTime? finPack;
@@ -127,7 +133,11 @@ final rappelsProvider = FutureProvider<void>((ref) async {
             titreExamen: Fr.rappels.examenTitre,
             texteExamen: Fr.rappels.examenTexte,
             titrePack: Fr.rappels.packTitre,
-            textePack: Fr.rappels.packTexte,
+            // Sur l'application iPhone, rien ne pousse à racheter.
+            textePack: achatsDansLApplication
+                ? Fr.rappels.packTexte
+                : Fr.rappels.packTexteSansAchat,
+            options: options,
           ),
         );
   } catch (_) {}
@@ -243,3 +253,43 @@ final facultesProvider = FutureProvider.family<List<Faculte>, String>((
 ) {
   return ref.read(depotProfilProvider).facultes(universiteId);
 });
+
+// --------------------------------------------------------- Notifications
+
+final depotNotificationsProvider = Provider((_) => const DepotNotifications());
+
+/// Les 50 dernières notifications. Relues au retour au premier plan, à la
+/// réception d'un push, et en tirant la liste vers le bas.
+final notificationsProvider = FutureProvider<List<NotificationReviz>>((
+  ref,
+) async {
+  ref.watch(authProvider);
+  if (supabase.auth.currentUser == null) return const [];
+  return ref.read(depotNotificationsProvider).liste();
+});
+
+/// Le nombre de non lues, pour la pastille de la cloche. Zéro tant que la
+/// liste n'est pas lue : une pastille ne doit jamais mentir vers le haut.
+final nonLuesProvider = Provider<int>((ref) {
+  final liste = ref.watch(notificationsProvider).value ?? const [];
+  return liste.where((n) => !n.lue).length;
+});
+
+final prefsPushProvider = FutureProvider<PrefsPush>((ref) async {
+  ref.watch(authProvider);
+  return ref.read(depotNotificationsProvider).prefs();
+});
+
+final servicePushProvider = Provider(
+  (ref) => ServicePush(
+    depot: ref.read(depotNotificationsProvider),
+    api: ref.read(apiProvider),
+    rappels: ref.read(serviceRappelsProvider),
+  ),
+);
+
+/// Le push est-il possible ici (Firebase configuré, pas le web) ? Les
+/// réglages n'affichent ses catégories que si oui.
+final pushDisponibleProvider = FutureProvider<bool>(
+  (ref) => ref.read(servicePushProvider).disponible(),
+);

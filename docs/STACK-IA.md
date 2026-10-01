@@ -361,8 +361,10 @@ return items.map(item => {
 ```
 
 Sur la sortie d'erreur du HTTP Request, un Set node fait `tentative + 1` et
-reboucle sur ce Code node. Après 3 tentatives, alerte WhatsApp et l'étudiant
-reçoit « traitement en cours, tu seras notifié ».
+reboucle sur ce Code node. Après 3 tentatives, le traitement échoue en base,
+et l'étudiant en est prévenu par le centre de notifications et le push
+(`docs/GUIDE-NOTIFICATIONS.md`) — plus par WhatsApp, abandonné le 30
+septembre 2026.
 
 ### 4.4 Code node « normalisation du payload »
 

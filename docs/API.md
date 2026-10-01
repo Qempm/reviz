@@ -399,6 +399,32 @@ l'ancien écran web construisait `/avatars/${avatar_key}.png` et récoltait des
 clés sont stables — le jour où les images arrivent, `ton-03` désigne un fichier
 au lieu d'une couleur, sans migration.
 
+### Notifications
+
+Les lignes de `notifications` naissent dans des déclencheurs SQL
+(`20261001120000_notifications.sql`) ; l'application les lit en direct
+(RLS : les siennes) et les marque lues par la RPC
+`marquer_notifications_lues(ids?)`. Le push part après la réponse des routes
+qui produisent des événements (`pousserNotifications()`), et au cron du soir
+en rattrapage. Guide : `docs/GUIDE-NOTIFICATIONS.md`.
+
+#### `POST /api/notifications/appareil`
+
+Enregistre le jeton de push du téléphone : `{ token, plateforme: 'android' |
+'ios' }`. Le jeton est la clé : un téléphone reconnecté sous un autre compte
+change de titulaire. Rend `{ ok: true, data: { enregistre: true } }`.
+
+#### `DELETE /api/notifications/appareil`
+
+`{ token }` — à la déconnexion, avant de fermer la session. Rend
+`{ ok: true, data: { oublie: true } }`.
+
+#### `PUT /api/profile/notifications`
+
+`{ cours, argent, compte, ligue }`, quatre booléens, tous exigés (schéma
+strict) : les catégories de push voulues. Le centre de notifications montre
+tout, quelles que soient ces préférences.
+
 ### Les routes antérieures
 
 `/api/payments/init` et `/api/payments/status` sont converties au lot D :
@@ -453,9 +479,10 @@ n'a aucune raison d'accepter un jeton d'étudiant.
   chose.~~ La Server Action est partie avec les écrans web.
 - Le cron de `/api/jobs/run` est planifié **une fois par jour** dans
   `vercel.json` (limite de l'offre Hobby), alors que le code annonce « toutes
-  les minutes » : avec `BATCH_SIZE = 5`, cinq jobs par jour au plus. C'est la
-  raison pour laquelle le webhook notifie n8n directement au lieu d'enfiler un
-  job `notify`.
+  les minutes » : avec `BATCH_SIZE = 5`, cinq jobs par jour au plus. Plus
+  rien n'enfile de job `notify` (WhatsApp abandonné le 30 septembre 2026) :
+  l'étudiant est prévenu par le centre de notifications et le push, qui
+  partent après la réponse des routes, sans passer par la file.
 
   Les traitements que l'étudiant attend ne dépendent plus de ce cron :
   `correct_copy`, `verify_card` et `ingest_course` partent depuis l'invocation

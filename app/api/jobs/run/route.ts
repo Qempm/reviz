@@ -3,6 +3,7 @@ import { after, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createSupabaseJobStore, handlers, runJobs } from '@/lib/jobs'
 import { lancerJobMaintenant, prochainJobDuCours } from '@/lib/jobs/immediat'
+import { pousserNotifications } from '@/lib/notifications/envoyer'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 /**
@@ -98,6 +99,18 @@ export async function GET(request: Request) {
       deadline,
       signal: request.signal,
       log: (message, extra) => console.log('[jobs]', message, extra ?? {}),
+    })
+
+    // Le passage du soir est aussi le rattrapage du push : ce qu'aucune route
+    // n'a poussé (une ligue close, un retrait passé à la main en base) part
+    // ici. Et le centre de notifications ne garde que trois mois.
+    after(async () => {
+      await pousserNotifications()
+      const { error } = await createAdminClient()
+        .from('notifications')
+        .delete()
+        .lt('created_at', new Date(Date.now() - 90 * 86_400_000).toISOString())
+      if (error) console.error('[notifications] purge', error.message)
     })
 
     return NextResponse.json({ ok: true, data })

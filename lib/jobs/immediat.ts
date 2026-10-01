@@ -2,6 +2,7 @@ import 'server-only'
 import { createSupabaseJobStore } from './store'
 import { handlers } from './handlers'
 import { runJobs } from './runner'
+import { pousserNotifications } from '@/lib/notifications/envoyer'
 
 /**
  * Temps qu'il faut encore avoir pour démarrer un job de plus dans la même
@@ -101,6 +102,11 @@ export async function lancerJobMaintenant(
     // Le job garde son état en base ; le cron reprendra. On journalise sans
     // relancer : personne n'attend cette promesse.
     console.error('[jobs:immediat] passage en échec', { jobId: courant, erreur })
+  } finally {
+    // Un job qui finit écrit souvent un statut (cours prêt, copie corrigée,
+    // carte vérifiée) : son déclencheur a créé une notification, qu'on
+    // pousse tout de suite plutôt qu'au cron du soir.
+    await pousserNotifications()
   }
 }
 

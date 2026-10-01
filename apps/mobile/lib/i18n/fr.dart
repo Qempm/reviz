@@ -32,8 +32,129 @@ abstract final class Fr {
   static const niveaux = _Niveaux();
   static const ligue = _Ligue();
   static const rappels = _Rappels();
+  static const notifications = _Notifications();
   static const depot = _Depot();
   static const erreurs = _Erreurs();
+}
+
+/// Les notifications : le centre, les réglages, et le texte de chaque
+/// événement (`metier/notifications.dart`).
+///
+/// Le texte des événements est **le même** que celui du push, rendu côté
+/// serveur par `lib/metier/notifications.ts` : les deux sont vérifiés contre
+/// `lib/metier/notifications.cas.json`. Changer une phrase ici, c'est la
+/// changer là-bas aussi.
+class _Notifications {
+  const _Notifications();
+
+  // --- Centre
+  final String titre = 'Notifications';
+  final String toutLu = 'Tout marquer comme lu';
+  final String videTitre = 'Rien de neuf pour l’instant';
+  final String videDetail =
+      'Ton cours prêt, ta copie corrigée, tes gains : tout arrive ici.';
+  String nonLues(int n) =>
+      n <= 1 ? '$n notification non lue' : '$n notifications non lues';
+  final String ouvrirCentre = 'Ouvrir les notifications';
+  String ilYa(Duration d) {
+    if (d.inMinutes < 1) return 'À l’instant';
+    if (d.inMinutes < 60) return 'Il y a ${d.inMinutes} min';
+    if (d.inHours < 24) return 'Il y a ${d.inHours} h';
+    if (d.inDays == 1) return 'Hier';
+    return 'Il y a ${d.inDays} jours';
+  }
+
+  // --- Réglages
+  final String reglagesTitre = 'Notifications';
+  final String reglagesEntree = 'Notifications et rappels';
+  final String rappelsTitre = 'Rappels';
+  final String rappelsDetail =
+      'Programmés sur ce téléphone, ils arrivent même sans réseau.';
+  final String rappelSerie = 'Ma série';
+  final String rappelSerieAide =
+      'Un rappel le soir si ta journée n’est pas faite.';
+  final String heureSerie = 'Heure du rappel';
+  String heure(int h) => '$h h';
+  final String rappelExamens = 'Mes examens';
+  final String rappelExamensAide = 'Trois jours avant, puis la veille.';
+  final String rappelFinPack = 'La fin de mon pack';
+  final String rappelFinPackAide = 'La veille, le matin.';
+  final String pushTitre = 'Ce qui m’arrive';
+  final String pushDetail =
+      'Reviz te prévient même application fermée. Tout reste aussi dans tes '
+      'notifications.';
+  final String categorieCours = 'Cours et copies';
+  final String categorieCoursAide =
+      'Ton cours est prêt, ta copie est corrigée.';
+  final String categorieArgent = 'Paiements et gains';
+  final String categorieArgentAide =
+      'Paiement confirmé, commission reçue, retrait envoyé.';
+  final String categorieCompte = 'Carte étudiante';
+  final String categorieCompteAide = 'Ta carte est validée ou à reprendre.';
+  final String categorieLigue = 'Ligue de la semaine';
+  final String categorieLigueAide = 'Le dimanche soir : montée ou maintien.';
+  final String bloquees = 'Les notifications sont coupées sur ce téléphone.';
+  final String bloqueesDetail =
+      'Autorise-les pour recevoir tes rappels et ce qui t’arrive.';
+  final String autoriser = 'Autoriser les notifications';
+  final String enregistrementImpossible =
+      'Ton choix n’a pas pu être enregistré. Réessaie.';
+  final String canalNom = 'Ce qui t’arrive';
+  final String canalDescription =
+      'Ton cours prêt, ta copie corrigée, tes paiements et tes gains.';
+
+  // --- Les événements (mêmes phrases que le push)
+  final String coursPretTitre = 'Ton cours est prêt';
+  String coursPretCorps(String? titre) => titre == null
+      ? 'Tes QCM et tes fiches t’attendent.'
+      : '« $titre » : tes QCM et tes fiches t’attendent.';
+  final String coursEchoueTitre = 'Ton cours n’a pas pu être préparé';
+  String coursEchoueCorps(String? titre) => titre == null
+      ? 'Dépose-le à nouveau, de préférence en PDF.'
+      : '« $titre » : dépose-le à nouveau, de préférence en PDF.';
+  final String correctionPreteTitre = 'Ta copie est corrigée';
+  String correctionPreteCorps(String? note, String? bareme) =>
+      note == null || bareme == null
+      ? 'Ta note et le détail du barème t’attendent.'
+      : 'Ta note : $note / $bareme. Le détail t’attend.';
+  final String correctionIllisibleTitre = 'Ta copie est illisible';
+  final String correctionIllisibleCorps =
+      'Reprends la photo à plat, bien éclairée. Cette correction ne t’a rien coûté.';
+  final String correctionEchoueeTitre = 'La correction n’a pas abouti';
+  final String correctionEchoueeCorps =
+      'Un souci de notre côté. Réessaie dans un moment.';
+  final String paiementReussiTitre = 'Paiement confirmé';
+  String paiementReussiCorps(String? pack) => pack == null
+      ? 'Ton pack est actif. Bonne révision !'
+      : 'Ton pack $pack est actif. Bonne révision !';
+  final String paiementEchoueTitre = 'Le paiement n’est pas passé';
+  final String paiementEchoueCorps =
+      'Aucun montant n’a été prélevé. Tu peux réessayer quand tu veux.';
+  String commissionTitre(String? montant) =>
+      montant == null ? 'Nouvelle commission' : '+$montant F de commission';
+  final String commissionCorps =
+      'Un camarade que tu as invité vient de payer son pack.';
+  final String retraitPayeTitre = 'Ton retrait est parti';
+  String retraitPayeCorps(String? montant) => montant == null
+      ? 'L’argent est envoyé sur ton Mobile Money.'
+      : '$montant F envoyés sur ton Mobile Money.';
+  final String retraitRefuseTitre = 'Ton retrait n’a pas abouti';
+  String retraitRefuseCorps(String? motif) => motif == null
+      ? 'Écris-nous depuis l’aide, on regarde avec toi.'
+      : '$motif Écris-nous depuis l’aide.';
+  final String carteVerifieeTitre = 'Ta carte étudiante est validée';
+  final String carteVerifieeCorps =
+      'Ton compte est vérifié : le parrainage est ouvert.';
+  final String carteRefuseeTitre = 'Ta carte n’a pas pu être validée';
+  final String carteRefuseeCorps = 'Reprends la photo, à plat et bien lisible.';
+  String ligueMonteTitre(String nom) => 'Tu montes en $nom !';
+  String ligueMonteCorps(int? rang) => rang == null
+      ? 'Belle semaine. Bravo.'
+      : '${rang == 1 ? '1re' : '${rang}e'} de ton groupe cette semaine. Bravo.';
+  String ligueDescendTitre(String nom) => 'Tu redescends en $nom';
+  final String ligueDescendCorps = 'Une bonne semaine suffit pour remonter.';
+  String ligueResteTitre(String nom) => 'Tu restes en $nom';
+  final String ligueResteCorps = 'Nouvelle semaine, nouveau classement.';
 }
 
 /// Les rappels du téléphone (`metier/rappels.dart`). Courts : une
@@ -53,6 +174,10 @@ class _Rappels {
   final String packTitre = 'Ton pack se termine demain';
   final String packTexte =
       'Réactive-le pour garder tes corrections et tes cours sans interruption.';
+  // Sur l'application iPhone, rien ne renvoie vers un achat
+  // (`metier/plateforme.dart`).
+  final String packTexteSansAchat =
+      'Tes cours et ton historique restent consultables ensuite.';
   final String canalNom = 'Rappels de révision';
   final String canalDescription =
       'Ta série, tes examens qui approchent, la fin de ton pack.';
@@ -1010,6 +1135,9 @@ class _Cours {
   final String traitementAstuce =
       'Reste sur cet écran : la préparation avance pendant que tu attends. Si '
       'tu fermes, elle reprendra plus tard dans la nuit.';
+  final String traitementAstucePush =
+      'Reste sur cet écran pour que ça aille plus vite. Si tu fermes, on te '
+      'prévient dès qu’il est prêt.';
 
   String traitementAvance(int chapitres, int questions) => chapitres == 0
       ? 'Lecture du document…'

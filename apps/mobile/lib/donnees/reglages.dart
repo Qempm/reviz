@@ -10,6 +10,7 @@ library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../metier/rappels.dart';
 
 /// Clé du réglage « réduire les animations ».
 ///
@@ -68,5 +69,60 @@ class AnimationsReduites extends Notifier<bool> {
   }
 }
 
-final animationsReduitesProvider =
-    NotifierProvider<AnimationsReduites, bool>(AnimationsReduites.new);
+final animationsReduitesProvider = NotifierProvider<AnimationsReduites, bool>(
+  AnimationsReduites.new,
+);
+
+/// Clés des réglages de rappels. Sur l'appareil, comme les rappels eux-mêmes :
+/// ils sont programmés par ce téléphone, pour ce téléphone.
+const String cleRappelSerie = 'reviz.rappel-serie';
+const String cleRappelHeure = 'reviz.rappel-serie-heure';
+const String cleRappelExamens = 'reviz.rappel-examens';
+const String cleRappelFinPack = 'reviz.rappel-fin-pack';
+
+/// Les rappels que l'étudiant veut, et l'heure du rappel du soir.
+///
+/// Même motif que [AnimationsReduites] : valeurs par défaut tout de suite,
+/// réglage lu ensuite, écrit à chaque changement. `rappelsProvider` le
+/// regarde et reprogramme le téléphone dès qu'il change.
+class ReglagesRappels extends Notifier<OptionsRappels> {
+  @override
+  OptionsRappels build() {
+    _relire();
+    return const OptionsRappels();
+  }
+
+  Future<void> _relire() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final lu = OptionsRappels(
+        serie: prefs.getBool(cleRappelSerie) ?? true,
+        heureSerie: (prefs.getInt(cleRappelHeure) ?? heureSerieParDefaut).clamp(
+          heureSerieMin,
+          heureSerieMax,
+        ),
+        examens: prefs.getBool(cleRappelExamens) ?? true,
+        finPack: prefs.getBool(cleRappelFinPack) ?? true,
+      );
+      if (lu != state) state = lu;
+    } catch (_) {
+      // Pas de greffon (test), ou fournisseur jeté pendant la lecture.
+    }
+  }
+
+  Future<void> changer(OptionsRappels nouvelles) async {
+    state = nouvelles;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(cleRappelSerie, nouvelles.serie);
+      await prefs.setInt(cleRappelHeure, nouvelles.heureSerie);
+      await prefs.setBool(cleRappelExamens, nouvelles.examens);
+      await prefs.setBool(cleRappelFinPack, nouvelles.finPack);
+    } catch (_) {
+      // Le choix tient pour la session.
+    }
+  }
+}
+
+final reglagesRappelsProvider =
+    NotifierProvider<ReglagesRappels, OptionsRappels>(ReglagesRappels.new);

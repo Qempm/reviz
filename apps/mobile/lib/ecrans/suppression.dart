@@ -69,6 +69,12 @@ class _EcranSuppressionState extends ConsumerState<EcranSuppression> {
 
     switch (reponse) {
       case ReponseSucces():
+        // Plus de rappels ni de push pour un compte qui n'existe plus. Le
+        // serveur a déjà effacé les jetons ; on oublie aussi celui de
+        // Firebase sur ce téléphone.
+        await ref.read(serviceRappelsProvider).toutAnnuler();
+        await ref.read(servicePushProvider).desactiver();
+        if (!mounted) return;
         // Les sessions ont été révoquées côté serveur ; on ferme la nôtre
         // pour que le routeur ramène à l'écran de connexion.
         await supabase.auth.signOut();

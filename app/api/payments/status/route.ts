@@ -1,9 +1,11 @@
+import { after } from 'next/server'
 import { z } from 'zod'
 import { authentifier, refusSession } from '@/lib/supabase/jeton'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createPaymentProvider } from '@/lib/payments/provider'
 import { traiterTransaction } from '@/lib/payments/traiter'
 import { statutDepuisFedaPay } from '@/lib/metier/paiement'
+import { pousserNotifications } from '@/lib/notifications/envoyer'
 
 /**
  * GET /api/payments/status[?id=<paiement>]
@@ -104,6 +106,9 @@ export async function GET(request: Request) {
           statut: statut!,
           brut: { source: 'suivi', transaction },
         })
+        // Paiement et commission du parrain : leurs notifications partent
+        // après la réponse.
+        after(() => pousserNotifications())
         paiement = (await lire()).data
       }
     } catch (e) {

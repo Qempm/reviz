@@ -36,3 +36,7 @@ bool get rappelsDisponibles => !kIsWeb;
 /// Une mise à jour à télécharger n'existe que pour une application
 /// installée : le web est toujours à la dernière version.
 bool get versionAInstaller => !kIsWeb;
+
+/// Le push (Firebase) : Android et l'application iPhone. Pas le web dans
+/// cette version — le centre de notifications y suffit.
+bool get pushDisponible => !kIsWeb;

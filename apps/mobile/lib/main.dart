@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'composants/bandeau.dart';
+import 'composants/ecoute_notifications.dart';
 import 'composants/mouvement_reduit.dart';
 import 'donnees/config.dart';
 import 'donnees/supabase.dart';
@@ -52,8 +53,9 @@ class AppReviz extends ConsumerWidget {
       // plutôt qu'écran par écran : c'est le seul endroit qui les voit tous.
       // Côté web, les quatre composants prévus pour ce rôle existaient et
       // n'étaient montés nulle part.
-      builder: (context, enfant) =>
-          MouvementReduit(child: _Transversal(enfant: enfant!)),
+      builder: (context, enfant) => MouvementReduit(
+        child: EcouteNotifications(child: _Transversal(enfant: enfant!)),
+      ),
     );
   }
 }

@@ -83,6 +83,15 @@ class ApiReviz {
     return _appeler(() => _dio.put<dynamic>(chemin, data: corps), depuis);
   }
 
+  /// Supprime une ressource (`DELETE`, avec un corps). Même enveloppe.
+  Future<Reponse<T>> supprimer<T>(
+    String chemin, {
+    Object? corps,
+    T Function(Map<String, dynamic>)? depuis,
+  }) {
+    return _appeler(() => _dio.delete<dynamic>(chemin, data: corps), depuis);
+  }
+
   /// Envoie un fichier vers une URL signée, par un `PUT` direct.
   ///
   /// Ni enveloppe ni jeton : c'est le stockage Supabase qui répond, et l'URL

@@ -35,6 +35,15 @@ export const DEFINES = [
   // Facultatif aussi : sans lui, l'écran d'aide ne propose pas de contact
   // plutôt que d'ouvrir un numéro qui ne répond pas.
   { define: 'CONTACT_WHATSAPP', env: 'CONTACT_WHATSAPP', requis: false },
+  // Le projet Firebase, pour le push (docs/GUIDE-NOTIFICATIONS.md).
+  // Facultatifs : sans eux, l'application marche, sans push. Identifiants
+  // publics — la clé qui envoie, FIREBASE_SERVICE_ACCOUNT, ne passe jamais.
+  { define: 'FIREBASE_PROJECT_ID', env: 'FIREBASE_PROJECT_ID', requis: false },
+  { define: 'FIREBASE_SENDER_ID', env: 'FIREBASE_SENDER_ID', requis: false },
+  { define: 'FIREBASE_ANDROID_API_KEY', env: 'FIREBASE_ANDROID_API_KEY', requis: false },
+  { define: 'FIREBASE_ANDROID_APP_ID', env: 'FIREBASE_ANDROID_APP_ID', requis: false },
+  { define: 'FIREBASE_IOS_API_KEY', env: 'FIREBASE_IOS_API_KEY', requis: false },
+  { define: 'FIREBASE_IOS_APP_ID', env: 'FIREBASE_IOS_APP_ID', requis: false },
 ]
 
 /** Lecture minimale d'un `.env` : `CLE=valeur`, guillemets optionnels. */
@@ -106,7 +115,11 @@ export function defines({ sauf = [], pourquoi = '' } = {}) {
 
   // La clé de service ne doit jamais descendre dans un client. Ce contrôle
   // est là pour qu'un ajout distrait à DEFINES se voie tout de suite.
-  if (args.some((a) => /SERVICE_ROLE|DEEPSEEK|FEDAPAY|DASHSCOPE|ZAI_|CRON/i.test(a))) {
+  if (
+    args.some((a) =>
+      /SERVICE_ROLE|SERVICE_ACCOUNT|PRIVATE_KEY|DEEPSEEK|FEDAPAY|DASHSCOPE|ZAI_|CRON/i.test(a),
+    )
+  ) {
     echouer(
       'Un secret serveur figure parmi les --dart-define. Une application se ' +
         'décompile : tout ce qu’elle embarque est public. Compilation refusée.',

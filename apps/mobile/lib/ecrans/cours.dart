@@ -431,9 +431,15 @@ class _EnTraitement extends StatelessWidget {
           Carte(
             petite: true,
             enfants: [
-              Text(
-                Fr.cours.traitementAstuce,
-                style: Typo.labelSm.copyWith(color: Couleurs.attenue),
+              // Avec le push, fermer n'est plus perdre la nouvelle : on la
+              // reçoit quand le cours est prêt.
+              Consumer(
+                builder: (context, ref, _) => Text(
+                  ref.watch(pushDisponibleProvider).value ?? false
+                      ? Fr.cours.traitementAstucePush
+                      : Fr.cours.traitementAstuce,
+                  style: Typo.labelSm.copyWith(color: Couleurs.attenue),
+                ),
               ),
             ],
           ),

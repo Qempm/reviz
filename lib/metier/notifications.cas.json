@@ -1,0 +1,19 @@
+[
+  { "kind": "cours_pret", "reference": "c1", "data": { "titre": "Droit constitutionnel" }, "titre": "Ton cours est prêt", "corps": "« Droit constitutionnel » : tes QCM et tes fiches t’attendent.", "lien": "/cours/c1" },
+  { "kind": "cours_pret", "reference": "c1", "data": {}, "titre": "Ton cours est prêt", "corps": "Tes QCM et tes fiches t’attendent.", "lien": "/cours/c1" },
+  { "kind": "cours_echoue", "reference": "c1", "data": { "titre": "Économie" }, "titre": "Ton cours n’a pas pu être préparé", "corps": "« Économie » : dépose-le à nouveau, de préférence en PDF.", "lien": "/reviser" },
+  { "kind": "correction_prete", "reference": "k1", "data": { "note": 27.5, "bareme": 40 }, "titre": "Ta copie est corrigée", "corps": "Ta note : 27,5 / 40. Le détail t’attend.", "lien": "/corrections/k1" },
+  { "kind": "correction_prete", "reference": "k1", "data": {}, "titre": "Ta copie est corrigée", "corps": "Ta note et le détail du barème t’attendent.", "lien": "/corrections/k1" },
+  { "kind": "correction_illisible", "reference": "k1", "data": {}, "titre": "Ta copie est illisible", "corps": "Reprends la photo à plat, bien éclairée. Cette correction ne t’a rien coûté.", "lien": "/corrections/k1" },
+  { "kind": "correction_echouee", "reference": "k1", "data": {}, "titre": "La correction n’a pas abouti", "corps": "Un souci de notre côté. Réessaie dans un moment.", "lien": "/corrections/k1" },
+  { "kind": "paiement_reussi", "reference": "p1", "data": { "montant": 1500, "pack": "partiel" }, "titre": "Paiement confirmé", "corps": "Ton pack Partiel est actif. Bonne révision !", "lien": "/" },
+  { "kind": "paiement_echoue", "reference": "p1", "data": { "montant": 1500, "pack": "partiel" }, "titre": "Le paiement n’est pas passé", "corps": "Aucun montant n’a été prélevé. Tu peux réessayer quand tu veux.", "lien": "/boutique" },
+  { "kind": "commission_recue", "reference": "l1", "data": { "montant": 375 }, "titre": "+375 F de commission", "corps": "Un camarade que tu as invité vient de payer son pack.", "lien": "/gains" },
+  { "kind": "retrait_paye", "reference": "w1", "data": { "montant": 4250 }, "titre": "Ton retrait est parti", "corps": "4 250 F envoyés sur ton Mobile Money.", "lien": "/gains" },
+  { "kind": "retrait_refuse", "reference": "w1", "data": { "montant": 4250 }, "titre": "Ton retrait n’a pas abouti", "corps": "Écris-nous depuis l’aide, on regarde avec toi.", "lien": "/gains" },
+  { "kind": "carte_verifiee", "reference": null, "data": {}, "titre": "Ta carte étudiante est validée", "corps": "Ton compte est vérifié : le parrainage est ouvert.", "lien": "/profil/carte-etudiante" },
+  { "kind": "carte_refusee", "reference": null, "data": {}, "titre": "Ta carte n’a pas pu être validée", "corps": "Reprends la photo, à plat et bien lisible.", "lien": "/profil/carte-etudiante" },
+  { "kind": "ligue_cloturee", "reference": "g1", "data": { "issue": "monte", "rang": 1, "division": 3 }, "titre": "Tu montes en Ligue Or !", "corps": "1re de ton groupe cette semaine. Bravo.", "lien": "/ligue" },
+  { "kind": "ligue_cloturee", "reference": "g1", "data": { "issue": "reste", "rang": 12, "division": 2 }, "titre": "Tu restes en Ligue Argent", "corps": "Nouvelle semaine, nouveau classement.", "lien": "/ligue" },
+  { "kind": "ligue_cloturee", "reference": "g1", "data": { "issue": "descend", "rang": 28, "division": 1 }, "titre": "Tu redescends en Ligue Bronze", "corps": "Une bonne semaine suffit pour remonter.", "lien": "/ligue" }
+]
