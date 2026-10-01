@@ -57,6 +57,10 @@ export default function Telechargement() {
             des fiches.
           </li>
           <li>Réviser en QCM, une question par écran, et suivre ta série.</li>
+          <li>
+            Avancer sur le chemin de chaque cours, chapitre par chapitre,
+            gagner des niveaux et jouer ta ligue de la semaine.
+          </li>
           <li>Retourner des fiches, chapitre par chapitre.</li>
           <li>Photographier une copie et recevoir une note détaillée.</li>
           <li>Voir le classement de ta faculté, et tes gains de parrainage.</li>

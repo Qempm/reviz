@@ -32,6 +32,9 @@ import 'package:reviz/ecrans/accueil.dart';
 import 'package:reviz/ecrans/connexion.dart';
 import 'package:reviz/ecrans/cours.dart';
 import 'package:reviz/ecrans/ligue.dart';
+import 'package:reviz/ecrans/correction.dart';
+import 'package:reviz/ecrans/session.dart';
+import 'package:reviz/metier/selection.dart';
 import 'package:reviz/metier/maitrise.dart';
 import 'package:reviz/ecrans/galerie.dart';
 import 'package:reviz/ecrans/profil.dart';
@@ -449,6 +452,103 @@ void main() {
                   estMoi: i == 3,
                 ),
             ],
+          ),
+        ),
+      ],
+    );
+  });
+
+  testWidgets('session', (tester) async {
+    await _photographier(
+      tester,
+      'session',
+      const EcranSession(coursId: 'c2'),
+      remplacements: [
+        questionsProvider((
+          cours: 'c2',
+          chapitre: null,
+          mode: ModeSession.normal,
+        )).overrideWith(
+          (_) async => const [
+            QuestionQcm(
+              id: 'q1',
+              enonce:
+                  'Selon ton cours, qu’est-ce qui distingue le contrôle de '
+                  'constitutionnalité a priori du contrôle a posteriori ?',
+              options: [
+                'Le moment : avant ou après la promulgation de la loi',
+                'L’organe qui contrôle : Parlement ou juge',
+                'La procédure : écrite ou orale',
+                'Le type de loi : organique ou ordinaire',
+              ],
+              reponse: 'Le moment : avant ou après la promulgation de la loi',
+              explication:
+                  'Le chapitre 3 le dit : a priori, avant la promulgation ; '
+                  'a posteriori, à l’occasion d’un procès.',
+              probabilite: 'high',
+            ),
+            QuestionQcm(
+              id: 'q2',
+              enonce: 'Qui peut saisir la Cour constitutionnelle ?',
+              options: ['Tout citoyen', 'Le seul Président', 'Le Sénat', 'Personne'],
+              reponse: 'Tout citoyen',
+              explication: null,
+              probabilite: 'medium',
+            ),
+          ],
+        ),
+      ],
+    );
+  });
+
+  testWidgets('correction', (tester) async {
+    await _photographier(
+      tester,
+      'correction',
+      const EcranCorrection(correctionId: 'k1'),
+      taille: const Size(390, 1500),
+      remplacements: [
+        correctionProvider('k1').overrideWith(
+          (_) async => Correction(
+            id: 'k1',
+            coursId: 'c2',
+            statut: 'ready',
+            note: 27.5,
+            bareme: 40,
+            lignes: const [
+              LigneBareme(
+                critere: 'Compréhension du sujet',
+                points: 9,
+                maximum: 10,
+                commentaire: 'Tu as bien situé la question dans le cours.',
+              ),
+              LigneBareme(
+                critere: 'Maîtrise des notions du cours',
+                points: 10.5,
+                maximum: 16,
+                commentaire:
+                    'Le contrôle a posteriori est confondu avec l’exception '
+                    'd’inconstitutionnalité : revois le chapitre 3.',
+              ),
+              LigneBareme(
+                critere: 'Plan et argumentation',
+                points: 8,
+                maximum: 14,
+                commentaire: null,
+              ),
+            ],
+            retour: const RetourCorrection(
+              resume:
+                  'Bonne copie de L1 : le plan tient, les définitions sont '
+                  'justes. Il manque les articles du cours pour convaincre.',
+              pointsForts: ['Définitions exactes', 'Plan clair'],
+              aTravailler: ['Citer les articles', 'Conclusion trop courte'],
+              chapitres: [('ch3', 'Le contrôle de constitutionnalité')],
+              notions: ['Contrôle a posteriori', 'Saisine citoyenne'],
+            ),
+            modele: null,
+            creeLe: null,
+            motifIllisible: null,
           ),
         ),
       ],
