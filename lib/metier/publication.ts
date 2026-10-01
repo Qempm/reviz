@@ -38,8 +38,8 @@ export const VERSION_MINIMALE = '2.0.0'
 export const MAINTENANCE = false
 
 export const NOTES =
-  'Ton chemin commence par le chapitre 1, ta série démarre dès ta première ' +
-  'journée, et quitter une série en cours demande confirmation.'
+  'Une cloche pour tes notifications : ton cours prêt, ta copie corrigée, ' +
+  'tes gains. Et l’heure de ton rappel du soir, au choix.'
 
 /** Date de la publication, au format `AAAA-MM-JJ`. */
 export const DATE = '2026-10-01'
