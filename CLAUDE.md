@@ -12,7 +12,7 @@ App mobile-first de révision pour étudiants d'universités d'Afrique francopho
 
 L'utilisateur cible a un Android milieu de gamme, une connexion instable, un forfait data limité, et ouvre l'app la nuit avant un contrôle. Tout doit être léger, rapide, rassurant et en français. Tous les montants en FCFA.
 
-Distribution : **APK Flutter** partagé par lien et WhatsApp. Le Play Store viendra plus tard. La coquille Capacitor et la coquille Kotlin ont été retirées : l'application est un vrai client, plus un site emballé (voir `docs/GUIDE-APK-REVIZ.md`).
+Distribution : **APK Flutter** partagé par lien et WhatsApp. Le Play Store viendra plus tard. **Version iPhone** (arbitrage du 1er octobre 2026) : App Store via TestFlight, compilée sur un Mac Codemagic (`codemagic.yaml`), **sans aucun achat ni prix** et **connexion par e-mail seule** — deux interrupteurs dans `apps/mobile/lib/metier/plateforme.dart`, que tout écran montrant un prix ou menant à la boutique doit consulter. Mode d'emploi et compte Apple : `docs/GUIDE-IOS.md`. La coquille Capacitor et la coquille Kotlin ont été retirées : l'application est un vrai client, plus un site emballé (voir `docs/GUIDE-APK-REVIZ.md`).
 
 ## Stack (ne pas dévier sans en discuter)
 
@@ -181,6 +181,11 @@ Ce qui reste à faire, par ordre de valeur :
    l'**essayer sur un téléphone** : un `DEVELOPER_ERROR` voudrait dire que le
    SHA-1 ou le paquet déclaré ne correspond pas. `docs/GUIDE-APK-REVIZ.md`
    § 3 bis.
-5. **La mascotte** — faite le 29 septembre 2026 : sept états, branchés
+5. **L'iPhone** — code prêt le 1er octobre 2026 (projet `apps/mobile/ios/`,
+   icône, écran de lancement, rappels, `/confidentialite`), **jamais
+   compilé** : il faut un compte Apple Developer (99 $/an), une clé App Store
+   Connect et Codemagic. Reste aussi à trancher la connexion de
+   l'examinateur Apple. `docs/GUIDE-IOS.md`.
+6. **La mascotte** — faite le 29 septembre 2026 : sept états, branchés
    (résultats, n° 1, pack expiré, vides, accueil, attentes longues). L'icône et les douze avatars sont dans la 2.0.1 ; les icônes
    PWA ne sont plus attendues.

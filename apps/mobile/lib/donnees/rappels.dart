@@ -30,6 +30,13 @@ class ServiceRappels {
       final ok = await _greffon.initialize(
         settings: const InitializationSettings(
           android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+          // iOS demanderait la permission dès l'initialisation : on la garde
+          // pour après la première série, comme sur Android.
+          iOS: DarwinInitializationSettings(
+            requestAlertPermission: false,
+            requestBadgePermission: false,
+            requestSoundPermission: false,
+          ),
         ),
       );
       return ok ?? false;
@@ -38,7 +45,7 @@ class ServiceRappels {
     }
   }();
 
-  /// Demande la permission d'Android 13, **une seule fois** : après une
+  /// Demande la permission (Android 13, iOS), **une seule fois** : après une
   /// première série réussie, quand le rappel a du sens pour l'étudiant, et
   /// non à l'ouverture de l'application.
   Future<void> demanderPermissionUneFois() async {
@@ -52,6 +59,11 @@ class ServiceRappels {
             AndroidFlutterLocalNotificationsPlugin
           >()
           ?.requestNotificationsPermission();
+      await _greffon
+          .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin
+          >()
+          ?.requestPermissions(alert: true, badge: true, sound: true);
     } catch (_) {}
   }
 
@@ -67,6 +79,7 @@ class ServiceRappels {
           channelDescription: Fr.rappels.canalDescription,
           color: Couleurs.jaune,
         ),
+        iOS: const DarwinNotificationDetails(),
       );
       for (final r in rappels) {
         await _greffon.zonedSchedule(

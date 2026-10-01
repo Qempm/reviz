@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Fabrique l'icône Android à partir d'un seul dessin.
+ * Fabrique les icônes Android et iPhone à partir d'un seul dessin.
  *
  * L'APK 2.0.0 publié porte **le logo de Flutter** sur l'écran d'accueil : le
  * `flutter create` d'origine n'a jamais été remplacé, et rien ne le
@@ -42,7 +42,7 @@ const RES = path.join(
 )
 
 const SOURCE_DEFAUT = path.join(
-  RACINE, 'assets-source', 'icone', 'reviz-tete-1024.png',
+  RACINE, 'assets-source', 'icone', 'reviz-fiches-1024.png',
 )
 
 /** Le jaune du design system (`docs/DESIGN.md`), fond des deux icônes. */
@@ -255,6 +255,53 @@ const cheminBoutique = path.join(
 )
 writeFileSync(cheminBoutique, boutique)
 ecrits.push(`${path.relative(RACINE, cheminBoutique)} (512x512, squircle)`)
+
+// --- iPhone ------------------------------------------------------------------
+//
+// Une seule image de 1024 px, déclarée « universal » : Xcode 14 et plus en
+// tirent toutes les tailles. Deux exigences de l'App Store, vérifiées à
+// l'envoi et non à la compilation : **aucun canal alpha** (d'où le
+// `removeAlpha`, le fond jaune étant déjà plein) et **pas de coins
+// arrondis** — iOS pose son propre masque, un squircle dessiné ici se
+// verrait en double. Le dessin prend 62 %, comme l'icône de boutique.
+const IOS = path.join(
+  RACINE, 'apps', 'mobile', 'ios', 'Runner', 'Assets.xcassets',
+  'AppIcon.appiconset',
+)
+if (existsSync(path.dirname(IOS))) {
+  const { readdirSync, rmSync } = await import('node:fs')
+  mkdirSync(IOS, { recursive: true })
+  // Les tailles que `flutter create` y avait laissées : le logo de Flutter.
+  for (const f of readdirSync(IOS)) {
+    if (f.endsWith('.png')) rmSync(path.join(IOS, f))
+  }
+  const ios = await sharp(await poser(1024, 0.62, JAUNE))
+    .removeAlpha()
+    .png({ compressionLevel: 9 })
+    .toBuffer()
+  writeFileSync(path.join(IOS, 'Icon-App-1024x1024@1x.png'), ios)
+  writeFileSync(
+    path.join(IOS, 'Contents.json'),
+    JSON.stringify(
+      {
+        images: [
+          {
+            filename: 'Icon-App-1024x1024@1x.png',
+            idiom: 'universal',
+            platform: 'ios',
+            size: '1024x1024',
+          },
+        ],
+        info: { author: 'scripts/icones.mjs', version: 1 },
+      },
+      null,
+      2,
+    ) + '\n',
+  )
+  ecrits.push(
+    `${path.relative(RACINE, path.join(IOS, 'Icon-App-1024x1024@1x.png'))} (1024x1024, sans alpha)`,
+  )
+}
 
 // --- Aperçu de vérification, sur demande -----------------------------------
 //

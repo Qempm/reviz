@@ -13,6 +13,7 @@ import '../donnees/supabase.dart';
 import '../i18n/fr.dart';
 import '../metier/google.dart';
 import '../metier/otp.dart';
+import '../metier/plateforme.dart';
 import '../theme/jetons.dart';
 import '../theme/typographie.dart';
 
@@ -141,8 +142,7 @@ class _EcranConnexionState extends State<EcranConnexion> {
     MotifEchecGoogle.configuration => Fr.connexion.googleConfiguration,
     MotifEchecGoogle.refuseParSupabase => Fr.connexion.googleRefuse,
     MotifEchecGoogle.interrompu => Fr.connexion.googleInterrompu,
-    MotifEchecGoogle.indisponible =>
-      Fr.connexion.googleIndisponibleAppareil,
+    MotifEchecGoogle.indisponible => Fr.connexion.googleIndisponibleAppareil,
     MotifEchecGoogle.autreCompte => Fr.connexion.googleAutreCompte,
     // `annule` n'arrive jamais ici : il devient `GoogleAnnule`.
     MotifEchecGoogle.annule ||
@@ -224,7 +224,10 @@ class _EcranConnexionState extends State<EcranConnexion> {
                 ),
                 const SizedBox(height: Espaces.x32),
 
-                if (_etape == _Etape.email) ..._etapeEmail() else ..._etapeCode(),
+                if (_etape == _Etape.email)
+                  ..._etapeEmail()
+                else
+                  ..._etapeCode(),
 
                 if (_erreur != null) ...[
                   const SizedBox(height: Espaces.x16),
@@ -243,41 +246,45 @@ class _EcranConnexionState extends State<EcranConnexion> {
   }
 
   List<Widget> _etapeEmail() => [
-    // Google reste affiché mais inerte sans identifiant client : le masquer
-    // ferait croire que l'application ne le propose pas, l'activer donnerait
-    // une erreur opaque.
-    Bouton(
-      libelle: Fr.connexion.avecGoogle,
-      icone: Icons.account_circle,
-      variante: VarianteBouton.secondaire,
-      onTap: Config.googleWebClientId.isEmpty || _enCours
-          ? null
-          : _avecGoogle,
-    ),
-    if (Config.googleWebClientId.isEmpty) ...[
-      const SizedBox(height: Espaces.x4),
-      Text(
-        Fr.connexion.googleIndisponible,
-        style: Typo.labelSm.copyWith(color: Couleurs.attenue),
-        textAlign: TextAlign.center,
+    // Sur iPhone, l'e-mail seul : Google y exigerait « Se connecter avec
+    // Apple » (`metier/plateforme.dart`).
+    if (connexionGoogleProposee) ...[
+      // Google reste affiché mais inerte sans identifiant client : le masquer
+      // ferait croire que l'application ne le propose pas, l'activer donnerait
+      // une erreur opaque.
+      Bouton(
+        libelle: Fr.connexion.avecGoogle,
+        icone: Icons.account_circle,
+        variante: VarianteBouton.secondaire,
+        onTap: Config.googleWebClientId.isEmpty || _enCours
+            ? null
+            : _avecGoogle,
       ),
-    ],
-
-    const SizedBox(height: Espaces.x24),
-    Row(
-      children: [
-        const Expanded(child: Divider(color: Couleurs.bordure)),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: Espaces.x12),
-          child: Text(
-            Fr.connexion.ou,
-            style: Typo.labelSm.copyWith(color: Couleurs.attenue),
-          ),
+      if (Config.googleWebClientId.isEmpty) ...[
+        const SizedBox(height: Espaces.x4),
+        Text(
+          Fr.connexion.googleIndisponible,
+          style: Typo.labelSm.copyWith(color: Couleurs.attenue),
+          textAlign: TextAlign.center,
         ),
-        const Expanded(child: Divider(color: Couleurs.bordure)),
       ],
-    ),
-    const SizedBox(height: Espaces.x24),
+
+      const SizedBox(height: Espaces.x24),
+      Row(
+        children: [
+          const Expanded(child: Divider(color: Couleurs.bordure)),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: Espaces.x12),
+            child: Text(
+              Fr.connexion.ou,
+              style: Typo.labelSm.copyWith(color: Couleurs.attenue),
+            ),
+          ),
+          const Expanded(child: Divider(color: Couleurs.bordure)),
+        ],
+      ),
+      const SizedBox(height: Espaces.x24),
+    ],
 
     Champ(
       libelle: Fr.connexion.labelEmail,

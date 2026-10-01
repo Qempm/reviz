@@ -6,6 +6,7 @@ import '../composants/carte.dart';
 import '../donnees/config.dart';
 import '../etat/fournisseurs.dart';
 import '../i18n/fr.dart';
+import '../metier/plateforme.dart';
 import '../routage.dart';
 import '../theme/jetons.dart';
 import '../theme/typographie.dart';
@@ -72,7 +73,10 @@ class EcranAide extends ConsumerWidget {
                 ),
                 const SizedBox(height: Espaces.x20),
 
-                for (final (question, reponse) in Fr.aide.questions) ...[
+                for (final (question, reponse)
+                    in achatsDansLApplication
+                        ? Fr.aide.questions
+                        : Fr.aide.questionsSansAchat) ...[
                   _Question(question: question, reponse: reponse),
                   const SizedBox(height: Espaces.x8),
                 ],
@@ -121,9 +125,7 @@ class EcranAide extends ConsumerWidget {
                             AsyncData(:final value) => value.locale,
                             _ => '…',
                           },
-                          style: Typo.labelMd.copyWith(
-                            color: Couleurs.attenue,
-                          ),
+                          style: Typo.labelMd.copyWith(color: Couleurs.attenue),
                         ),
                       ],
                     ),
@@ -171,9 +173,7 @@ class _QuestionState extends State<_Question> {
             padding: const EdgeInsets.symmetric(vertical: Espaces.x8),
             child: Row(
               children: [
-                Expanded(
-                  child: Text(widget.question, style: Typo.labelLg),
-                ),
+                Expanded(child: Text(widget.question, style: Typo.labelLg)),
                 const SizedBox(width: Espaces.x8),
                 Icon(
                   _ouverte ? Icons.expand_less : Icons.expand_more,

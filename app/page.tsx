@@ -411,6 +411,8 @@ export default async function Accueil() {
             <a href="#prix" className="underline underline-offset-4">Prix</a>
             {' · '}
             <a href="#questions" className="underline underline-offset-4">Questions</a>
+            {' · '}
+            <Link href="/confidentialite" className="underline underline-offset-4">Confidentialité</Link>
           </p>
         </div>
       </footer>

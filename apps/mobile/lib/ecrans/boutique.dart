@@ -12,6 +12,7 @@ import '../donnees/modeles.dart';
 import '../etat/fournisseurs.dart';
 import '../i18n/fr.dart';
 import '../metier/acces.dart';
+import '../metier/plateforme.dart';
 import '../routage.dart';
 import '../theme/jetons.dart';
 import '../theme/typographie.dart';
@@ -21,6 +22,9 @@ import '../theme/typographie.dart';
 /// Un pack se paie **une fois** pour une durée donnée. L'écran le dit deux
 /// fois — sur la carte d'accès et en pied de page — parce que c'est la règle
 /// métier n° 1 et que tout le monde s'attend à un abonnement.
+///
+/// Sur iPhone, l'écran devient « Mon accès » : l'accès en cours et le pack
+/// gratuit, sans prix ni bouton de paiement (`metier/plateforme.dart`).
 class EcranBoutique extends ConsumerWidget {
   const EcranBoutique({super.key});
 
@@ -33,7 +37,10 @@ class EcranBoutique extends ConsumerWidget {
       appBar: AppBar(
         backgroundColor: Couleurs.fond,
         surfaceTintColor: Colors.transparent,
-        title: Text(Fr.boutique.titre, style: Typo.headlineLg),
+        title: Text(
+          achatsDansLApplication ? Fr.boutique.titre : Fr.boutique.titreAcces,
+          style: Typo.headlineLg,
+        ),
         leading: IconButton(
           onPressed: () => context.remonter(Chemins.profil),
           icon: const Icon(Icons.arrow_back, color: Couleurs.encre),
@@ -119,6 +126,10 @@ class _ContenuState extends ConsumerState<_Contenu> {
   @override
   Widget build(BuildContext context) {
     final acces = widget.donnees.acces;
+    // Sur iPhone, seul le pack gratuit reste : il ne s'achète pas.
+    final packs = achatsDansLApplication
+        ? widget.donnees.packs
+        : widget.donnees.packs.where((p) => p.gratuit);
 
     return ListView(
       padding: const EdgeInsets.symmetric(
@@ -127,7 +138,9 @@ class _ContenuState extends ConsumerState<_Contenu> {
       ),
       children: [
         Text(
-          Fr.boutique.sousTitre,
+          achatsDansLApplication
+              ? Fr.boutique.sousTitre
+              : Fr.boutique.accesLieAuCompte,
           style: Typo.bodyMd.copyWith(color: Couleurs.attenue),
         ),
         const SizedBox(height: Espaces.x16),
@@ -135,7 +148,7 @@ class _ContenuState extends ConsumerState<_Contenu> {
         _CarteAcces(acces: acces),
         const SizedBox(height: Espaces.x20),
 
-        for (final pack in widget.donnees.packs) ...[
+        for (final pack in packs) ...[
           _CartePack(
             pack: pack,
             decouverteUtilisee: widget.donnees.decouverteUtilisee,
@@ -146,12 +159,14 @@ class _ContenuState extends ConsumerState<_Contenu> {
           const SizedBox(height: Espaces.x12),
         ],
 
-        const SizedBox(height: Espaces.x8),
-        Text(
-          Fr.boutique.sansReconduction,
-          style: Typo.labelSm.copyWith(color: Couleurs.attenue),
-          textAlign: TextAlign.center,
-        ),
+        if (achatsDansLApplication) ...[
+          const SizedBox(height: Espaces.x8),
+          Text(
+            Fr.boutique.sansReconduction,
+            style: Typo.labelSm.copyWith(color: Couleurs.attenue),
+            textAlign: TextAlign.center,
+          ),
+        ],
         const SizedBox(height: Espaces.x32),
       ],
     );
@@ -228,7 +243,9 @@ class _CarteAcces extends StatelessWidget {
             ],
           ),
           Text(
-            Fr.boutique.accesExpireDetail,
+            achatsDansLApplication
+                ? Fr.boutique.accesExpireDetail
+                : Fr.boutique.accesExpireDetailSansAchat,
             style: Typo.bodyMd.copyWith(color: Couleurs.attenue),
           ),
         ],

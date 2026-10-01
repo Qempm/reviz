@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 // `Override` n'est pas dans le baril principal de flutter_riverpod.
@@ -2507,6 +2508,114 @@ void main() {
         remplacements: [ligueProvider.overrideWith((_) async => ligue())],
       );
       expect(tester.takeException(), isNull);
+    });
+  });
+
+  // Règles de l'App Store (`metier/plateforme.dart`) : sur iPhone, ni achat,
+  // ni prix, ni renvoi vers un achat ailleurs, et l'e-mail seul pour se
+  // connecter. Le système est simulé : on ne compile pas iOS sous Windows.
+  group('iPhone', () {
+    Future<void> commeUnIPhone(Future<void> Function() corps) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      try {
+        await corps();
+      } finally {
+        // Remis avant la fin du test : le banc vérifie qu'il l'est.
+        debugDefaultTargetPlatformOverride = null;
+      }
+    }
+
+    testWidgets('connexion par e-mail seulement', (tester) async {
+      await commeUnIPhone(() async {
+        await _poser(tester, const EcranConnexion());
+
+        expect(find.text('Continuer avec Google'), findsNothing);
+        expect(
+          find.text(
+            'La connexion Google n’est pas configurée dans cette version.',
+          ),
+          findsNothing,
+        );
+        expect(find.text('Recevoir mon code'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      });
+    });
+
+    testWidgets('« Mon accès » ne vend rien et ne montre aucun prix', (
+      tester,
+    ) async {
+      await commeUnIPhone(() async {
+        await _poser(
+          tester,
+          const EcranBoutique(),
+          remplacements: [
+            boutiqueProvider.overrideWith(
+              (_) async =>
+                  const DonneesBoutique(packs: _packs, abonnements: []),
+            ),
+          ],
+        );
+
+        expect(find.text('Mon accès'), findsOneWidget);
+        expect(find.text('Les packs'), findsNothing);
+        // Le pack gratuit reste : il ne s'achète pas.
+        expect(find.text('Activer gratuitement'), findsOneWidget);
+        expect(find.textContaining(RegExp(r'\d F\b')), findsNothing);
+        expect(find.textContaining('Payer'), findsNothing);
+        expect(find.textContaining('Mobile Money'), findsNothing);
+        expect(tester.takeException(), isNull);
+      });
+    });
+
+    testWidgets('un pack expiré ne pousse pas à racheter', (tester) async {
+      await commeUnIPhone(() async {
+        final vieux = DateTime.now().toUtc().subtract(const Duration(days: 30));
+        await _poser(
+          tester,
+          const EcranBoutique(),
+          taille: const Size(320, 640),
+          remplacements: [
+            boutiqueProvider.overrideWith(
+              (_) async => DonneesBoutique(
+                packs: _packs,
+                abonnements: [
+                  LigneAbonnement(
+                    code: 'controle',
+                    debut: vieux,
+                    fin: vieux.add(const Duration(days: 7)),
+                    correctionsRestantes: 0,
+                    plafondMatieres: 2,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+
+        expect(find.text('Ton pack est arrivé à terme'), findsOneWidget);
+        expect(
+          find.text('Tes cours et ton historique restent consultables.'),
+          findsOneWidget,
+        );
+        expect(find.textContaining('Réactive'), findsNothing);
+        expect(tester.takeException(), isNull);
+      });
+    });
+
+    testWidgets('l’aide ne renvoie pas vers un achat', (tester) async {
+      await commeUnIPhone(() async {
+        await _poser(tester, const EcranAide(), stabiliser: false);
+        expect(
+          find.text('Est-ce que je serai prélevé chaque mois ?'),
+          findsOneWidget,
+        );
+        expect(
+          Fr.aide.questionsSansAchat.first.$2,
+          isNot(contains('reprends un pack')),
+        );
+        expect(Fr.aide.questionsSansAchat.length, Fr.aide.questions.length);
+        expect(tester.takeException(), isNull);
+      });
     });
   });
 }

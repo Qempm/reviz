@@ -1,0 +1,92 @@
+# Version iPhone de Reviz, construite sur un Mac de Codemagic.
+#
+# Une application iOS ne se compile que sur un Mac, avec Xcode : ce fichier
+# fait ce que `npm run apk` fait pour Android, dans le nuage. Mode d'emploi
+# complet — compte Apple, clé App Store Connect, variables — dans
+# docs/GUIDE-IOS.md.
+#
+# Rien de secret ici : les valeurs vivent dans Codemagic.
+#  - L'intégration App Store Connect « Reviz » (clé API d'Apple) signe et
+#    envoie la build.
+#  - Le groupe de variables `reviz_ios` porte ce qui est compilé dans
+#    l'application, exactement comme pour l'APK. Une application iOS se
+#    décompile aussi : jamais `SUPABASE_SERVICE_ROLE_KEY` ni une clé IA ou
+#    FedaPay dans ce groupe — l'étape « Garde-fou » refuse de construire.
+workflows:
+  ios-testflight:
+    name: Reviz iOS → TestFlight
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    working_directory: apps/mobile
+    integrations:
+      app_store_connect: Reviz
+    environment:
+      groups:
+        # SUPABASE_URL, SUPABASE_ANON_KEY, API_BASE, CONTACT_WHATSAPP,
+        # APP_STORE_APPLE_ID (l'identifiant numérique de l'app dans App
+        # Store Connect). Pas de GOOGLE_WEB_CLIENT_ID : sur iPhone, la
+        # connexion se fait par e-mail seulement (lib/metier/plateforme.dart).
+        - reviz_ios
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.reviz.app
+      # La version du dépôt, pas « stable » : une build doit se refaire à
+      # l'identique.
+      flutter: 3.44.0
+      xcode: latest
+      cocoapods: default
+    # Lancée à la main depuis Codemagic, comme une release Android.
+    scripts:
+      - name: Garde-fou
+        script: |
+          for v in SUPABASE_URL SUPABASE_ANON_KEY API_BASE APP_STORE_APPLE_ID; do
+            if [ -z "${!v}" ]; then
+              echo "Variable manquante dans le groupe reviz_ios : $v"
+              exit 1
+            fi
+          done
+          # La clé anonyme est un JWT au rôle « anon ». Si c'est celui de
+          # service, l'application donnerait tous les droits à quiconque la
+          # décompile.
+          role=$(echo "$SUPABASE_ANON_KEY" | cut -d. -f2 | tr '_-' '/+' | base64 -d 2>/dev/null | grep -o '"role":"[a-z_]*"' || true)
+          case "$role" in
+            *service_role*)
+              echo "SUPABASE_ANON_KEY est la clé de service. Refus."
+              exit 1
+              ;;
+          esac
+          case "$SUPABASE_ANON_KEY" in
+            sb_secret_*)
+              echo "SUPABASE_ANON_KEY est une clé secrète. Refus."
+              exit 1
+              ;;
+          esac
+      - name: Dépendances
+        script: flutter pub get
+      - name: Profils de signature
+        script: xcode-project use-profiles
+      - name: Tests
+        script: flutter test
+      - name: Construire l'IPA
+        script: |
+          # Un numéro de build neuf à chaque envoi : App Store Connect refuse
+          # un numéro déjà vu pour la même version. Zéro s'il n'y en a pas
+          # encore (premier envoi).
+          dernier=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APPLE_ID" 2>/dev/null || echo 0)
+          flutter build ipa --release \
+            --build-number=$((dernier + 1)) \
+            --export-options-plist=/Users/builder/export_options.plist \
+            --dart-define=SUPABASE_URL="$SUPABASE_URL" \
+            --dart-define=SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY" \
+            --dart-define=API_BASE="$API_BASE" \
+            --dart-define=CONTACT_WHATSAPP="${CONTACT_WHATSAPP:-}"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        # TestFlight d'abord : l'App Store ne se soumet qu'après un essai sur
+        # un vrai iPhone, et à la main (docs/GUIDE-IOS.md § 5).
+        submit_to_testflight: true
+        submit_to_app_store: false

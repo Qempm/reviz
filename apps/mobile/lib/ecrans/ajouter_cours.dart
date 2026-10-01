@@ -15,6 +15,7 @@ import '../donnees/api.dart';
 import '../donnees/modeles.dart';
 import '../etat/fournisseurs.dart';
 import '../i18n/fr.dart';
+import '../metier/plateforme.dart';
 import '../routage.dart';
 import '../theme/jetons.dart';
 import '../theme/typographie.dart';
@@ -287,7 +288,10 @@ class _EcranAjouterCoursState extends ConsumerState<EcranAjouterCours> {
   /// français ; on le remplace seulement quand on sait dire mieux.
   String _messageDe(String? motif, String parDefaut) => switch (motif) {
     'aucun-acces' => Fr.depot.aucunAcces,
-    'acces-expire' => Fr.depot.accesExpire,
+    'acces-expire' =>
+      achatsDansLApplication
+          ? Fr.depot.accesExpire
+          : Fr.depot.accesExpireSansAchat,
     'deja-depose' => Fr.depot.dejaDepose,
     _ => parDefaut.isEmpty ? Fr.depot.echec : parDefaut,
   };
@@ -611,7 +615,7 @@ class _Refus extends StatelessWidget {
                 chargement: activationEnCours,
                 onTap: onActiverGratuit,
               )
-            else
+            else if (achatsDansLApplication)
               Bouton(
                 libelle: Fr.depot.voirLesPacks,
                 icone: Icons.shopping_bag_outlined,

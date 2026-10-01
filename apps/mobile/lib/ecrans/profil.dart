@@ -17,6 +17,7 @@ import '../donnees/google.dart';
 import '../donnees/supabase.dart';
 import '../etat/fournisseurs.dart';
 import '../i18n/fr.dart';
+import '../metier/plateforme.dart';
 import '../metier/serie.dart';
 import '../routage.dart';
 import '../theme/jetons.dart';
@@ -309,7 +310,9 @@ class _Contenu extends ConsumerWidget {
 
         // --- Accès
         Bouton(
-          libelle: Fr.profil.voirLesPacks,
+          libelle: achatsDansLApplication
+              ? Fr.profil.voirLesPacks
+              : Fr.profil.monAcces,
           icone: Icons.shopping_bag_outlined,
           variante: VarianteBouton.secondaire,
           onTap: () => context.descendre(Chemins.boutique),

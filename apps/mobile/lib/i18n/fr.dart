@@ -277,6 +277,15 @@ class _Boutique {
   final String sansReconduction =
       'Aucun prélèvement automatique. À la fin de la période, l’accès '
       's’arrête, tout simplement.';
+
+  // Sur iPhone, l'écran ne vend rien (`metier/plateforme.dart`) : il montre
+  // l'accès, sans prix ni renvoi vers un achat ailleurs.
+  final String titreAcces = 'Mon accès';
+  final String accesLieAuCompte =
+      'Ton accès est lié à ton compte Reviz : il te suit sur chacun de tes '
+      'appareils.';
+  final String accesExpireDetailSansAchat =
+      'Tes cours et ton historique restent consultables.';
 }
 
 class _Gains {
@@ -373,6 +382,7 @@ class _Profil {
       'Ajoute ta carte étudiante pour débloquer le parrainage et les cours '
       'partagés.';
   final String voirLesPacks = 'Les packs et mon accès';
+  final String monAcces = 'Mon accès';
   final String deconnexion = 'Me déconnecter';
   final String animationsReduites = 'Réduire les animations';
   final String animationsReduitesAide =
@@ -458,6 +468,7 @@ class _Correction {
       'Il te faut un pack actif pour faire corriger une copie.';
   final String packExpire =
       'Ton pack est arrivé à terme. Réactive-le pour continuer.';
+  final String packExpireSansAchat = 'Ton pack est arrivé à terme.';
   final String creditEpuise = 'Tu n’as plus de correction dans ton pack.';
   final String plafondJournalier =
       'Tu as atteint les 5 corrections du jour. Reviens demain.';
@@ -653,6 +664,18 @@ class _Aide {
     ),
   ];
 
+  /// Sur iPhone, la première réponse ne renvoie pas vers un achat.
+  List<(String, String)> get questionsSansAchat => [
+    (
+      questions.first.$1,
+      'Non. Jamais. Un pack dure le nombre de jours annoncé, et il '
+          's’arrête. Il n’y a aucun abonnement automatique et rien à '
+          'résilier. À la fin, tes cours restent à toi : tu continues à '
+          'réviser tes questions et tes fiches gratuitement.',
+    ),
+    ...questions.skip(1),
+  ];
+
   final String contactTitre = 'Nous écrire';
   final String contactDetail =
       'On répond sur WhatsApp, en français, dans la journée.';
@@ -778,6 +801,8 @@ class _Depot {
       'Pour ajouter un cours, il te faut un pack. Le premier est gratuit.';
   final String accesExpire =
       'Ton pack est arrivé à terme. Réactive-le pour déposer.';
+  final String accesExpireSansAchat =
+      'Ton pack est arrivé à terme : tes cours restent consultables.';
 
   String plafondMatieres(int? n) => n == null
       ? 'Tu as atteint le nombre de matières de ton pack.'

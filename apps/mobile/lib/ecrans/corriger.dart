@@ -15,6 +15,7 @@ import '../donnees/modeles.dart';
 import '../etat/fournisseurs.dart';
 import '../i18n/fr.dart';
 import '../metier/acces.dart';
+import '../metier/plateforme.dart';
 import '../metier/serie.dart';
 import '../routage.dart';
 import '../theme/jetons.dart';
@@ -336,7 +337,10 @@ class _Depot extends StatelessWidget {
   /// Ce qui empêche de corriger, ou `null` si rien.
   String? get _blocage => switch (acces) {
     AucunAcces() => Fr.correction.aucunPack,
-    AccesExpire() => Fr.correction.packExpire,
+    AccesExpire() =>
+      achatsDansLApplication
+          ? Fr.correction.packExpire
+          : Fr.correction.packExpireSansAchat,
     AccesActif(:final correctionsRestantes) when correctionsRestantes <= 0 =>
       Fr.correction.creditEpuise,
     AccesActif() => null,
@@ -359,11 +363,14 @@ class _Depot extends StatelessWidget {
               AccesActif() => EtatMascotte.courage,
             },
             titre: blocage,
-            action: Bouton(
-              libelle: Fr.correction.voirLesPacks,
-              icone: Icons.shopping_bag_outlined,
-              onTap: () => context.descendre(Chemins.boutique),
-            ),
+            // Sur iPhone, pas de renvoi vers un achat (`metier/plateforme`).
+            action: achatsDansLApplication
+                ? Bouton(
+                    libelle: Fr.correction.voirLesPacks,
+                    icone: Icons.shopping_bag_outlined,
+                    onTap: () => context.descendre(Chemins.boutique),
+                  )
+                : null,
           ),
         ],
       );

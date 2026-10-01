@@ -128,5 +128,5 @@ flutter_native_splash:
     color: "#FFC300"
     image: assets/marque/logo-lancement-a12.png
   android: true
-  ios: false
+  ios: true
   web: false
