@@ -13,7 +13,7 @@
  */
 
 /** La version publiée, telle que `pubspec.yaml` la déclare. */
-export const VERSION = '2.7.0'
+export const VERSION = '2.8.0'
 
 /**
  * En dessous, l'application refuse de servir.
@@ -38,8 +38,8 @@ export const VERSION_MINIMALE = '2.0.0'
 export const MAINTENANCE = false
 
 export const NOTES =
-  'Une nouvelle tenue : un fond crème, de nouvelles polices, et le ' +
-  'panthéreau en 3D, avec sa tête pour icône.'
+  'Tes matières s’ouvrent en un toucher, la boutique te conseille ton pack, ' +
+  'douze avatars en 3D, et le parrainage s’ouvre à 3 000 XP.'
 
 /** Date de la publication, au format `AAAA-MM-JJ`. */
 export const DATE = '2026-10-03'
@@ -74,9 +74,9 @@ export type Apk =
 
 export const APK: Apk = {
   publie: true,
-  url: 'https://github.com/Qempm/reviz/releases/download/v2.7.0/reviz-2.7.0.apk',
-  tailleOctets: 64_759_206,
-  sha256: '37edb59330326f9e2ebbeffe8594bdeb95561cde320d5a4e8f6acf0b496ccc1d',
+  url: 'https://github.com/Qempm/reviz/releases/download/v2.8.0/reviz-2.8.0.apk',
+  tailleOctets: 65_082_305,
+  sha256: 'a48c8f06c15b9f43d8567d2090bbbddb783abb919f12880e96f11832696c3737',
 }
 
 /**
