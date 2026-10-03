@@ -18,6 +18,9 @@ import 'package:reviz/ecrans/avatar.dart';
 import 'package:reviz/metier/avatars.dart';
 import 'package:reviz/ecrans/boutique.dart';
 import 'package:reviz/ecrans/aide.dart';
+import 'package:reviz/ecrans/matiere.dart';
+import 'package:reviz/composants/carte_matiere.dart';
+import 'package:reviz/metier/matieres.dart';
 import 'package:reviz/i18n/fr.dart';
 import 'package:reviz/ecrans/carte.dart';
 import 'package:reviz/ecrans/connexion.dart';
@@ -1220,6 +1223,145 @@ void main() {
         scrollable: find.byType(Scrollable).first,
       );
       expect(rappel, findsOneWidget);
+    });
+  });
+
+  group('matière', () {
+    const droit = ApercuCours(
+      id: 'c1',
+      titre: 'Droit constitutionnel — chapitres 1 à 4',
+      statut: 'ready',
+      demo: false,
+      matiereNom: 'Droit constitutionnel',
+      matiereId: 'm1',
+      dateExamen: null,
+      nbChapitres: 4,
+      nbQuestions: 20,
+      nbFiches: 12,
+      nbTentees: 14,
+    );
+
+    ApercuChapitre chapitre(String id, int index, String titre, double taux) =>
+        ApercuChapitre(
+          id: id,
+          index: index,
+          titre: titre,
+          nbQuestions: 5,
+          nbFiches: 3,
+          nbTentees: 4,
+          taux: taux,
+          aRevoir: taux < 0.5,
+        );
+
+    final donnees = DonneesMatiere(
+      id: 'm1',
+      nom: 'Droit constitutionnel',
+      stat: const StatMatiere(
+        matiereId: 'm1',
+        matiereNom: 'Droit constitutionnel',
+        questionsFaites: 14,
+        scoreMoyen: 0.57,
+        aRevoir: false,
+      ),
+      cours: const [droit],
+      aRetravailler: [
+        ChapitreARetravailler(
+          cours: droit,
+          chapitre: chapitre('ch3', 2, 'Le contrôle de constitutionnalité', 0.25),
+        ),
+        ChapitreARetravailler(
+          cours: droit,
+          chapitre: chapitre('ch2', 1, 'La séparation des pouvoirs', 0.5),
+        ),
+      ],
+    );
+
+    testWidgets('dit la maîtrise, ce qu’il faut retravailler, et les cours', (
+      tester,
+    ) async {
+      await _poser(
+        tester,
+        const EcranMatiere(matiereId: 'm1'),
+        remplacements: [
+          matiereProvider('m1').overrideWith((_) async => donnees),
+        ],
+      );
+
+      expect(find.text('Droit constitutionnel'), findsWidgets);
+      expect(find.text('57 %'), findsOneWidget);
+      expect(find.text('Réviser cette matière'), findsOneWidget);
+      expect(find.text('À retravailler'), findsOneWidget);
+
+      // Du plus fragile au moins fragile.
+      final premier = tester.getTopLeft(
+        find.text('Chapitre 3 · Le contrôle de constitutionnalité'),
+      );
+      final second = tester.getTopLeft(
+        find.text('Chapitre 2 · La séparation des pouvoirs'),
+      );
+      expect(premier.dy, lessThan(second.dy));
+      expect(find.text('Reprendre'), findsNWidgets(2));
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('sans chapitre fragile, le dit sans alarmer', (tester) async {
+      await _poser(
+        tester,
+        const EcranMatiere(matiereId: 'm1'),
+        remplacements: [
+          matiereProvider('m1').overrideWith(
+            (_) async => const DonneesMatiere(
+              id: 'm1',
+              nom: 'Droit constitutionnel',
+              stat: null,
+              cours: [droit],
+              aRetravailler: [],
+            ),
+          ),
+        ],
+      );
+
+      expect(find.text('Rien à retravailler pour l’instant'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('ne déborde pas à 320 px', (tester) async {
+      await _poser(
+        tester,
+        const EcranMatiere(matiereId: 'm1'),
+        taille: const Size(320, 640),
+        remplacements: [
+          matiereProvider('m1').overrideWith((_) async => donnees),
+        ],
+      );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('sur l’accueil, chaque matière porte son illustration', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: CarteMatiere(
+              matiere: const StatMatiere(
+                matiereId: 'm1',
+                matiereNom: 'Droit constitutionnel',
+                questionsFaites: 14,
+                scoreMoyen: 0.57,
+                aRevoir: true,
+              ),
+              onTap: () {},
+            ),
+          ),
+        ),
+      );
+      expect(find.byType(MedaillonMatiere), findsOneWidget);
+      expect(
+        tester.widget<MedaillonMatiere>(find.byType(MedaillonMatiere)).famille,
+        FamilleMatiere.droit,
+      );
+      expect(find.text('À revoir'), findsOneWidget);
     });
   });
 

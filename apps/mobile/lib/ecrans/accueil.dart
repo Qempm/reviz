@@ -5,13 +5,13 @@ import '../composants/apparition.dart';
 import '../composants/blason_ligue.dart';
 import '../composants/bouton.dart';
 import '../composants/carte.dart';
+import '../composants/carte_matiere.dart';
 import '../composants/carte_serie.dart';
 import '../composants/chargement.dart';
 import '../composants/coquille.dart';
 import '../composants/etat_vide.dart';
 import '../composants/mascotte.dart';
 import '../composants/progression.dart';
-import '../composants/puce.dart';
 import '../donnees/api.dart';
 import '../donnees/depots.dart';
 import '../donnees/modeles.dart';
@@ -228,34 +228,12 @@ class _Contenu extends StatelessWidget {
             )
           else
             for (final m in donnees.matieres) ...[
+              // Chaque matière ouvre son écran : maîtrise, chapitres à
+              // retravailler, cours.
               entre(
-                Carte(
-                  petite: true,
-                  enfants: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            m.matiereNom ?? '—',
-                            style: Typo.labelLg,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        if (m.aRevoir)
-                          Puce(
-                            libelle: Fr.tableauDeBord.pointFaible,
-                            ton: TonPuce.danger,
-                            icone: Icons.priority_high,
-                          ),
-                      ],
-                    ),
-                    BarreProgression(valeur: m.scoreMoyen),
-                    Text(
-                      Fr.tableauDeBord.questionsFaites(m.questionsFaites),
-                      style: Typo.labelSm.copyWith(color: Couleurs.attenue),
-                    ),
-                  ],
+                CarteMatiere(
+                  matiere: m,
+                  onTap: () => context.descendre(Chemins.matiere(m.matiereId)),
                 ),
               ),
               const SizedBox(height: Espaces.x12),

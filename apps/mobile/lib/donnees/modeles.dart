@@ -159,6 +159,7 @@ class ApercuCours {
     required this.nbQuestions,
     required this.nbFiches,
     required this.nbTentees,
+    this.matiereId,
   });
 
   final String id;
@@ -166,6 +167,10 @@ class ApercuCours {
   final String? statut;
   final bool demo;
   final String? matiereNom;
+
+  /// La matière du cours (`subjects.id`) : c'est elle qui relie un cours à
+  /// l'écran de sa matière.
+  final String? matiereId;
   final String? dateExamen;
   final int nbChapitres;
   final int nbQuestions;
@@ -186,6 +191,7 @@ class ApercuCours {
       statut: l['status'] as String?,
       demo: l['is_demo'] as bool? ?? false,
       matiereNom: l['subject_name'] as String?,
+      matiereId: l['subject_id'] as String?,
       dateExamen: l['exam_date'] as String?,
       nbChapitres: (l['nb_chapitres'] as num?)?.toInt() ?? 0,
       nbQuestions: (l['nb_questions'] as num?)?.toInt() ?? 0,

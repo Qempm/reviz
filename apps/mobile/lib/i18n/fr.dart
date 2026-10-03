@@ -13,6 +13,7 @@ abstract final class Fr {
   static const connexion = _Connexion();
   static const inscription = _Inscription();
   static const tableauDeBord = _TableauDeBord();
+  static const matiere = _Matiere();
   static const reviser = _Reviser();
   static const cours = _Cours();
   static const session = _Session();
@@ -1072,6 +1073,36 @@ class _Inscription {
   final String labelTelephone = 'Ton numéro Mobile Money (facultatif)';
   final String aideTelephone =
       'Pour préremplir tes paiements. Personne d’autre ne le voit.';
+}
+
+class _Matiere {
+  const _Matiere();
+
+  String ouvrir(String nom) => 'Ouvrir la matière $nom';
+  final String titreParDefaut = 'Ma matière';
+  final String maitrise = 'Ta maîtrise';
+  String questions(int n) =>
+      n <= 1 ? '$n question répondue' : '$n questions répondues';
+  final String pasEncore =
+      'Pas encore de réponse dans cette matière : lance une série pour voir '
+      'où tu en es.';
+  final String aRetravailler = 'À retravailler';
+  final String aRetravaillerDetail =
+      'Les chapitres où tu te trompes le plus, du plus fragile au moins '
+      'fragile.';
+  final String rienARetravailler = 'Rien à retravailler pour l’instant';
+  final String rienARetravaillerDetail =
+      'Continue tes séries : un chapitre fragile apparaîtra ici.';
+  String chapitre(int index, String? titre) =>
+      'Chapitre ${index + 1}${titre == null ? '' : ' · $titre'}';
+  String reussite(double taux) => '${(taux * 100).round()} % de justes';
+  final String reprendre = 'Reprendre';
+  final String tesCours = 'Tes cours';
+  final String reviserMatiere = 'Réviser cette matière';
+  final String aucunCours = 'Aucun cours dans cette matière';
+  final String aucunCoursDetail =
+      'Ajoute un cours de cette matière : Reviz en tire des QCM et des '
+      'fiches.';
 }
 
 class _TableauDeBord {

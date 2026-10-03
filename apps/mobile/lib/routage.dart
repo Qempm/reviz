@@ -25,6 +25,7 @@ import 'ecrans/corriger.dart';
 import 'ecrans/cours.dart';
 import 'ecrans/fiches.dart';
 import 'ecrans/ligue.dart';
+import 'ecrans/matiere.dart';
 import 'ecrans/notifications.dart';
 import 'ecrans/notifications_reglages.dart';
 import 'ecrans/gains.dart';
@@ -67,6 +68,9 @@ abstract final class Chemins {
   static const corriger = '/corriger';
 
   static String cours(String id) => '/cours/$id';
+
+  /// Une matière : sa maîtrise, ses chapitres à retravailler, ses cours.
+  static String matiere(String id) => '/matiere/$id';
 
   /// Une session du cours, d'un chapitre, ou de ses seules erreurs.
   static String session(String id, {String? chapitre, bool erreurs = false}) {
@@ -205,6 +209,11 @@ GoRouter creerRouteur(Ref ref) {
               GoRoute(
                 path: Chemins.ligue,
                 builder: (_, _) => const EcranLigue(),
+              ),
+              GoRoute(
+                path: '/matiere/:id',
+                builder: (_, etat) =>
+                    EcranMatiere(matiereId: etat.pathParameters['id'] ?? ''),
               ),
               GoRoute(
                 path: Chemins.notifications,

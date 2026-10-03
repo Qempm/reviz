@@ -28,6 +28,7 @@ final apiProvider = Provider<ApiReviz>((_) => ApiReviz());
 final depotProfilProvider = Provider((_) => const DepotProfil());
 final depotAccueilProvider = Provider((_) => const DepotAccueil());
 final depotCoursProvider = Provider((_) => const DepotCours());
+final depotMatiereProvider = Provider((_) => const DepotMatiere());
 final depotFichesProvider = Provider((_) => const DepotFiches());
 final depotBoutiqueProvider = Provider((_) => const DepotBoutique());
 final depotGainsProvider = Provider((_) => const DepotGains());
@@ -64,6 +65,15 @@ final accueilProvider = FutureProvider<DonneesAccueil?>((ref) async {
 final coursProvider = FutureProvider<List<ApercuCours>>((ref) async {
   ref.watch(authProvider);
   return ref.read(depotCoursProvider).liste();
+});
+
+/// L'écran d'une matière : maîtrise, cours, chapitres à retravailler.
+final matiereProvider = FutureProvider.family<DonneesMatiere, String>((
+  ref,
+  id,
+) {
+  ref.watch(authProvider);
+  return ref.read(depotMatiereProvider).charger(id);
 });
 
 final unCoursProvider = FutureProvider.family<ApercuCours?, String>((ref, id) {

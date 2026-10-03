@@ -166,6 +166,22 @@ void main() {
       expect(aQuitte(), isFalse);
     });
 
+    testWidgets('une matière ouverte depuis Accueil y ramène au retour', (
+      tester,
+    ) async {
+      final routeur = await monter(tester);
+
+      routeur.push(Chemins.matiere('m1'));
+      await tester.pumpAndSettle();
+      expect(find.text('page matière'), findsOneWidget);
+      // La matière vit sous l'onglet Accueil : la barre reste là.
+      expect(find.byType(NavBasse), findsOneWidget);
+
+      await retour(tester);
+      expect(find.text('page accueil'), findsOneWidget);
+      expect(aQuitte(), isFalse);
+    });
+
     testWidgets('ne sort jamais depuis la racine d’un autre onglet', (
       tester,
     ) async {
@@ -261,7 +277,9 @@ GoRouter routeurDeTest() {
       StatefulShellRoute.indexedStack(
         builder: (_, _, coquille) => CoquilleOnglets(coquille: coquille),
         branches: [
-          StatefulShellBranch(routes: [page('/', 'accueil')]),
+          StatefulShellBranch(
+            routes: [page('/', 'accueil'), page('/matiere/:id', 'matière')],
+          ),
           StatefulShellBranch(
             routes: [
               page('/reviser', 'réviser'),

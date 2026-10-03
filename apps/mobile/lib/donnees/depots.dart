@@ -287,7 +287,7 @@ class DepotAccueil {
   }
 
   static const _colonnesCours =
-      'id, title, status, is_demo, subject_name, exam_date, '
+      'id, title, status, is_demo, subject_id, subject_name, exam_date, '
       'nb_chapitres, nb_questions, nb_fiches, nb_tentees';
 
   /// La date du téléphone, pas celle d'UTC : entre minuit et une heure à
@@ -305,6 +305,106 @@ class DepotAccueil {
 
 // ----------------------------------------------------------------- Cours
 
+// --------------------------------------------------------------- Matière
+
+/// Un chapitre à retravailler, avec le cours qui le porte.
+class ChapitreARetravailler {
+  const ChapitreARetravailler({required this.cours, required this.chapitre});
+
+  final ApercuCours cours;
+  final ApercuChapitre chapitre;
+}
+
+/// L'écran d'une matière : sa maîtrise, ses cours, ce qu'il faut reprendre.
+class DonneesMatiere {
+  const DonneesMatiere({
+    required this.id,
+    required this.nom,
+    required this.stat,
+    required this.cours,
+    required this.aRetravailler,
+  });
+
+  final String id;
+  final String? nom;
+
+  /// `null` tant qu'aucune question de la matière n'a été répondue.
+  final StatMatiere? stat;
+  final List<ApercuCours> cours;
+
+  /// Du plus faible au moins faible, cinq au plus.
+  final List<ChapitreARetravailler> aRetravailler;
+
+  /// Le cours à rouvrir par « Réviser cette matière » : celui du chapitre le
+  /// plus faible s'il y en a un, sinon le prêt le moins avancé.
+  ApercuCours? get coursAReviser {
+    if (aRetravailler.isNotEmpty) return aRetravailler.first.cours;
+    final prets = cours.where((c) => c.pret && c.nbQuestions > 0).toList()
+      ..sort((a, b) => a.progression.compareTo(b.progression));
+    return prets.firstOrNull;
+  }
+}
+
+class DepotMatiere {
+  const DepotMatiere();
+
+  /// Seuil sous lequel un chapitre tenté est « à retravailler », même si la
+  /// vue ne le marque pas encore faible (elle attend quatre tentatives).
+  static const seuilRetravail = 0.6;
+
+  Future<DonneesMatiere> charger(String matiereId) async {
+    final resultats = await Future.wait<dynamic>([
+      Future<dynamic>.value(
+        supabase
+            .from('subject_stats')
+            .select(
+              'subject_id, subject_name, questions_answered, average_score, '
+              'is_weak',
+            )
+            .eq('subject_id', matiereId)
+            .maybeSingle(),
+      ),
+      Future<dynamic>.value(
+        supabase
+            .from('course_overview')
+            .select(
+              'id, title, status, is_demo, subject_id, subject_name, '
+              'exam_date, nb_chapitres, nb_questions, nb_fiches, nb_tentees, '
+              'created_at',
+            )
+            .eq('subject_id', matiereId)
+            .order('created_at', ascending: false),
+      ),
+    ]);
+
+    final stat = DepotAccueil._un(resultats[0], StatMatiere.depuis);
+    final cours = _garder(resultats[1] as List? ?? const [], ApercuCours.depuis);
+
+    // Les chapitres de chaque cours prêt, en parallèle : un étudiant a
+    // rarement plus de trois cours par matière.
+    final prets = cours.where((c) => c.pret).toList();
+    final chapitres = await Future.wait([
+      for (final c in prets) const DepotCours().chapitres(c.id),
+    ]);
+
+    final faibles = <ChapitreARetravailler>[
+      for (var i = 0; i < prets.length; i++)
+        for (final ch in chapitres[i])
+          if (ch.aRevoir ||
+              (ch.taux != null && ch.nbTentees > 0 && ch.taux! < seuilRetravail))
+            ChapitreARetravailler(cours: prets[i], chapitre: ch),
+    ]..sort((a, b) => (a.chapitre.taux ?? 0).compareTo(b.chapitre.taux ?? 0));
+
+    return DonneesMatiere(
+      id: matiereId,
+      nom: stat?.matiereNom ?? cours.firstOrNull?.matiereNom,
+      stat: stat,
+      cours: cours,
+      aRetravailler: faibles.take(5).toList(),
+    );
+  }
+}
+
 class DepotCours {
   const DepotCours();
 
@@ -316,7 +416,7 @@ class DepotCours {
     final lignes = await supabase
         .from('course_overview')
         .select(
-          'id, title, status, is_demo, subject_name, exam_date, '
+          'id, title, status, is_demo, subject_id, subject_name, exam_date, '
           'nb_chapitres, nb_questions, nb_fiches, nb_tentees, created_at',
         )
         .order('is_demo', ascending: false)
@@ -329,7 +429,7 @@ class DepotCours {
     final ligne = await supabase
         .from('course_overview')
         .select(
-          'id, title, status, is_demo, subject_name, exam_date, '
+          'id, title, status, is_demo, subject_id, subject_name, exam_date, '
           'nb_chapitres, nb_questions, nb_fiches, nb_tentees',
         )
         .eq('id', id)
