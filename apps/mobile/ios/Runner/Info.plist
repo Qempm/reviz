@@ -31,10 +31,10 @@
 		<key>ITSAppUsesNonExemptEncryption</key>
 		<false/>
 		<key>UIBackgroundModes</key>
-	<array>
-		<string>remote-notification</string>
-	</array>
-	<key>UIRequiresFullScreen</key>
+		<array>
+			<string>remote-notification</string>
+		</array>
+		<key>UIRequiresFullScreen</key>
 		<true/>
 		<key>LSRequiresIPhoneOS</key>
 		<true/>

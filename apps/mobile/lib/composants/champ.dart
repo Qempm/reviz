@@ -88,7 +88,7 @@ class _ChampState extends State<Champ> {
               shadows: _focus && !enErreur
                   ? const [
                       BoxShadow(
-                        color: Color(0x33FFC300),
+                        color: Color(0x33FFC400),
                         blurRadius: 0,
                         spreadRadius: 4,
                       ),

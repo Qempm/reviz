@@ -1,10 +1,10 @@
 import type { Config } from 'tailwindcss'
 
 /**
- * Design system Reviz — deuxième version, 29 septembre 2026.
+ * Design system Reviz — troisième version, 3 octobre 2026.
  *
- * Les neutres ont été revus (docs/DESIGN.md § 11 bis) : fond gris très clair,
- * texte presque noir, secondaire gris neutre, plus de brun ni d'arête tactile.
+ * L'identité de la charte de marque (docs/DESIGN.md § 11 ter) : fond crème
+ * #FCEFD0, jaune #FFC400, encre #101818, orange flamme #F4793B.
  * La référence est `apps/mobile/lib/theme/jetons.dart` ; ce fichier en reprend
  * les valeurs pour les deux pages publiques (`/` et `/app`). Les rôles
  * Material 3 hérités de Stitch gardent leurs noms, leurs valeurs ont suivi.
@@ -20,28 +20,28 @@ import type { Config } from 'tailwindcss'
 /** Palette brute, partagée par les deux jeux de tokens. */
 const stitch = {
   // Surfaces
-  surface: '#f5f5f7',
-  surfaceDim: '#d1d1d6',
-  surfaceBright: '#f5f5f7',
+  surface: '#fcefd0',
+  surfaceDim: '#e5d3a6',
+  surfaceBright: '#fcefd0',
   surfaceContainerLowest: '#ffffff',
-  surfaceContainerLow: '#f2f2f7',
-  surfaceContainer: '#ebebf0',
-  surfaceContainerHigh: '#e5e5ea',
-  surfaceContainerHighest: '#e5e5ea',
-  surfaceVariant: '#e5e5ea',
-  surfaceTint: '#2c2c2e',
-  onSurface: '#1d1d1f',
-  onSurfaceVariant: '#6e6e73',
+  surfaceContainerLow: '#fff8e8',
+  surfaceContainer: '#f7e7c0',
+  surfaceContainerHigh: '#eadbb4',
+  surfaceContainerHighest: '#eadbb4',
+  surfaceVariant: '#eadbb4',
+  surfaceTint: '#263030',
+  onSurface: '#101818',
+  onSurfaceVariant: '#4a4f4c',
   inverseSurface: '#313030',
   inverseOnSurface: '#f3f0ef',
-  outline: '#8e8e93',
-  outlineVariant: '#d1d1d6',
+  outline: '#8a8471',
+  outlineVariant: '#e5d3a6',
 
   // Jaune
-  primary: '#2c2c2e',
+  primary: '#263030',
   onPrimary: '#ffffff',
-  primaryContainer: '#ffc300',
-  onPrimaryContainer: '#1d1d1f',
+  primaryContainer: '#ffc400',
+  onPrimaryContainer: '#101818',
   primaryFixed: '#ffedb0',
   primaryFixedDim: '#f8be00',
   onPrimaryFixed: '#251a00',
@@ -49,11 +49,11 @@ const stitch = {
   inversePrimary: '#f8be00',
 
   // Orange
-  secondary: '#a83900',
+  secondary: '#c9531f',
   onSecondary: '#ffffff',
-  secondaryContainer: '#fe6a2b',
+  secondaryContainer: '#f4793b',
   onSecondaryContainer: '#5b1b00',
-  secondaryFixed: '#ffe2d5',
+  secondaryFixed: '#fde3d3',
   secondaryFixedDim: '#ffb59a',
   onSecondaryFixed: '#380d00',
   onSecondaryFixedVariant: '#802900',

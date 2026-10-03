@@ -31,7 +31,6 @@ class BlasonLigue extends StatelessWidget {
                   // Noir sur l'or, comme tout texte posé sur le jaune.
                   color: division == 3 ? Couleurs.surJaune : Couleurs.carte,
                   fontSize: taille * 0.36,
-                  fontWeight: FontWeight.w800,
                 ),
               ),
             ),

@@ -32,8 +32,8 @@ export const viewport: Viewport = {
   // Le zoom reste permis : le bloquer empêche un étudiant malvoyant
   // d'agrandir le texte, et Android l'ignore de toute façon en partie.
   viewportFit: 'cover',
-  // Le fond de la deuxième version (#F5F5F7), et non plus le crème de la v1.
-  themeColor: '#f5f5f7',
+  // Le crème de l'identité du 3 octobre 2026 (#FCEFD0).
+  themeColor: '#fcefd0',
 }
 
 export default function RootLayout({

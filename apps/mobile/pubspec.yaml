@@ -93,42 +93,54 @@ flutter:
     # Le logo, dans l'en-tête et à la connexion : la marque doit se voir dans
     # l'application, pas seulement sur l'écran d'accueil du téléphone. 30 ko.
     - assets/marque/logo.png
-    # Le panthéreau, dans ses sept états : 175 ko en tout, en WebP 512 px.
+    # Le panthéreau en 3D, dans ses vingt et un états, en WebP 512 px.
     # Produits par `node scripts/mascotte.mjs` depuis `assets-source/mascotte/`.
     - assets/mascotte/
 
   fonts:
-    # Nunito Sans embarquée, et non téléchargée par `google_fonts` au premier
-    # lancement : le public cible a un forfait data limité et ouvre souvent
-    # l'application la nuit avant un contrôle, sur une connexion instable.
-    # Un fichier variable (571 ko) couvre les trois graisses du design system
-    # pour le prix d'une seule.
+    # Identité du 3 octobre 2026 : Fredoka pour les titres et les chiffres
+    # héros, Inter pour le texte. Embarquées, et non téléchargées par
+    # `google_fonts` au premier lancement : le public cible a un forfait data
+    # limité et ouvre souvent l'application la nuit avant un contrôle.
     #
-    # Contrairement à l'APK versionné du dépôt web, une police est une entrée
-    # de build qui ne change jamais : la committer est légitime.
-    - family: Nunito Sans
+    # Les deux fichiers sont réduits à l'alphabet latin (`fontTools subset`) :
+    #  - Fredoka figée en graisse 600, l'équivalent de l'ancienne Fredoka
+    #    One : 35 ko ;
+    #  - Inter variable sur l'axe `wght` (400 à 700), axe `opsz` figé à 14 :
+    #    156 ko pour quatre graisses — Nunito Sans pesait 558 ko.
+    # Une police est une entrée de build qui ne change jamais : la committer
+    # est légitime. Licences : `assets/polices/OFL.txt`.
+    - family: Fredoka
       fonts:
-        - asset: assets/polices/NunitoSans.ttf
+        - asset: assets/polices/Fredoka.ttf
+          weight: 600
+    - family: Inter
+      fonts:
+        - asset: assets/polices/Inter.ttf
+          weight: 400
+        - asset: assets/polices/Inter.ttf
           weight: 500
-        - asset: assets/polices/NunitoSans.ttf
+        - asset: assets/polices/Inter.ttf
+          weight: 600
+        - asset: assets/polices/Inter.ttf
           weight: 700
-        - asset: assets/polices/NunitoSans.ttf
-          weight: 800
 
-# Écran de lancement : le logo sur le jaune de marque, au lieu d'un écran
-# blanc pendant que Flutter démarre — la première seconde que voit un
-# étudiant. Régénérer après modification :
+# Écran de lancement : l'icône du panthéreau sur le crème de l'application,
+# au lieu d'un écran blanc pendant que Flutter démarre — la première seconde
+# que voit un étudiant. Les images sont produites par `scripts/icones.mjs` ;
+# régénérer ensuite avec :
 #
 #   dart run flutter_native_splash:create
 flutter_native_splash:
-  color: "#FFC300"
+  color: "#FCEFD0"
   image: assets/marque/logo-objet.png
-  # Android 12 et plus découpent l'image dans un disque : la version dédiée
-  # tient dans ce disque par sa diagonale (voir scripts/icones.mjs pour le
-  # même raisonnement sur l'icône adaptative).
+  # Android 12 et plus découpent l'image dans un disque posé sur
+  # `icon_background_color` : le buste y est calé au bas du disque (voir
+  # scripts/icones.mjs).
   android_12:
-    color: "#FFC300"
+    color: "#FCEFD0"
     image: assets/marque/logo-lancement-a12.png
+    icon_background_color: "#FFC400"
   android: true
   ios: true
   web: false

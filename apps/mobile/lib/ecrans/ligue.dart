@@ -195,7 +195,7 @@ class _EnTeteLigue extends StatelessWidget {
                           Fr.ligue.finDans(
                             reste.isNegative ? Duration.zero : reste,
                           ),
-                          style: Typo.labelMd.copyWith(color: Couleurs.orange),
+                          style: Typo.labelMd.copyWith(color: Couleurs.orangeProfond),
                         ),
                       ),
                     ],

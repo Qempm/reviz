@@ -346,7 +346,7 @@ class _ResultatState extends ConsumerState<_Resultat> {
                           nombreFr(c.bareme!),
                         ),
                   style: Typo.displayHerosMobile.copyWith(
-                    color: reussi ? Couleurs.texteAccent : Couleurs.orange,
+                    color: reussi ? Couleurs.texteAccent : Couleurs.orangeProfond,
                   ),
                   textAlign: TextAlign.center,
                 ),

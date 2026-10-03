@@ -62,11 +62,10 @@ class Cloche extends ConsumerWidget {
                       alignment: Alignment.center,
                       child: Text(
                         n > 9 ? '9+' : '$n',
-                        style: Typo.labelSm.copyWith(
+                        style: Typo.labelSm.merge(Typo.chiffres).copyWith(
                           color: Colors.white,
                           fontSize: 10,
                           height: 1,
-                          fontWeight: FontWeight.w800,
                         ),
                       ),
                     ),

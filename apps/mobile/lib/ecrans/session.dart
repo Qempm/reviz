@@ -557,9 +557,9 @@ class _ResultatState extends State<_Resultat> {
                   depuisZero: true,
                   construire: (n) => Text(
                     Fr.session.score(n, widget.total),
-                    style: Typo.displayHerosMobile.copyWith(
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                    ),
+                    // Le score défile de 0 à sa valeur : Inter et ses
+                    // chiffres tabulaires, sinon la ligne tremblerait.
+                    style: Typo.displayHerosMobile.merge(Typo.chiffres),
                     textAlign: TextAlign.center,
                   ),
                 ),

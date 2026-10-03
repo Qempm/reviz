@@ -71,7 +71,7 @@ class GraphiqueSemaine extends StatelessWidget {
                   Text(
                     _lettres[(j.jourSemaine - 1).clamp(0, 6)],
                     style: Typo.caption.copyWith(
-                      color: j.aujourdhui ? Couleurs.orange : Couleurs.attenue,
+                      color: j.aujourdhui ? Couleurs.orangeProfond : Couleurs.attenue,
                       fontWeight: j.aujourdhui ? FontWeight.w800 : null,
                     ),
                   ),

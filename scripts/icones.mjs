@@ -7,27 +7,33 @@
  * signalait — une icône par défaut s'installe sans erreur. C'est pourtant la
  * première chose qu'un étudiant voit, avant même d'ouvrir l'application.
  *
- *   node scripts/icones.mjs [chemin/vers/tete-1024.png]
+ *   node scripts/icones.mjs [chemin/vers/buste.png] [--apercu=planche.png]
  *
- * **Une seule entrée : la tête de la mascotte sur fond transparent**, carrée,
- * 1024 px au moins. C'est exactement ce que rend un détourage, donc la chaîne
- * est faite pour ce format-là. Le script en tire :
+ * **Une seule entrée : le buste du panthéreau sur fond transparent**
+ * (`assets-source/icone/reviz-panthere-buste.png`, identité du 3 octobre
+ * 2026). C'est l'icône de la charte de marque, tête et épaules, dont on a
+ * retiré le jaune : le script la repose sur le jaune exact du design system.
  *
- *  - l'icône héritée (`ic_launcher.png`), cinq densités, la tête posée sur le
- *    jaune du design system — sur Android 7 c'est elle qui s'affiche, et un
- *    PNG transparent y donnerait une icône trouée ;
- *  - l'icône **adaptative** (Android 8+), en deux couches : un fond de
- *    couleur et un premier plan transparent de 108 dp. Sans elle, Android
- *    pose l'icône héritée dans une pastille blanche et le rendu paraît
- *    inachevé.
+ * Le buste est **coupé en bas**, aux épaules. Il ne se centre donc pas comme
+ * un objet compact : on le pose **au pied** de la toile, et c'est le bord de
+ * l'icône qui le coupe — un buste qui flotte au milieu du jaune, avec une
+ * coupe nette sous les épaules, aurait l'air d'une découpe ratée. Le script
+ * en tire :
+ *
+ *  - l'icône héritée (`ic_launcher.png`), cinq densités, sur le jaune — sur
+ *    Android 7 c'est elle qui s'affiche, et un PNG transparent y donnerait
+ *    une icône trouée ;
+ *  - l'icône **adaptative** (Android 8+), en deux couches : un fond jaune et
+ *    un premier plan transparent de 108 dp, buste au pied ;
+ *  - l'icône de l'iPhone, celles du web, et les trois images de la marque
+ *    dans l'application (`apps/mobile/assets/marque/`) : le logo de l'en-tête
+ *    et les deux images de l'écran de lancement.
  *
  * Le calcul qui compte est celui de la zone sûre : sur les 108 dp du premier
- * plan, seuls les **72 dp** centraux sont affichés — les 18 dp de chaque côté
- * sont la réserve de parallaxe. Et le lanceur inscrit ensuite sa forme dans
- * ces 72 dp : cercle, carré arrondi ou goutte selon l'appareil. Un objet
- * compact doit donc y entrer **par sa diagonale**, pas par son côté. Voir
- * `PART_ADAPTATIVE` plus bas : ce détail-là a été réglé en simulant le rendu,
- * après avoir constaté que le premier réglage coupait le dessin.
+ * plan, seuls les **72 dp** centraux sont affichés, et le lanceur y inscrit
+ * sa forme — cercle, carré arrondi ou goutte. Les oreilles, en haut aux
+ * coins, sont ce qui sort le premier d'un cercle : voir `PART_ADAPTATIVE`,
+ * réglée en simulant le rendu (`--apercu`).
  */
 
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
@@ -42,11 +48,11 @@ const RES = path.join(
 )
 
 const SOURCE_DEFAUT = path.join(
-  RACINE, 'assets-source', 'icone', 'reviz-fiches-1024.png',
+  RACINE, 'assets-source', 'icone', 'reviz-panthere-buste.png',
 )
 
-/** Le jaune du design system (`docs/DESIGN.md`), fond des deux icônes. */
-const JAUNE = { r: 0xff, g: 0xc3, b: 0x00, alpha: 1 }
+/** Le jaune de la charte (`jetons.dart`), fond de toutes les icônes. */
+const JAUNE = { r: 0xff, g: 0xc4, b: 0x00, alpha: 1 }
 
 /**
  * Densités Android. `ic_launcher` fait 48 dp, le premier plan adaptatif
@@ -61,35 +67,44 @@ const DENSITES = [
 ]
 
 /**
- * Part de la toile occupée par le dessin, par couche.
+ * Largeur du buste, en part de la toile, selon ce qui masque l'icône.
  *
- * Ces deux nombres ont été réglés en simulant le vrai rendu, pas déduits.
+ *  - `PART_PLEINE` : rien ne la masque, ou un simple carré arrondi (icône
+ *    héritée, boutique, iPhone, logo) — le buste peut presque toucher les
+ *    bords ;
+ *  - `PART_ADAPTATIVE` : la couche de 108 dp, dont seuls les 72 dp centraux
+ *    se voient, découpés en cercle sur bien des lanceurs. Les oreilles sont
+ *    aux coins hauts du buste : c'est elles que le cercle coupe d'abord ;
+ *  - `PART_DECOUPABLE` : l'icône web « maskable », dont la zone sûre est un
+ *    disque de 80 %.
  *
- * `PART_ADAPTATIVE` a d'abord été posée à 0,62 — un peu en dedans des 66,7 %
- * de la zone sûre — et c'était **faux**. La zone sûre de 66,7 % est le côté du
- * carré visible ; un lanceur rond y inscrit un cercle, et les coins d'un
- * objet carré sortent alors de ce cercle. Pour qu'un objet compact tienne
- * entier, c'est sa **diagonale** qui doit entrer dans les 72 dp : côté ≤
- * 72/√2, soit 47 % de la couche. La simulation montrait les fiches coupées
- * net en bas ; elle ne les montre plus.
- *
- * `PART_HERITEE` peut être plus généreuse : l'icône héritée n'est masquée par
- * rien. On garde tout de même une marge, un dessin qui touche le bord d'un
- * carré paraissant toujours à l'étroit.
+ * Valeurs réglées sur la planche de `--apercu`, pas déduites.
  */
-const PART_HERITEE = 0.76
-const PART_ADAPTATIVE = 0.47
+const PART_PLEINE = 0.86
+const PART_ADAPTATIVE = 0.6
 
-const source = process.argv[2]
-  ? path.resolve(process.argv[2])
-  : SOURCE_DEFAUT
+/**
+ * Hauteur du pied du buste dans la couche adaptative, en part des 108 dp.
+ * Seuls les 72 dp centraux se voient : leur bas est à 90 dp. Posé au bas de
+ * la couche, le buste montrait les épaules et coupait le visage sous les
+ * yeux (c'est ce que la planche `--apercu` a fait voir). On pose donc son
+ * pied à 94 dp, juste sous le bas visible : la coupe des épaules reste
+ * cachée, et la tête remplit le cadre.
+ */
+const BAS_ADAPTATIF = (108 - 94) / 108
+const PART_DECOUPABLE = 0.66
+
+// Le premier argument qui n'est pas une option : `--apercu=…` seul ne doit
+// pas être pris pour le chemin du dessin.
+const cheminDonne = process.argv.slice(2).find((a) => !a.startsWith('--'))
+const source = cheminDonne ? path.resolve(cheminDonne) : SOURCE_DEFAUT
 
 if (!existsSync(source)) {
   console.error(
     `Dessin introuvable : ${source}\n\n` +
-      'Attendu : la tête de la mascotte, carrée, fond transparent, 1024 px ou\n' +
-      'plus. C’est le format que rend un détourage.\n\n' +
-      `  node scripts/icones.mjs chemin/vers/tete.png`,
+      'Attendu : le buste du panthéreau, fond transparent, coupé en bas,\n' +
+      '512 px de large au moins.\n\n' +
+      `  node scripts/icones.mjs chemin/vers/buste.png`,
   )
   process.exit(1)
 }
@@ -109,39 +124,32 @@ if (meta.width < 512 || meta.height < 512) {
   process.exit(1)
 }
 
-if (Math.abs(meta.width - meta.height) > 2) {
-  console.error(
-    `Ce dessin n’est pas carré (${meta.width}×${meta.height}). Une icône ` +
-      'Android l’est, et le recadrage automatique couperait au hasard.',
-  )
-  process.exit(1)
-}
-
 if (!meta.hasAlpha) {
   // Non bloquant : un dessin déjà sur fond jaune plein passe, mais l'icône
   // adaptative perdra la découpe et remplira toute la pastille.
   console.warn(
     'Attention : ce dessin n’a pas de canal alpha. Le premier plan adaptatif ' +
-      'sera un carré plein au lieu d’une tête découpée.',
+      'sera un rectangle plein au lieu d’un buste découpé.',
   )
 }
 
 /**
- * La tête, réduite à `part` d'une toile de `cote`, centrée.
+ * Le buste, large de `part` de la toile, **posé au pied** et centré.
  *
- * Le `trim()` n'est pas décoratif : sans lui, `part` s'appliquerait à la
- * marge transparente que porte déjà le dessin d'origine, et la tête sortirait
- * bien plus petite que voulu — deux réductions au lieu d'une. On recadre donc
- * sur la tête, puis on calcule.
+ * `bas` remonte le pied, en part de la toile : 0 pose le buste sur le bord
+ * inférieur, ce que veulent toutes les icônes.
+ *
+ * Le `trim()` recadre sur le buste avant de calculer, pour que `part`
+ * s'applique au dessin et non à une marge transparente.
  */
-async function poser(cote, part, fond) {
+async function poser(cote, part, fond, bas = 0) {
   const interne = Math.round(cote * part)
 
-  const tete = await sharp(source)
+  const { data: buste, info } = await sharp(source)
     .trim()
-    .resize(interne, interne, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
+    .resize({ width: interne, height: interne, fit: 'inside' })
     .png()
-    .toBuffer()
+    .toBuffer({ resolveWithObject: true })
 
   return sharp({
     create: {
@@ -151,7 +159,13 @@ async function poser(cote, part, fond) {
       background: fond ?? { r: 0, g: 0, b: 0, alpha: 0 },
     },
   })
-    .composite([{ input: tete, gravity: 'center' }])
+    .composite([
+      {
+        input: buste,
+        left: Math.round((cote - info.width) / 2),
+        top: cote - info.height - Math.round(cote * bas),
+      },
+    ])
     .png({ compressionLevel: 9 })
     .toBuffer()
 }
@@ -166,13 +180,13 @@ for (const { nom, facteur } of DENSITES) {
   // un PNG transparent y donnerait une icône trouée.
   const cote = Math.round(48 * facteur)
   const heritee = path.join(dossier, 'ic_launcher.png')
-  writeFileSync(heritee, await poser(cote, PART_HERITEE, JAUNE))
+  writeFileSync(heritee, await poser(cote, PART_PLEINE, JAUNE))
   ecrits.push(`${path.relative(RACINE, heritee)} (${cote}×${cote})`)
 
   // Premier plan adaptatif : 108 dp, transparent, tête dans la zone sûre.
   const coteAdaptatif = Math.round(108 * facteur)
   const premierPlan = path.join(dossier, 'ic_launcher_foreground.png')
-  writeFileSync(premierPlan, await poser(coteAdaptatif, PART_ADAPTATIVE, null))
+  writeFileSync(premierPlan, await poser(coteAdaptatif, PART_ADAPTATIVE, null, BAS_ADAPTATIF))
   ecrits.push(
     `${path.relative(RACINE, premierPlan)} (${coteAdaptatif}×${coteAdaptatif})`,
   )
@@ -200,10 +214,10 @@ const valeurs = path.join(RES, 'values')
 mkdirSync(valeurs, { recursive: true })
 
 const xmlFond = `<?xml version="1.0" encoding="utf-8"?>
-<!-- Le jaune du design system (docs/DESIGN.md § 2). Écrit par
+<!-- Le jaune de la charte (jetons.dart). Écrit par
      scripts/icones.mjs : ne pas le modifier ici. -->
 <resources>
-    <color name="ic_launcher_background">#FFC300</color>
+    <color name="ic_launcher_background">#FFC400</color>
 </resources>
 `
 
@@ -241,12 +255,12 @@ const disque = (c) =>
 
 // L'icône de la boutique et du web : un squircle complet, fond compris.
 //
-// Ni le Play Store ni une page web ne la masquent, donc le dessin peut y être
-// plus généreux que dans la couche adaptative — 62 % au lieu de 47 %.
+// Ni le Play Store ni une page web ne la masquent, donc le buste peut y être
+// plus large que dans la couche adaptative.
 const COTE_BOUTIQUE = 512
 
 const boutique = await masquer(
-  await poser(COTE_BOUTIQUE, 0.62, JAUNE),
+  await poser(COTE_BOUTIQUE, PART_PLEINE, JAUNE),
   await masque(COTE_BOUTIQUE, arrondi(COTE_BOUTIQUE)),
 )
 
@@ -263,7 +277,7 @@ ecrits.push(`${path.relative(RACINE, cheminBoutique)} (512x512, squircle)`)
 // l'envoi et non à la compilation : **aucun canal alpha** (d'où le
 // `removeAlpha`, le fond jaune étant déjà plein) et **pas de coins
 // arrondis** — iOS pose son propre masque, un squircle dessiné ici se
-// verrait en double. Le dessin prend 62 %, comme l'icône de boutique.
+// verrait en double. Le buste a la largeur de l'icône de boutique.
 const IOS = path.join(
   RACINE, 'apps', 'mobile', 'ios', 'Runner', 'Assets.xcassets',
   'AppIcon.appiconset',
@@ -275,7 +289,7 @@ if (existsSync(path.dirname(IOS))) {
   for (const f of readdirSync(IOS)) {
     if (f.endsWith('.png')) rmSync(path.join(IOS, f))
   }
-  const ios = await sharp(await poser(1024, 0.62, JAUNE))
+  const ios = await sharp(await poser(1024, PART_PLEINE, JAUNE))
     .removeAlpha()
     .png({ compressionLevel: 9 })
     .toBuffer()
@@ -309,8 +323,7 @@ if (existsSync(path.dirname(IOS))) {
 //  - `Icon-192/512` (« any ») : affichées telles quelles par Chrome sur un
 //    bureau ou dans le lanceur d'apps — squircle complet, comme la boutique ;
 //  - `Icon-maskable-*` : Android les découpe en cercle ou en goutte. La zone
-//    sûre est un disque de 80 % : le dessin y entre par sa diagonale, d'où
-//    0,52 du côté ;
+//    sûre est un disque de 80 % : `PART_DECOUPABLE` ;
 //  - `apple-touch-icon` (180 px) : l'iPhone l'arrondit lui-même et noircit
 //    la transparence — plein cadre, sans alpha ;
 //  - `favicon.png` (32 px) : l'onglet, en squircle.
@@ -319,7 +332,7 @@ if (existsSync(WEB)) {
   const icones = path.join(WEB, 'icons')
   mkdirSync(icones, { recursive: true })
   const squircle = async (c) =>
-    masquer(await poser(c, 0.62, JAUNE), await masque(c, arrondi(c)))
+    masquer(await poser(c, PART_PLEINE, JAUNE), await masque(c, arrondi(c)))
   const ecrire = (chemin, octets, note) => {
     writeFileSync(chemin, octets)
     ecrits.push(`${path.relative(RACINE, chemin)} (${note})`)
@@ -328,16 +341,65 @@ if (existsSync(WEB)) {
     ecrire(path.join(icones, `Icon-${c}.png`), await squircle(c), `${c}, squircle`)
     ecrire(
       path.join(icones, `Icon-maskable-${c}.png`),
-      await sharp(await poser(c, 0.52, JAUNE)).removeAlpha().png().toBuffer(),
+      await sharp(await poser(c, PART_DECOUPABLE, JAUNE)).removeAlpha().png().toBuffer(),
       `${c}, découpable`,
     )
   }
   ecrire(
     path.join(icones, 'apple-touch-icon.png'),
-    await sharp(await poser(180, 0.62, JAUNE)).removeAlpha().png().toBuffer(),
+    await sharp(await poser(180, PART_PLEINE, JAUNE)).removeAlpha().png().toBuffer(),
     '180, plein cadre',
   )
   ecrire(path.join(WEB, 'favicon.png'), await squircle(32), '32, squircle')
+}
+
+// --- La marque dans l'application ------------------------------------------
+//
+// Trois images, dans `apps/mobile/assets/marque/` :
+//  - `logo.png` (288 px) : le logo de l'en-tête et de la connexion, l'icône
+//    du téléphone en squircle — on reconnaît dans l'application ce qu'on a
+//    touché pour l'ouvrir ;
+//  - `logo-objet.png` (432 px) : l'écran de lancement, au centre du
+//    **crème**. Le même squircle jaune : le buste seul flotterait, coupé net
+//    sous les épaules, au milieu de l'écran ;
+//  - `logo-lancement-a12.png` (1152 px) : l'écran de lancement d'Android 12,
+//    qui découpe l'image dans un disque de 768 px sur fond jaune
+//    (`icon_background_color` dans `pubspec.yaml`). Le buste y est posé un
+//    peu sous le bas du disque, dont la courbe le coupe comme le bord d'une
+//    icône ronde.
+const MARQUE = path.join(RACINE, 'apps', 'mobile', 'assets', 'marque')
+if (existsSync(MARQUE)) {
+  const tuile = async (c) =>
+    masquer(await poser(c, PART_PLEINE, JAUNE), await masque(c, arrondi(c)))
+  const ecrire = (nom, octets, note) => {
+    writeFileSync(path.join(MARQUE, nom), octets)
+    ecrits.push(`${path.relative(RACINE, path.join(MARQUE, nom))} (${note})`)
+  }
+
+  ecrire('logo.png', await tuile(288), '288, squircle')
+
+  // La tuile au centre d'une toile transparente, avec la marge que
+  // `flutter_native_splash` laisse d'ordinaire autour de l'objet.
+  const objet = await sharp({
+    create: {
+      width: 432,
+      height: 432,
+      channels: 4,
+      background: { r: 0, g: 0, b: 0, alpha: 0 },
+    },
+  })
+    .composite([{ input: await tuile(288), left: 72, top: 72 }])
+    .png({ compressionLevel: 9 })
+    .toBuffer()
+  ecrire('logo-objet.png', objet, '432, tuile centrée')
+
+  // Disque visible de 768 px centré dans 1152 : son bas est à 960 px. Le pied
+  // du buste se pose 30 px plus bas, hors du disque.
+  ecrire(
+    'logo-lancement-a12.png',
+    await poser(1152, 0.6, null, (1152 - 990) / 1152),
+    '1152, buste au bas du disque',
+  )
 }
 
 // --- Aperçu de vérification, sur demande -----------------------------------
@@ -358,7 +420,7 @@ if (apercu) {
     create: { width: C, height: C, channels: 4, background: JAUNE },
   })
     .composite([
-      { input: await poser(C, PART_ADAPTATIVE, null), top: 0, left: 0 },
+      { input: await poser(C, PART_ADAPTATIVE, null, BAS_ADAPTATIF), top: 0, left: 0 },
     ])
     .png()
     .toBuffer()

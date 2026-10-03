@@ -208,7 +208,7 @@ class _Case extends StatelessWidget {
           Text(
             lettre,
             style: Typo.caption.copyWith(
-              color: jour.aujourdhui ? Couleurs.orange : Couleurs.attenue,
+              color: jour.aujourdhui ? Couleurs.orangeProfond : Couleurs.attenue,
             ),
           ),
           const SizedBox(height: Espaces.x4),

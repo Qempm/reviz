@@ -1,14 +1,15 @@
 # DESIGN.md — Système de design Reviz
 
-> ## ⚠️ Deuxième version — 29 septembre 2026
+> ## ⚠️ Troisième version — 3 octobre 2026
 >
-> **Le design system a été revu, et le § 11 bis ci-dessous prime sur tout le
-> reste de ce fichier.** Le propriétaire a jugé la première version
-> amateur — un air de « vieux papier » — et a tranché pour des neutres clairs
-> et une géométrie inspirée d'Apple. Les valeurs de référence vivent
-> désormais dans `apps/mobile/lib/theme/jetons.dart`, qui en commente chaque
-> choix. Ce qui suit le § 11 bis décrit la **première** version, extraite de
-> Stitch : c'est un historique, pas une consigne.
+> **L'identité a été refaite, et le § 11 ter ci-dessous prime sur tout le
+> reste de ce fichier, § 11 bis compris.** Elle vient de la charte de marque
+> du propriétaire (tableau Miro « Reviz — brand guide v1.0 ») et des maquettes
+> qu'il a validées : fond crème, jaune, encre, Fredoka et Inter, panthéreau en
+> 3D. Les valeurs de référence vivent dans `apps/mobile/lib/theme/jetons.dart`
+> et `typographie.dart`, qui en commentent chaque choix. Le § 11 bis décrit
+> la deuxième version (29 septembre), et ce qui le suit la **première**,
+> extraite de Stitch : c'est un historique, pas une consigne.
 
 
 > **Source de vérité.** Ce fichier est extrait du projet Stitch
@@ -421,6 +422,64 @@ Vérifié par recherche littérale sur les 8 écrans exportés.
 | 20 | Un seul CTA principal par écran, tutoiement, textes courts, mobile 390px | Respectés | 🟢 |
 
 ---
+
+## 11 ter. Arbitrage du 3 octobre 2026 — l'identité de la charte
+
+Le propriétaire a posé sa charte de marque sur Miro, puis validé des maquettes
+(accueil, question, copie corrigée, packs, page publique) et les vingt et une
+poses du panthéreau en 3D. Ces décisions **remplacent** les points
+correspondants du § 11 bis.
+
+| Sujet | Deuxième version (29 sept.) | Troisième version (3 oct.) |
+| --- | --- | --- |
+| Fond | gris très clair `#F5F5F7` | **crème `#FCEFD0`** |
+| Cartes | blanc `#FFFFFF` | blanc `#FFFFFF`, inchangé |
+| Jaune de marque | `#FFC300` | **`#FFC400`** |
+| Texte principal, texte sur jaune | `#1D1D1F` | **encre `#101818`** |
+| Texte secondaire | gris neutre `#6E6E73` | **`#4A4F4C`** (7,4:1 sur le crème) |
+| Urgence | orange `#FE6A2B` | **orange flamme `#F4793B`** ; en petit texte, **`#C9531F`** |
+| Séparateurs, contours | `#D1D1D6` | **sable `#E5D3A6`** |
+| Pistes, remplissages | gris `#F2F2F7` → `#E5E5EA` | **crèmes `#FFF8E8` → `#EADBB4`** |
+| Ombres | noir, deux couches | **encre `#101818`**, deux couches, 10 % au plus |
+| Coins | 14 px dominant, 22 px cartes | **20 px dominant, 24 px cartes**, 28 px héros, 32 px feuilles |
+| Typographie | Nunito Sans seule | **Fredoka** (titres, chiffres héros) + **Inter** (texte) |
+| Mascotte | panthéreau dessiné à plat | **panthéreau en peluche, rendu 3D** |
+| Icône | pile de fiches cochée sur le jaune | **la tête du panthéreau sur le jaune** |
+| Écran de lancement | logo sur le jaune | **l'icône sur le crème** |
+
+**Typographie.** Fredoka (graisse unique 600, l'ancienne Fredoka One) pour ce
+qui se lit d'un coup d'œil : titres, chiffres héros, montants. Inter (400 à
+700) pour ce qui se lit vraiment : corps, labels, boutons. Fredoka n'a pas de
+chiffres tabulaires : un compteur qui défile prend `Typo.chiffres` (Inter
+tabulaire), sinon sa largeur tremble. Les deux fichiers sont embarqués et
+réduits à l'alphabet latin — 35 ko et 156 ko, contre 558 ko pour Nunito Sans.
+
+**Mascotte.** Vingt et une poses générées dans Flow (Nano Banana 2) à partir
+de l'icône de la charte, pour garder le même personnage : yeux cerclés de
+crème, museau crème, truffe orange, oreilles bordées de crème à l'intérieur
+orange, moustaches blanches, queue en spirale. Sources sur fond blanc dans
+`assets-source/mascotte/`, détourées par `scripts/detourer-blanc.mjs` (le
+fond est ce qui est neutre, clair et relié au bord — le museau crème, enfermé
+dans la fourrure, reste), mises à l'échelle commune par
+`scripts/mascotte.mjs`. Une pose dont l'anatomie est fausse (bras en trop) se
+régénère avec la consigne « exactly two arms, two legs and one tail ».
+
+**Icône.** Le buste du panthéreau (`assets-source/icone/reviz-panthere-buste.png`)
+est posé **au pied** de chaque icône par `scripts/icones.mjs`, qui produit
+aussi le logo de l'en-tête et les deux images de l'écran de lancement. Dans
+la couche adaptative d'Android, le pied du buste est calé juste sous la zone
+visible : posé au bas des 108 dp, il coupait le visage.
+
+**Ce qui ne change pas :**
+
+- **Toujours aucun vert.** Une bonne réponse se fête en jaune (`#FFC400` sur
+  `#FFEDB0`), une mauvaise en rouge `#D92D20`.
+- Coins continus (superellipse), ombres en deux couches, bouton qui se
+  contracte puis revient sur ressort, une seule pilule de navigation.
+- Le mouvement réduit, à un seul point (`MouvementReduit`).
+- Mobile d'abord, zones tactiles de 48 px, un seul CTA principal par écran.
+- La page d'accueil publique `/` garde son habit « Page Tarifs » (jetons
+  `papier.*`, arbitrage du 1er octobre).
 
 ## 11 bis. Arbitrage du 29 septembre 2026 — la deuxième version
 

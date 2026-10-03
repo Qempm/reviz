@@ -1,89 +1,81 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
 
-// Jetons du design system Reviz — deuxième version, 29 septembre 2026.
+// Jetons du design system Reviz — troisième version, 3 octobre 2026.
 //
-// La première version, figée depuis les maquettes Stitch, donnait à
-// l'application un air de **vieux papier** : fond blanc cassé chaud, texte
-// secondaire brun, arêtes pleines sous chaque bouton. Le propriétaire l'a
-// jugée amateur, et il a tranché (voir `docs/DESIGN.md` § 11, arbitrage du
-// 29 septembre) :
+// L'identité vient de la charte de marque (tableau Miro « Reviz — brand
+// guide v1.0 ») et des maquettes validées par le propriétaire le 3 octobre
+// (`docs/DESIGN.md` § 11 ter, qui prime sur les sections précédentes) :
 //
-//  * des **neutres clairs, façon Apple** — fond gris très clair, cartes
-//    blanches pures, texte presque noir, secondaire gris moyen. On reprend la
-//    géométrie et le rendu, pas la texture ;
-//  * **fin de l'arête tactile** — du relief doux, des ombres en couches, et un
-//    bouton qui se contracte sous le doigt ;
-//  * le **jaune reste la marque**, l'orange l'urgence, le rouge l'erreur ;
+//  * un **fond crème** `#FCEFD0`, chaud, sur lequel les cartes blanches se
+//    posent — il remplace le gris clair « façon Apple » du 29 septembre ;
+//  * le **jaune** `#FFC400` de la marque, l'**encre** `#101818` (un noir
+//    légèrement bleuté, celui du pelage du panthéreau), l'**orange flamme**
+//    `#F4793B` pour l'urgence ;
+//  * des coins plus ronds (20 px dominant, 24 px cartes) et des ombres
+//    teintées d'encre plutôt que de noir pur ;
 //  * et toujours **aucun vert** : une bonne réponse se fête en jaune.
 //
-// Les noms des jetons n'ont presque pas changé, et c'est voulu : plus de deux
-// cents usages dans trente fichiers basculent d'un coup, sans qu'on les
-// touche. Seuls ont été renommés ceux dont le nom aurait menti — `cream`
-// n'est plus crème — ou qui disparaissent avec l'arête tactile.
+// Les noms des jetons n'ont pas changé : plus de deux cents usages dans
+// trente fichiers basculent d'un coup, sans qu'on les touche.
 
 abstract final class Couleurs {
-  /// Fond de l'application. Le gris très clair des listes groupées d'iOS : les
-  /// cartes blanches s'en détachent sans bordure.
-  static const fond = Color(0xFFF5F5F7);
+  /// Fond de l'application : le crème de la charte. Les cartes blanches s'en
+  /// détachent sans bordure.
+  static const fond = Color(0xFFFCEFD0);
 
   /// Cartes.
   static const carte = Color(0xFFFFFFFF);
 
   /// Jaune de marque : CTA, progression, podium n° 1, série, pilule de
   /// navigation. Le seul aplat franc de l'interface.
-  static const jaune = Color(0xFFFFC300);
+  static const jaune = Color(0xFFFFC400);
 
-  /// Sélection de QCM, bonne réponse. Plus clair et plus net que l'ancien
-  /// `#FFDF9A`, qui tirait vers le beige.
+  /// Sélection de QCM, bonne réponse.
   static const jauneDoux = Color(0xFFFFEDB0);
 
-  /// Texte sur un fond jaune : **noir**, et non plus brun. Un brun sur jaune
-  /// était le premier signe de l'effet « vieux papier ».
-  static const surJaune = Color(0xFF1D1D1F);
+  /// Texte sur un fond jaune : l'encre.
+  static const surJaune = Color(0xFF101818);
 
-  /// Urgence, compte à rebours.
-  static const orange = Color(0xFFFE6A2B);
+  /// Urgence, compte à rebours : l'orange flamme de la charte. Comme fond ou
+  /// comme icône ; un **texte** orange prend [orangeProfond], plus lisible.
+  static const orange = Color(0xFFF4793B);
 
   /// Podium n° 3, fond d'urgence.
-  static const orangeDoux = Color(0xFFFFE2D5);
+  static const orangeDoux = Color(0xFFFDE3D3);
 
   /// Podium n° 2, badges.
   static const bleu = Color(0xFFBCCDEB);
   static const bleuDoux = Color(0xFFE3ECFF);
 
-  /// Texte principal.
-  static const encre = Color(0xFF1D1D1F);
+  /// Texte principal : l'encre de la charte.
+  static const encre = Color(0xFF101818);
 
-  /// Texte secondaire : un gris **neutre**. L'ancienne règle « jamais de gris
-  /// froid » est levée par l'arbitrage du 29 septembre — c'était elle qui
-  /// imposait le brun.
-  static const attenue = Color(0xFF6E6E73);
+  /// Texte secondaire : un gris tiré vers l'encre, 7,4:1 sur le crème.
+  static const attenue = Color(0xFF4A4F4C);
 
-  /// Mauvaise réponse, erreur. Plus vif que l'ancien `#BA1A1A`, sans tomber
-  /// sous le contraste AA sur du blanc (4,9:1).
+  /// Mauvaise réponse, erreur. Contraste AA sur le blanc (4,9:1).
   static const danger = Color(0xFFD92D20);
   static const dangerDoux = Color(0xFFFEE4E2);
   static const surDangerDoux = Color(0xFFB42318);
 
-  /// Séparateurs et contours de champs.
-  static const bordure = Color(0xFFD1D1D6);
+  /// Séparateurs et contours de champs : un sable, pas un gris froid, pour
+  /// rester dans la famille du crème.
+  static const bordure = Color(0xFFE5D3A6);
 
-  /// Texte d'emphase secondaire — liens, valeurs mises en avant. L'ancien
-  /// `#785A00` était un brun : c'est ce jeton qui colorait « Tout voir ».
-  static const texteAccent = Color(0xFF2C2C2E);
+  /// Texte d'emphase secondaire — liens, valeurs mises en avant.
+  static const texteAccent = Color(0xFF263030);
 
-  /// Surfaces intermédiaires : le fond groupé, le remplissage d'un champ ou
-  /// d'une piste de progression, la surface la plus marquée.
-  static const surfaceBasse = Color(0xFFF2F2F7);
-  static const surfaceConteneur = Color(0xFFEBEBF0);
-  static const surfaceHaute = Color(0xFFE5E5EA);
+  /// Surfaces intermédiaires, toutes tirées du crème : le remplissage d'un
+  /// champ, la piste d'une jauge, la surface la plus marquée.
+  static const surfaceBasse = Color(0xFFFFF8E8);
+  static const surfaceConteneur = Color(0xFFF7E7C0);
+  static const surfaceHaute = Color(0xFFEADBB4);
 
-  /// Teintes profondes, anciennement les « arêtes tactiles ». L'arête a
-  /// disparu, mais ces trois couleurs restent : les avatars s'en servent
-  /// comme fonds et encres.
+  /// Teintes profondes. Les avatars s'en servent comme fonds et encres ;
+  /// [orangeProfond] est aussi l'orange des petits textes d'urgence.
   static const jauneProfond = Color(0xFFD9A400);
-  static const orangeProfond = Color(0xFFD94E15);
+  static const orangeProfond = Color(0xFFC9531F);
   static const pecheProfond = Color(0xFF802900);
 
   /// Les six divisions des ligues, de Bronze à Diamant — le blason de
@@ -92,7 +84,7 @@ abstract final class Couleurs {
   static const divisions = [
     Color(0xFFB0703C), // Bronze
     Color(0xFF8E8E96), // Argent
-    Color(0xFFFFC300), // Or
+    Color(0xFFFFC400), // Or
     Color(0xFF4F7BD9), // Saphir
     Color(0xFFE0457B), // Rubis
     Color(0xFF6FA8EE), // Diamant
@@ -122,20 +114,20 @@ abstract final class Espaces {
 /// cercle posé sur une droite. C'est la différence qu'on sent sans savoir la
 /// nommer entre une icône iOS et un rectangle arrondi quelconque.
 abstract final class Rayons {
-  static const petit = 6.0;
-  static const moyen = 10.0;
+  static const petit = 8.0;
+  static const moyen = 14.0;
 
   /// Rayon **dominant** : boutons, champs, options de QCM.
-  static const normal = 14.0;
+  static const normal = 20.0;
 
   /// Cartes.
-  static const carte = 22.0;
+  static const carte = 24.0;
 
   /// Carte héros.
   static const heros = 28.0;
 
   /// Feuilles modales.
-  static const feuille = 28.0;
+  static const feuille = 32.0;
 }
 
 abstract final class Mesures {
@@ -152,27 +144,27 @@ abstract final class Mesures {
   static const zoneTactile = 48.0;
 }
 
-/// Ombres : **toujours en deux couches**.
+/// Ombres : **toujours en deux couches**, teintées de l'encre `#101818`.
 ///
 /// Une ombre unique paraît posée ; deux — une courte et nette au contact, une
 /// longue et diffuse autour — donnent l'impression d'un objet qui flotte
-/// légèrement au-dessus du fond. Les opacités sont basses exprès : c'est la
-/// somme qui se voit, pas chaque couche.
+/// légèrement au-dessus du fond. La charte fixe l'encre à 10 % au plus :
+/// c'est la somme des couches qui atteint ce plafond, pas chacune.
 abstract final class Ombres {
   static const carte = [
-    BoxShadow(color: Color(0x08000000), blurRadius: 2, offset: Offset(0, 1)),
-    BoxShadow(color: Color(0x0D000000), blurRadius: 24, offset: Offset(0, 8)),
+    BoxShadow(color: Color(0x0A101818), blurRadius: 2, offset: Offset(0, 1)),
+    BoxShadow(color: Color(0x14101818), blurRadius: 24, offset: Offset(0, 10)),
   ];
 
   static const cartePetite = [
-    BoxShadow(color: Color(0x08000000), blurRadius: 1, offset: Offset(0, 1)),
-    BoxShadow(color: Color(0x0A000000), blurRadius: 12, offset: Offset(0, 4)),
+    BoxShadow(color: Color(0x0A101818), blurRadius: 1, offset: Offset(0, 1)),
+    BoxShadow(color: Color(0x0F101818), blurRadius: 12, offset: Offset(0, 4)),
   ];
 
   /// Ce qui flotte au-dessus du contenu : barre de navigation, feuilles.
   static const flottante = [
-    BoxShadow(color: Color(0x0A000000), blurRadius: 1, offset: Offset(0, 0)),
-    BoxShadow(color: Color(0x14000000), blurRadius: 30, offset: Offset(0, -2)),
+    BoxShadow(color: Color(0x0A101818), blurRadius: 1, offset: Offset(0, 0)),
+    BoxShadow(color: Color(0x1A101818), blurRadius: 30, offset: Offset(0, -2)),
   ];
 
   /// Le halo d'un bouton jaune : une ombre **teintée** plutôt que grise.

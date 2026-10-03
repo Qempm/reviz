@@ -7,9 +7,10 @@
  * `--png` écrit en plus chaque état en PNG transparent de 1024 px, même
  * échelle et même pied : pour une vidéo ou un visuel, pas pour l'application.
  *
- * Entrée : `assets-source/mascotte/<etat>-source.jpg`, dessins générés dans
- * Flow sur fond magenta, **tous à partir du même dessin de référence** (l'état
- * `salut`) pour que ce soit toujours le même personnage.
+ * Entrée : `assets-source/mascotte/<etat>-source.jpg`, rendus 3D générés
+ * dans Flow (Nano Banana 2) sur **fond blanc**, tous à partir du même dessin
+ * de référence — l'icône de la charte, la tête du panthéreau sur le jaune —
+ * pour que ce soit toujours le même personnage (identité du 3 octobre 2026).
  * Sortie : `apps/mobile/assets/mascotte/<etat>.webp`, 512 px de côté.
  *
  * **Tous les états partagent la même échelle.** Chaque dessin est détouré puis
@@ -21,8 +22,10 @@
  * composant `Mascotte`, ancrée en bas, soulève le corps sans décoller les
  * pieds.
  *
- * Le détourage lui-même est celui de `scripts/detourer.mjs` (seuil magenta et
- * érosion du liseré JPEG) ; ce script l'appelle au lieu de le recopier.
+ * Le détourage est celui de `scripts/detourer-blanc.mjs` (le fond est ce qui
+ * est neutre, clair et relié au bord) ; ce script l'appelle au lieu de le
+ * recopier. Les états de [FINS] tiennent un objet blanc et fin qui touche le
+ * fond, et passent l'option `--fins`.
  */
 
 import { execFileSync } from 'node:child_process'
@@ -57,6 +60,9 @@ const ETATS = [
   'reveil',
 ]
 
+/** États dont un objet blanc et fin touche le fond (le câble débranché). */
+const FINS = new Set(['horsLigne'])
+
 const SOURCES = 'assets-source/mascotte'
 const SORTIE = 'apps/mobile/assets/mascotte'
 const COTE = 512
@@ -86,9 +92,12 @@ try {
       process.exit(1)
     }
     const detoure = path.join(temporaire, `${etat}.png`)
-    execFileSync(process.execPath, ['scripts/detourer.mjs', source, detoure], {
-      stdio: ['ignore', 'ignore', 'inherit'],
-    })
+    const options = FINS.has(etat) ? ['--fins'] : []
+    execFileSync(
+      process.execPath,
+      ['scripts/detourer-blanc.mjs', source, detoure, ...options],
+      { stdio: ['ignore', 'ignore', 'inherit'] },
+    )
     const { data, info } = await sharp(detoure)
       .trim({ threshold: 0 })
       .png()
@@ -137,12 +146,12 @@ try {
   }
 
   // 3. Planche d'aperçu : chaque état sur le fond de l'application, puis sur
-  //    le jaune — c'est là qu'un liseré rose se verrait.
+  //    le jaune — c'est là qu'un liseré blanc se verrait.
   if (apercu) {
     const case_ = 240
     const fonds = [
-      { r: 0xf5, g: 0xf5, b: 0xf7 },
-      { r: 0xff, g: 0xc3, b: 0x00 },
+      { r: 0xfc, g: 0xef, b: 0xd0 },
+      { r: 0xff, g: 0xc4, b: 0x00 },
     ]
     const vignettes = []
     for (const [ligne, fond] of fonds.entries()) {

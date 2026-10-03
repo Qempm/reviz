@@ -44,12 +44,10 @@ class AnneauNiveau extends StatelessWidget {
             ),
             Text(
               '${n.numero}',
-              style: Typo.labelSm.copyWith(
+              style: Typo.labelSm.merge(Typo.chiffres).copyWith(
                 color: couleur,
                 fontSize: taille * 0.46,
-                fontWeight: FontWeight.w800,
                 height: 1,
-                fontFeatures: const [FontFeature.tabularFigures()],
               ),
             ),
           ],

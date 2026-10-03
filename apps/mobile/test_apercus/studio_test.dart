@@ -65,9 +65,12 @@ const _policeIcones =
     'C:/src/flutter/bin/cache/artifacts/material_fonts/materialicons-regular.otf';
 
 Future<void> _chargerPolices() async {
-  final nunito = FontLoader('Nunito Sans')
-    ..addFont(rootBundle.load('assets/polices/NunitoSans.ttf'));
-  await nunito.load();
+  final titres = FontLoader('Fredoka')
+    ..addFont(rootBundle.load('assets/polices/Fredoka.ttf'));
+  await titres.load();
+  final texte = FontLoader('Inter')
+    ..addFont(rootBundle.load('assets/polices/Inter.ttf'));
+  await texte.load();
   final fichier = File(_policeIcones);
   if (fichier.existsSync()) {
     final icones = FontLoader('MaterialIcons')
@@ -770,7 +773,7 @@ class _BarreEtat extends StatelessWidget {
               Text(
                 '9:41',
                 style: TextStyle(
-                  fontFamily: 'Nunito Sans',
+                  fontFamily: 'Inter',
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
                   color: Couleurs.encre,

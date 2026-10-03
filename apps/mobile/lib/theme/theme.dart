@@ -7,7 +7,7 @@ import 'typographie.dart';
 final ThemeData themeReviz = ThemeData(
   useMaterial3: true,
   scaffoldBackgroundColor: Couleurs.fond,
-  fontFamily: 'Nunito Sans',
+  fontFamily: familleTexte,
   colorScheme: const ColorScheme.light(
     surface: Couleurs.fond,
     onSurface: Couleurs.encre,
@@ -37,7 +37,7 @@ final ThemeData themeReviz = ThemeData(
   ),
   // Les barres d'application se posent sur le fond, sans ombre ni teinte au
   // défilement — Material 3 les assombrit par défaut dès qu'une liste passe
-  // dessous, ce qui salit le gris clair.
+  // dessous, ce qui salit le crème.
   appBarTheme: AppBarTheme(
     backgroundColor: Couleurs.fond,
     foregroundColor: Couleurs.encre,
@@ -45,7 +45,7 @@ final ThemeData themeReviz = ThemeData(
     elevation: 0,
     scrolledUnderElevation: 0,
     centerTitle: true,
-    titleTextStyle: Typo.headlineSm.copyWith(fontSize: 17),
+    titleTextStyle: Typo.headlineSm.copyWith(fontSize: 19),
   ),
   // Le jaune de marque partout où Material mettrait sa couleur primaire, qui
   // est ici un gris d'encre réservé au texte.
