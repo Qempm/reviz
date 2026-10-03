@@ -96,6 +96,9 @@ flutter:
     # Le panthéreau en 3D, dans ses vingt et un états, en WebP 512 px.
     # Produits par `node scripts/mascotte.mjs` depuis `assets-source/mascotte/`.
     - assets/mascotte/
+    # Les dix objets 3D des familles de matières, sur l'accueil et l'écran
+    # d'une matière. Produits par `node scripts/matieres.mjs`.
+    - assets/matieres/
 
   fonts:
     # Identité du 3 octobre 2026 : Fredoka pour les titres et les chiffres

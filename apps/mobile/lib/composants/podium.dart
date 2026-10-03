@@ -124,9 +124,8 @@ class _Marche extends StatelessWidget {
 ///
 /// La couleur vient de `avatar_key` — elle était figée sur `jauneDoux`, si
 /// bien que tout le monde avait la même tête et que la colonne ne servait à
-/// rien. Les images, elles, sont arrivées : ce widget pose désormais le
-/// pochoir de l'animal sur le même fond, **sans qu'aucun appelant ait
-/// changé**, comme le prévoyait le commentaire précédent.
+/// rien. Depuis le 3 octobre 2026, il y pose le **buste 3D** de l'animal,
+/// rogné au disque, **sans qu'aucun appelant ait changé**.
 ///
 /// Le nom reste `AvatarInitiale` bien que l'initiale soit devenue le repli :
 /// le renommer toucherait huit fichiers pour ne rien apprendre à personne.
@@ -181,23 +180,23 @@ class AvatarInitiale extends StatelessWidget {
         container: true,
         image: true,
         label: 'Avatar ${avatar.animal}',
-        // Le pochoir ne porte aucune couleur : `srcIn` remplace ses pixels
-        // opaques par l'encre de la clé et laisse les détails évidés montrer
-        // le fond. Un seul jeu d'images sert donc les douze combinaisons,
-        // fonds sombres compris.
-        child: Image.asset(
-          avatar.pochoir,
-          // L'étiquette est portée par le `Semantics` au-dessus.
-          excludeFromSemantics: true,
-          width: taille,
-          height: taille,
-          color: avatar.encre,
-          colorBlendMode: BlendMode.srcIn,
-          // Le décodage à la taille d'affichage évite de garder en mémoire
-          // douze bitmaps de 256 px pour des ronds de 44.
-          cacheWidth: (taille * 3).round(),
-          filterQuality: FilterQuality.medium,
-          errorBuilder: (_, _, _) => initiale,
+        // Le buste 3D, épaules au pied de son carré : le disque les coupe
+        // comme sur une photo d'identité.
+        child: ClipOval(
+          child: Image.asset(
+            avatar.image,
+            // L'étiquette est portée par le `Semantics` au-dessus.
+            excludeFromSemantics: true,
+            width: taille,
+            height: taille,
+            fit: BoxFit.cover,
+            // Le décodage à la taille d'affichage évite de garder en mémoire
+            // douze bitmaps de 288 px pour des ronds de 36.
+            cacheWidth: (taille * MediaQuery.devicePixelRatioOf(context))
+                .round(),
+            filterQuality: FilterQuality.medium,
+            errorBuilder: (_, _, _) => Center(child: initiale),
+          ),
         ),
       ),
     );

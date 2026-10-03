@@ -71,6 +71,12 @@ void main() {
     }
   });
 
+  test('« politique » ne fait pas d’une économie un cours de droit', () {
+    expect(familleDe('Économie politique'), FamilleMatiere.economie);
+    expect(familleDe('Introduction à la science politique'), FamilleMatiere.droit);
+    expect(familleDe('Introduction à l’étude du droit'), FamilleMatiere.droit);
+  });
+
   test('les noms saisis par un étudiant aussi, sans accent ni casse', () {
     expect(familleDe('DROIT DES AFFAIRES'), FamilleMatiere.droit);
     expect(familleDe('Programmation en C'), FamilleMatiere.informatique);

@@ -49,6 +49,9 @@ const AVATARS = [
   { cle: 'ton-12', animal: 'hibou', fond: '#263030' },
 ]
 
+/** Avatars dont la peluche est elle-même gris clair : détourage strict. */
+const STRICTS = new Set(['ton-02'])
+
 const SOURCES = 'assets-source/avatars'
 const SORTIE = 'apps/mobile/assets/avatars'
 const COTE = 288
@@ -71,9 +74,12 @@ try {
       process.exit(1)
     }
     const detoure = path.join(temporaire, `${cle}.png`)
-    execFileSync(process.execPath, ['scripts/detourer-blanc.mjs', source, detoure], {
-      stdio: ['ignore', 'ignore', 'inherit'],
-    })
+    const options = STRICTS.has(cle) ? ['--strict'] : []
+    execFileSync(
+      process.execPath,
+      ['scripts/detourer-blanc.mjs', source, detoure, ...options],
+      { stdio: ['ignore', 'ignore', 'inherit'] },
+    )
 
     // Rogné au buste, puis réduit pour tenir dans `PART` du carré.
     const interne = Math.round(COTE * PART)

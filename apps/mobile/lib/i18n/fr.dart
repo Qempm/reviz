@@ -447,11 +447,11 @@ class _Gains {
       'pendant 12 mois.';
   final String aideCodeVerrouille =
       'Tu peux déjà le partager. Les paiements de tes filleuls te rapportent '
-      '25 % dès que tu as 3 000 XP.';
+      '25 % dès que tu as 3 000 XP.';
 
-  final String deblocageTitre = 'Tes gains s’ouvrent à 3 000 XP';
+  final String deblocageTitre = 'Tes gains s’ouvrent à 3 000 XP';
   final String deblocageDetail =
-      'Révise pour gagner des XP. À 3 000, chaque paiement de tes filleuls te '
+      'Révise pour gagner des XP. À 3 000, chaque paiement de tes filleuls te '
       'rapporte 25 % pendant 12 mois.';
   String deblocageProgression(int xp) =>
       '${milliers(xp)} / ${milliers(3000)} XP';
@@ -785,7 +785,7 @@ class _Aide {
     ),
     (
       'Comment marche le parrainage ?',
-      'Tes gains de parrainage s’ouvrent quand tu atteins 3 000 XP : révise, '
+      'Tes gains de parrainage s’ouvrent quand tu atteins 3 000 XP : révise, '
           'puis invite. Ensuite, quand un filleul paie un pack, 25 % du '
           'montant vont dans ton portefeuille — 35 % si tu es ambassadeur —, '
           'à chacun de ses paiements pendant douze mois. Un filleul ne compte '
@@ -906,8 +906,8 @@ class _Avatar {
   final String echec =
       'On n’a pas pu enregistrer ton avatar. Réessaie dans un instant.';
   final String desImages =
-      'Douze animaux, 74 ko en tout : ils sont dans l’application, donc ils '
-      's’affichent même sans réseau.';
+      'Douze animaux en peluche, dans l’application : ils s’affichent même '
+      'sans réseau.';
 }
 
 class _Depot {

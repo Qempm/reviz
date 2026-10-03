@@ -2,7 +2,7 @@
 /**
  * Détoure un dessin généré sur fond blanc (ou gris très clair).
  *
- *   node scripts/detourer-blanc.mjs entree.jpg sortie.png [--fins]
+ *   node scripts/detourer-blanc.mjs entree.jpg sortie.png [--fins] [--strict]
  *
  * Les poses 3D du panthéreau (identité du 3 octobre 2026) sortent de Flow sur
  * un fond blanc, parfois légèrement grisé. Un seuil de luminosité seul ne
@@ -23,6 +23,10 @@
  *    `horsLigne`). On n'appelle alors « fond » que ce qui survit à une
  *    ouverture large : les formes fines restent au sujet. Sans cette option,
  *    le câble disparaissait et la prise était rongée.
+ *  - `--strict` : le sujet est lui-même **gris clair ou crème pâle** (la
+ *    peluche de l'éléphant, le verre d'un flacon). Seul le blanc presque pur
+ *    compte alors comme fond ; sans cette option, des pans entiers du sujet
+ *    partaient avec lui.
  *
  * Le bord est ensuite érodé d'un pixel (le liseré JPEG, gris clair autour de
  * la fourrure) puis adouci, et les miettes isolées (ombre résiduelle,
@@ -37,6 +41,7 @@ import sharp from 'sharp'
 const args = process.argv.slice(2)
 const [entree, sortie] = args.filter((a) => !a.startsWith('--'))
 const fins = args.includes('--fins')
+const strict = args.includes('--strict')
 
 if (!entree || !sortie) {
   console.error('Usage : node scripts/detourer-blanc.mjs entree.jpg sortie.png [--fins]')
@@ -48,8 +53,8 @@ if (!existsSync(entree)) {
 }
 
 /** Écart maximal entre canaux pour un pixel « neutre », et luminosité minimale. */
-const SATURATION_FOND = 22
-const LUMIERE_FOND = 165
+const SATURATION_FOND = strict ? 10 : 22
+const LUMIERE_FOND = strict ? 238 : 165
 /** Un trou enfermé n'est du fond que s'il est blanc pur et assez grand. */
 const SATURATION_TROU = 10
 const LUMIERE_TROU = 235

@@ -402,11 +402,11 @@ colonne `text` libre que le trigger `protect_profile_columns` ne gèle pas : la
 version précédente acceptait n'importe quelle chaîne de cent caractères, et
 rien ne garantissait que ce qu'un écran lit soit un avatar.
 
-Les 24 PNG annoncés par `CLAUDE.md` n'existent pas, ni `public/avatars/` :
-l'ancien écran web construisait `/avatars/${avatar_key}.png` et récoltait des
-404. En attendant, un avatar est une initiale sur un fond de la palette. Les
-clés sont stables — le jour où les images arrivent, `ton-03` désigne un fichier
-au lieu d'une couleur, sans migration.
+Les images sont embarquées dans l'application, pas servies par le site :
+depuis le 3 octobre 2026, douze bustes d'animaux en peluche 3D
+(`apps/mobile/assets/avatars/<clé>.webp`, `scripts/avatars.mjs`). Les clés
+n'ont jamais bougé — d'une initiale sur un fond aux pochoirs, puis aux bustes
+3D, `ton-03` a toujours désigné le même avatar, sans migration.
 
 ### Notifications
 

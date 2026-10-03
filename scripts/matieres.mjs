@@ -39,6 +39,9 @@ const FAMILLES = [
   'generique',
 ]
 
+/** Objets pâles (le verre du flacon) : détourage strict. */
+const STRICTS = new Set(['sciences'])
+
 const SOURCES = 'assets-source/matieres'
 const SORTIE = 'apps/mobile/assets/matieres'
 const COTE = 256
@@ -61,9 +64,12 @@ try {
       process.exit(1)
     }
     const detoure = path.join(temporaire, `${famille}.png`)
-    execFileSync(process.execPath, ['scripts/detourer-blanc.mjs', source, detoure], {
-      stdio: ['ignore', 'ignore', 'inherit'],
-    })
+    const options = STRICTS.has(famille) ? ['--strict'] : []
+    execFileSync(
+      process.execPath,
+      ['scripts/detourer-blanc.mjs', source, detoure, ...options],
+      { stdio: ['ignore', 'ignore', 'inherit'] },
+    )
 
     const interne = Math.round(COTE * PART)
     const { data: objet, info } = await sharp(detoure)

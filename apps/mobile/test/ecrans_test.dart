@@ -1398,7 +1398,7 @@ void main() {
         ],
       );
 
-      expect(find.text('Tes gains s’ouvrent à 3 000 XP'), findsOneWidget);
+      expect(find.text(Fr.gains.deblocageTitre), findsOneWidget);
       expect(find.text(Fr.gains.deblocageProgression(1280)), findsOneWidget);
       expect(find.text(Fr.gains.deblocageReste(1720)), findsOneWidget);
       // Le code reste partageable, avec la règle dite clairement — plus bas
@@ -1422,7 +1422,7 @@ void main() {
         ],
       );
 
-      expect(find.text('Tes gains s’ouvrent à 3 000 XP'), findsNothing);
+      expect(find.text(Fr.gains.deblocageTitre), findsNothing);
       await tester.scrollUntilVisible(
         find.text(Fr.gains.aideCode),
         200,
@@ -1445,7 +1445,7 @@ void main() {
         ],
       );
 
-      expect(find.text('Tes gains s’ouvrent à 3 000 XP'), findsNothing);
+      expect(find.text(Fr.gains.deblocageTitre), findsNothing);
     });
 
     testWidgets('la carte de déblocage tient à 320 px', (tester) async {

@@ -30,13 +30,26 @@ enum FamilleMatiere {
 /// Les mots-clés de chaque famille, **dans l'ordre où on les essaie**.
 ///
 /// L'ordre tranche les noms ambigus : « Didactique des sciences » est de
-/// l'éducation avant d'être des sciences, « Biochimie médicale » de la santé
-/// avant la chimie, « Statistiques descriptives » des maths avant
-/// l'économie, « Biotechnologie végétale » de l'agronomie avant la biologie.
+/// l'éducation avant d'être des sciences, « Économie politique » de
+/// l'économie avant le droit, « Biochimie médicale » de la santé avant la
+/// chimie, « Biotechnologie végétale » de l'agronomie avant la biologie.
 const List<(FamilleMatiere, List<String>)> _motsCles = [
   (
     FamilleMatiere.education,
     ['pedagog', 'didactique', 'education', 'apprentissage', 'enseignement'],
+  ),
+  (
+    FamilleMatiere.economie,
+    [
+      'econom',
+      'comptab',
+      'gestion',
+      'marketing',
+      'financ',
+      'management',
+      'commerce',
+      'fiscal',
+    ],
   ),
   (
     FamilleMatiere.droit,
@@ -91,19 +104,6 @@ const List<(FamilleMatiere, List<String>)> _motsCles = [
       'statist',
       'geometr',
       'calcul',
-    ],
-  ),
-  (
-    FamilleMatiere.economie,
-    [
-      'econom',
-      'comptab',
-      'gestion',
-      'marketing',
-      'financ',
-      'management',
-      'commerce',
-      'fiscal',
     ],
   ),
   (

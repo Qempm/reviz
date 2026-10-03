@@ -22,17 +22,18 @@ ouvrait le site.
 | `/` | `accueil.dart` | Série de sept jours, objectif du jour, pack gratuit à un appui, carte « ta ligue », quatre matières. Reprogramme les rappels du téléphone. |
 | `/reviser` | `reviser.dart` | Liste des cours, démonstration épinglée. |
 | `/reviser/ajouter` | `ajouter_cours.dart` | Dépôt d'un PDF, d'un .docx ou d'une photo, par URL signée. Empreinte SHA-256 calculée sur l'appareil. |
+| `/matiere/:id` | `matiere.dart` | Ouvert depuis « Mes matières » : illustration de la famille, maîtrise, chapitres à retravailler de tous les cours (« Reprendre »), cours de la matière, « Réviser cette matière ». |
 | `/cours/:id` | `cours.dart` | Progression, puis le chemin des chapitres en zigzag : couronnes, verrous, panthéreau sur le chapitre en cours. |
 | `/cours/:id/session` | `session.dart` | Dix questions (jamais vues, puis ratées, puis chapitres faibles), `?chapitre=` et `?mode=erreurs`. Barre de niveau, « Niveau supérieur ! », série gardée hors ligne. |
 | `/cours/:id/fiches` | `fiches.dart` | Paquet retournable, une fiche à l'écran. |
 | `/corriger` | `corriger.dart` | Jusqu'à quatre pages, cours pré-choisi, type d'épreuve, barème ; envoi par URL signée, historique. |
 | `/corrections/:id` | `correction.dart` | Attente, note, barème ligne par ligne, notions manquées, « Réviser : chapitre », copie illisible, échec. |
-| `/boutique` | `boutique.dart` | Les cinq packs, l'accès en cours, activation de Découverte. |
-| `/gains` | `gains.dart` | Solde, code parrain copiable, filleuls, feuille de retrait. |
+| `/boutique` | `boutique.dart` | « Tu prépares quoi ? » : le pack conseillé en carte héros jaune (prix par jour, « Conseillé »), les autres en cartes compactes, Découverte à part, l'accès en cours. |
+| `/gains` | `gains.dart` | Sous 3 000 XP (hors ambassadeur), carte de déblocage du parrainage ; solde, code parrain copiable, filleuls, feuille de retrait. |
 | `/classement` | `classement.dart` | Podium 2·1·3 et tableau, pour sa faculté. |
 | `/ligue` | `ligue.dart` | Ligue de la semaine : division, compte à rebours, zones de montée et de descente, bilan de la semaine passée. Attend la migration `20260930130000_ligues.sql`. |
 | `/profil` | `profil.dart` | Identité, vérification de carte, niveau, XP des sept jours en barres, meilleure série, réglages, déconnexion. |
-| `/profil/avatar` | `avatar.dart` | Douze couleurs, initiale dessus. |
+| `/profil/avatar` | `avatar.dart` | Douze bustes d'animaux en peluche 3D, chacun sur son disque de couleur. |
 | `/profil/supprimer-compte` | `suppression.dart` | Ce qui part, ce qui reste, confirmation par le prénom. |
 | `/profil/carte-etudiante` | `carte.dart` | Photo de la carte, attente du verdict, issue. La seule barrière « un compte par personne ». |
 | `/profil/aide` | `aide.dart` | Sept questions, l'argent en premier. Le contact WhatsApp n'apparaît que si `CONTACT_WHATSAPP` est passé au build. |

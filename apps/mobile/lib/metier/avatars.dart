@@ -1,36 +1,28 @@
-// Les douze avatars : un animal, un fond, une encre.
+// Les douze avatars : un animal en peluche 3D, posé sur un fond de couleur.
 //
-// **Les images sont arrivées**, et les clés n'ont pas bougé — c'est ce que
-// promettait le commentaire précédent, qui disait « le jour où les PNG
-// arrivent, `ton-03` désigne un fichier au lieu d'une couleur, sans migration
-// ni écran à réécrire ». Aucune ligne de base n'a été touchée.
+// **Identité du 3 octobre 2026** : les pochoirs 2D, teintés à l'écran, sont
+// devenus douze bustes en peluche 3D, de la même famille que le panthéreau —
+// générés un par un dans Flow, détourés et centrés par `scripts/avatars.mjs`
+// (WebP de 288 px, 15 à 21 ko pièce). Le léopard a remplacé la panthère, qui
+// aurait doublé la mascotte.
 //
-// Ce que porte chaque fichier est un **pochoir** : une silhouette opaque sur
-// du transparent, les yeux évidés. Aucune couleur dedans. Le fond et l'encre
-// restent ici, et l'écran teinte la forme à l'affichage (`BlendMode.srcIn`).
-// Trois raisons :
+// **Les clés n'ont pas bougé**, comme lors du passage des couleurs aux
+// pochoirs : `ton-03` désigne toujours le même animal, aucune ligne de base
+// ni route n'est touchée.
 //
-//  * aucune couleur n'est dupliquée entre Dart et des pixels, donc aucune ne
-//    peut diverger ;
-//  * un fond sombre reçoit la même forme en crème, sans second jeu d'images ;
-//  * les douze fichiers pèsent 74 ko en tout, ce qui compte pour un APK déjà
-//    lourd et un public au forfait data limité.
+// Chaque buste se pose dans un disque de la couleur `fond` de sa clé. `encre`
+// ne sert plus qu'au repli — l'initiale, pour une image manquante.
 //
 // Les animaux plutôt que des visages, et c'est un choix : générer douze
-// visages « divers » finit en stéréotypes, alors qu'une silhouette d'animal
-// n'a pas ce problème, se reconnaît à 40 px dans une ligne de classement, et
-// va avec le panthéreau de la mascotte.
+// visages « divers » finit en stéréotypes, alors qu'un animal n'a pas ce
+// problème, se reconnaît à 36 px dans une ligne de classement, et va avec le
+// panthéreau de la mascotte.
 //
-// L'initiale reste le repli, pour une clé inconnue ou une image manquante.
-//
-// Aucune couleur n'est inventée ici : les douze combinaisons viennent toutes
-// de `theme/jetons.dart`, et la palette reste strictement chaude, sans vert
-// (docs/DESIGN.md § 11).
+// Aucune couleur n'est inventée ici : les douze fonds viennent tous de
+// `theme/jetons.dart`, sans vert (docs/DESIGN.md § 11).
 //
 // La même liste de clés existe côté serveur dans `lib/profil/avatars.ts`, où
-// elle sert de liste blanche : `avatar_key` est un `text` libre, et la route
-// acceptait auparavant n'importe quelle chaîne de cent caractères. Les
-// couleurs, elles, ne concernent que l'écran.
+// elle sert de liste blanche : `avatar_key` est un `text` libre.
 
 library;
 
@@ -51,14 +43,16 @@ class Avatar {
   /// Le nom de l'animal, en français.
   ///
   /// Sert d'étiquette d'accessibilité et de libellé dans l'écran de choix :
-  /// un lecteur d'écran doit annoncer « avatar panthère », pas « image ».
+  /// un lecteur d'écran doit annoncer « avatar léopard », pas « image ».
   final String animal;
 
   final Color fond;
+
+  /// La couleur de l'initiale, quand l'image manque.
   final Color encre;
 
-  /// Le pochoir, produit par `scripts/avatars.mjs`.
-  String get pochoir => 'assets/avatars/$cle.png';
+  /// Le buste 3D, produit par `scripts/avatars.mjs`.
+  String get image => 'assets/avatars/$cle.webp';
 }
 
 /// Celui qu'on montre à qui n'a rien choisi.
@@ -76,15 +70,12 @@ const Avatar avatarParDefaut = Avatar(
   encre: Couleurs.texteAccent,
 );
 
-/// Les douze, dans l'ordre d'affichage — le même que la grille découpée par
+/// Les douze, dans l'ordre d'affichage — le même que `AVATARS` dans
 /// `scripts/avatars.mjs`.
 const List<Avatar> avatars = [
-  // `encre` et non `surJaune` : `#785A00` sur le jaune convenait à une
-  // lettre, pas à une silhouette pleine, qui ressortait terne. L'aperçu du
-  // script l'a montré.
   Avatar(
     cle: 'ton-01',
-    animal: 'panthère',
+    animal: 'léopard',
     fond: Couleurs.jaune,
     encre: Couleurs.encre,
   ),

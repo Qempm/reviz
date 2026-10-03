@@ -40,19 +40,19 @@ void main() {
       expect(avatars.map((a) => a.animal).toSet().length, avatars.length);
     });
 
-    test('désigne pour chaque clé le pochoir de son nom', () {
+    test('désigne pour chaque clé le buste de son nom', () {
       for (final a in avatars) {
-        expect(a.pochoir, 'assets/avatars/${a.cle}.png');
+        expect(a.image, 'assets/avatars/${a.cle}.webp');
       }
     });
 
-    test('a un pochoir sur le disque pour chaque clé', () {
+    test('a un buste sur le disque pour chaque clé', () {
       // Le garde-fou qui compte. Un fichier manquant ne casse rien à
       // l'écran : `errorBuilder` retombe sur l'initiale, **en silence**. Un
       // avatar pourrait donc disparaître sans que personne le voie — sauf
       // ici. Le répertoire courant de `flutter test` est `apps/mobile/`.
       for (final a in avatars) {
-        expect(File(a.pochoir).existsSync(), isTrue, reason: a.pochoir);
+        expect(File(a.image).existsSync(), isTrue, reason: a.image);
       }
     });
 
