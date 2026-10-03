@@ -1093,8 +1093,10 @@ class _Matiere {
   final String rienARetravailler = 'Rien à retravailler pour l’instant';
   final String rienARetravaillerDetail =
       'Continue tes séries : un chapitre fragile apparaîtra ici.';
-  String chapitre(int index, String? titre) =>
-      'Chapitre ${index + 1}${titre == null ? '' : ' · $titre'}';
+  String chapitre(int index, String? titre) {
+    final numero = 'Chapitre ${index + 1}';
+    return titre == null ? numero : '$numero · $titre';
+  }
   String reussite(double taux) => '${(taux * 100).round()} % de justes';
   final String reprendre = 'Reprendre';
   final String tesCours = 'Tes cours';
