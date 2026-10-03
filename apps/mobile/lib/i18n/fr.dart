@@ -427,6 +427,19 @@ class _Gains {
   final String aideCode =
       'Partage-le : tu touches 25 % de chaque paiement de tes filleuls '
       'pendant 12 mois.';
+  final String aideCodeVerrouille =
+      'Tu peux déjà le partager. Les paiements de tes filleuls te rapportent '
+      '25 % dès que tu as 3 000 XP.';
+
+  final String deblocageTitre = 'Tes gains s’ouvrent à 3 000 XP';
+  final String deblocageDetail =
+      'Révise pour gagner des XP. À 3 000, chaque paiement de tes filleuls te '
+      'rapporte 25 % pendant 12 mois.';
+  String deblocageProgression(int xp) =>
+      '${milliers(xp)} / ${milliers(3000)} XP';
+  String deblocageReste(int xp) => 'Encore ${milliers(xp)} XP';
+  final String deblocageAction = 'Réviser pour gagner des XP';
+  final String debloque = 'Parrainage débloqué : tes filleuls te rapportent.';
   final String copier = 'Copier';
   final String copie = 'Code copié';
   final String partager = 'Partager sur WhatsApp';
@@ -754,9 +767,10 @@ class _Aide {
     ),
     (
       'Comment marche le parrainage ?',
-      'Tu donnes ton code. Quand ton filleul paie un pack, 25 % du montant '
-          'vont dans ton portefeuille — 35 % si tu es ambassadeur —, et cela '
-          'pendant douze mois à chacun de ses paiements. Un filleul ne compte '
+      'Tes gains de parrainage s’ouvrent quand tu atteins 3 000 XP : révise, '
+          'puis invite. Ensuite, quand un filleul paie un pack, 25 % du '
+          'montant vont dans ton portefeuille — 35 % si tu es ambassadeur —, '
+          'à chacun de ses paiements pendant douze mois. Un filleul ne compte '
           'que s’il est vérifié et qu’il a payé au moins une fois. Le retrait '
           'part en Mobile Money dès 3 000 F.',
     ),

@@ -1116,6 +1116,101 @@ void main() {
   });
 
   group('gains', () {
+    const gainsSimples = DonneesGains(
+      soldeFcfa: 0,
+      codeParrain: 'ABC123',
+      filleuls: 1,
+      filleulsPayants: 0,
+    );
+
+    Profil avecXp(int xp, {bool ambassadeur = false}) => Profil(
+      id: 'u1',
+      prenom: 'Awa',
+      xpTotal: xp,
+      serieCourante: 0,
+      dernierJourValide: null,
+      faculteId: 'f1',
+      universiteNom: 'UAC',
+      faculteNom: 'FADESP',
+      codeParrain: 'ABC123',
+      estAmbassadeur: ambassadeur,
+    );
+
+    testWidgets('sous 3 000 XP, dit ce qui manque pour ouvrir les gains', (
+      tester,
+    ) async {
+      await _poser(
+        tester,
+        const EcranGains(),
+        remplacements: [
+          gainsProvider.overrideWith((_) async => gainsSimples),
+          profilProvider.overrideWith((_) async => avecXp(1280)),
+        ],
+      );
+
+      expect(find.text('Tes gains s’ouvrent à 3 000 XP'), findsOneWidget);
+      expect(find.text(Fr.gains.deblocageProgression(1280)), findsOneWidget);
+      expect(find.text(Fr.gains.deblocageReste(1720)), findsOneWidget);
+      // Le code reste partageable, avec la règle dite clairement — plus bas
+      // dans la liste, qu'on fait défiler jusqu'à lui.
+      await tester.scrollUntilVisible(
+        find.text(Fr.gains.aideCodeVerrouille),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.text(Fr.gains.aideCodeVerrouille), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('à 3 000 XP, plus de verrou', (tester) async {
+      await _poser(
+        tester,
+        const EcranGains(),
+        remplacements: [
+          gainsProvider.overrideWith((_) async => gainsSimples),
+          profilProvider.overrideWith((_) async => avecXp(3000)),
+        ],
+      );
+
+      expect(find.text('Tes gains s’ouvrent à 3 000 XP'), findsNothing);
+      await tester.scrollUntilVisible(
+        find.text(Fr.gains.aideCode),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.text(Fr.gains.aideCode), findsOneWidget);
+    });
+
+    testWidgets('un ambassadeur n’a pas de verrou, même à 0 XP', (
+      tester,
+    ) async {
+      await _poser(
+        tester,
+        const EcranGains(),
+        remplacements: [
+          gainsProvider.overrideWith((_) async => gainsSimples),
+          profilProvider.overrideWith(
+            (_) async => avecXp(0, ambassadeur: true),
+          ),
+        ],
+      );
+
+      expect(find.text('Tes gains s’ouvrent à 3 000 XP'), findsNothing);
+    });
+
+    testWidgets('la carte de déblocage tient à 320 px', (tester) async {
+      await _poser(
+        tester,
+        const EcranGains(),
+        taille: const Size(320, 640),
+        remplacements: [
+          gainsProvider.overrideWith((_) async => gainsSimples),
+          profilProvider.overrideWith((_) async => avecXp(1280)),
+        ],
+      );
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('dit ce qui reste avant le seuil, et n’ouvre pas le retrait', (
       tester,
     ) async {
@@ -1165,7 +1260,7 @@ void main() {
               filleulsPayants: 2,
             ),
           ),
-          profilProvider.overrideWith((_) async => _profil),
+          profilProvider.overrideWith((_) async => avecXp(3200)),
         ],
       );
 

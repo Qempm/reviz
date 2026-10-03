@@ -524,10 +524,11 @@ export default async function Accueil() {
               <Panthere pose="pieces" taille={170} className="-ml-7 h-auto w-[130px] md:w-[170px]" />
             </div>
             <div className="flex flex-[1_1_360px] flex-col gap-3">
-              <h2 className="font-titre text-[32px] leading-[1.05] sm:text-[48px]">Invite ta promo, gagne 25 %</h2>
+              <h2 className="font-titre text-[32px] leading-[1.05] sm:text-[48px]">Atteins 3 000 XP, invite ta promo</h2>
               <p className="text-[17px] leading-relaxed text-[#3B3424] sm:text-lg">
-                Chaque fois qu’un camarade que tu as invité paie un pack, 25 % du montant arrivent dans ton portefeuille,
-                pendant douze mois. Tu retires en Mobile Money dès 3 000 F.
+                Révise jusqu’à 3 000 XP : ton parrainage s’ouvre. Ensuite, chaque fois qu’un camarade que tu as invité
+                paie un pack, 25 % du montant arrivent dans ton portefeuille, pendant douze mois. Tu retires en Mobile
+                Money dès 3 000 F.
               </p>
             </div>
           </div>

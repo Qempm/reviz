@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../composants/bouton.dart';
 import '../composants/carte.dart';
@@ -48,7 +49,13 @@ class EcranGains extends ConsumerWidget {
         _ => null,
       },
       enfant: switch (gains) {
-        AsyncData(:final value) => _Contenu(donnees: value),
+        AsyncData(:final value) => _Contenu(
+          donnees: value,
+          profil: switch (profil) {
+            AsyncData(:final value) => value,
+            _ => null,
+          },
+        ),
         AsyncError() => Padding(
           padding: const EdgeInsets.all(Espaces.ecran),
           child: EtatVide(
@@ -69,9 +76,13 @@ class EcranGains extends ConsumerWidget {
 }
 
 class _Contenu extends ConsumerWidget {
-  const _Contenu({required this.donnees});
+  const _Contenu({required this.donnees, this.profil});
 
   final DonneesGains donnees;
+
+  /// Pour le seuil de 3 000 XP. Inconnu (profil en chargement) : on ne
+  /// montre pas de verrou plutôt que d'en montrer un à tort.
+  final Profil? profil;
 
   Future<void> _copier(BuildContext context, String code) async {
     await Clipboard.setData(ClipboardData(text: code));
@@ -97,6 +108,10 @@ class _Contenu extends ConsumerWidget {
     final solde = donnees.soldeFcfa;
     final peutRetirer = solde >= seuilRetraitFcfa;
     final code = donnees.codeParrain;
+    final xp = profil?.xpTotal ?? 0;
+    final verrouille =
+        profil != null &&
+        !parrainDebloque(estAmbassadeur: profil!.estAmbassadeur, xpTotal: xp);
 
     return ListView(
       padding: const EdgeInsets.symmetric(
@@ -106,6 +121,13 @@ class _Contenu extends ConsumerWidget {
       children: [
         Text(Fr.gains.titre, style: Typo.headlineXl),
         const SizedBox(height: Espaces.x20),
+
+        // --- Le seuil de 3 000 XP : tant qu'il n'est pas atteint, c'est la
+        //     première chose à savoir sur cet écran.
+        if (verrouille) ...[
+          _CarteDeblocage(xp: xp),
+          const SizedBox(height: Espaces.x16),
+        ],
 
         // --- Solde
         Carte(
@@ -188,7 +210,7 @@ class _Contenu extends ConsumerWidget {
               ],
             ),
             Text(
-              Fr.gains.aideCode,
+              verrouille ? Fr.gains.aideCodeVerrouille : Fr.gains.aideCode,
               style: Typo.bodyMd.copyWith(color: Couleurs.attenue),
             ),
             if (code != null)
@@ -254,6 +276,92 @@ class _Contenu extends ConsumerWidget {
         ),
         const SizedBox(height: Espaces.x32),
       ],
+    );
+  }
+}
+
+/// Le parrainage n'est pas encore ouvert : la progression vers 3 000 XP.
+///
+/// Sur le jaune, comme tout ce qui pousse à l'action : l'étudiant doit voir ce
+/// qui lui manque, et la manière de l'obtenir — réviser.
+class _CarteDeblocage extends StatelessWidget {
+  const _CarteDeblocage({required this.xp});
+
+  final int xp;
+
+  @override
+  Widget build(BuildContext context) {
+    final reste = seuilXpParrainage - xp;
+
+    return Container(
+      padding: const EdgeInsets.all(Espaces.x20),
+      decoration: ShapeDecoration(
+        color: Couleurs.jaune,
+        shape: formeContinue(Rayons.heros),
+        shadows: Ombres.lueurJaune,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      Fr.gains.deblocageTitre,
+                      style: Typo.headlineLg.copyWith(color: Couleurs.surJaune),
+                    ),
+                    const SizedBox(height: Espaces.x8),
+                    Text(
+                      Fr.gains.deblocageDetail,
+                      style: Typo.bodyMd.copyWith(color: Couleurs.surJaune),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: Espaces.x8),
+              const Mascotte(etat: EtatMascotte.niveau, taille: 76),
+            ],
+          ),
+          const SizedBox(height: Espaces.x16),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(5),
+            child: LinearProgressIndicator(
+              value: (xp / seuilXpParrainage).clamp(0.0, 1.0),
+              minHeight: 10,
+              color: Couleurs.encre,
+              backgroundColor: Couleurs.encre.withValues(alpha: 0.12),
+            ),
+          ),
+          const SizedBox(height: Espaces.x8),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  Fr.gains.deblocageProgression(xp),
+                  style: Typo.labelMd.merge(Typo.chiffres).copyWith(
+                    color: Couleurs.surJaune,
+                  ),
+                ),
+              ),
+              Text(
+                Fr.gains.deblocageReste(reste),
+                style: Typo.labelMd.copyWith(color: Couleurs.surJaune),
+              ),
+            ],
+          ),
+          const SizedBox(height: Espaces.x16),
+          Bouton(
+            libelle: Fr.gains.deblocageAction,
+            icone: Icons.bolt,
+            variante: VarianteBouton.secondaire,
+            onTap: () => context.go(Chemins.reviser),
+          ),
+        ],
+      ),
     );
   }
 }

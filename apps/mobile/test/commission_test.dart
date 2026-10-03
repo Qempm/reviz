@@ -3,8 +3,8 @@ import 'package:reviz/metier/commission.dart';
 
 /// Port de `lib/payments/commission.test.ts` — 16 tests.
 
-const parrain = EtatParrain(id: 'a', estAmbassadeur: false);
-const ambassadeur = EtatParrain(id: 'a', estAmbassadeur: true);
+const parrain = EtatParrain(id: 'a', estAmbassadeur: false, xpTotal: 3000);
+const ambassadeur = EtatParrain(id: 'a', estAmbassadeur: true, xpTotal: 3000);
 const filleul = EtatFilleul(id: 'b', verification: StatutVerification.verifie);
 
 Parrainage parrainage([DateTime? premierPaiement]) => Parrainage(
@@ -16,6 +16,48 @@ Parrainage parrainage([DateTime? premierPaiement]) => Parrainage(
 final janvier = DateTime.utc(2026, 1, 15, 10);
 
 void main() {
+  group('le seuil de 3 000 XP du parrain', () {
+    Commission commission(EtatParrain p) => calculerCommission(
+      parrainage: parrainage(),
+      parrain: p,
+      filleul: filleul,
+      montantFcfa: 1500,
+      maintenant: janvier,
+    );
+
+    test('le seuil est de 3 000 XP', () {
+      expect(seuilXpParrainage, 3000);
+    });
+
+    test('refuse la commission à 2 999 XP', () {
+      final c = commission(
+        const EtatParrain(id: 'a', estAmbassadeur: false, xpTotal: 2999),
+      );
+      expect(
+        (c as CommissionRefusee).motif,
+        MotifRefusCommission.parrainSousSeuilXp,
+      );
+    });
+
+    test('la verse à 3 000 XP pile', () {
+      final c = commission(parrain);
+      expect((c as CommissionDue).montantFcfa, 375);
+    });
+
+    test('dispense l’ambassadeur, même à 0 XP', () {
+      final c = commission(
+        const EtatParrain(id: 'a', estAmbassadeur: true, xpTotal: 0),
+      );
+      expect((c as CommissionDue).taux, tauxAmbassadeur);
+    });
+
+    test('parrainDebloque dit la même chose', () {
+      expect(parrainDebloque(estAmbassadeur: false, xpTotal: 2999), isFalse);
+      expect(parrainDebloque(estAmbassadeur: false, xpTotal: 3000), isTrue);
+      expect(parrainDebloque(estAmbassadeur: true, xpTotal: 0), isTrue);
+    });
+  });
+
   group('calcul des commissions', () {
     test('verse 25 % au parrain standard', () {
       final c = calculerCommission(

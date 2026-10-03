@@ -88,7 +88,11 @@ export async function traiterTransaction(
   let parrainage = null as
     | null
     | { referrerId: string; referredId: string; firstPaymentAt: Date | null }
-  let parrain = null as null | { id: string; isAmbassador: boolean }
+  let parrain = null as null | {
+    id: string
+    isAmbassador: boolean
+    xpTotal: number
+  }
 
   if (payeur?.referred_by) {
     const [{ data: ligne }, { data: profilParrain }] = await Promise.all([
@@ -100,7 +104,7 @@ export async function traiterTransaction(
         .maybeSingle(),
       admin
         .from('profiles')
-        .select('id, is_ambassador')
+        .select('id, is_ambassador, xp_total')
         .eq('id', payeur.referred_by)
         .maybeSingle(),
     ])
@@ -119,6 +123,7 @@ export async function traiterTransaction(
       parrain = {
         id: profilParrain.id,
         isAmbassador: profilParrain.is_ambassador ?? false,
+        xpTotal: profilParrain.xp_total ?? 0,
       }
     }
   }
@@ -190,17 +195,32 @@ export async function traiterTransaction(
     return { ok: true, motif: 'deja-traite' }
   }
 
-  // Le premier paiement d'un filleul vaut 500 XP à son parrain : au barème
-  // depuis le début, jamais attribués. Le premier seulement — ensuite, la
-  // commission suffit.
-  if (decision.commission && parrainage && parrainage.firstPaymentAt === null) {
-    const { attribuerXp } = await import('@/lib/xp/attribuer')
-    const { BAREME } = await import('@/lib/xp/attribution')
-    await attribuerXp({
-      userId: decision.commission.parrainId,
-      gains: [{ reason: 'referral', amount: BAREME.referral }],
-      referenceId: paiement.id,
-    })
+  // Le premier paiement d'un filleul vérifié vaut 500 XP à son parrain,
+  // **même sous le seuil de 3 000 XP** : ces points l'aident justement à
+  // l'atteindre. Une seule fois par filleul — la référence est le filleul, pas
+  // le paiement, puisque `first_payment_at` ne se pose qu'avec une commission
+  // et ne suffit plus à reconnaître le premier paiement.
+  if (
+    parrainage &&
+    parrain &&
+    parrainage.referrerId !== parrainage.referredId &&
+    payeur?.verification_status === 'verified'
+  ) {
+    const { count } = await admin
+      .from('xp_events')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', parrain.id)
+      .eq('reason', 'referral')
+      .eq('reference_id', parrainage.referredId)
+    if (!count) {
+      const { attribuerXp } = await import('@/lib/xp/attribuer')
+      const { BAREME } = await import('@/lib/xp/attribution')
+      await attribuerXp({
+        userId: parrain.id,
+        gains: [{ reason: 'referral', amount: BAREME.referral }],
+        referenceId: parrainage.referredId,
+      })
+    }
   }
 
   if (

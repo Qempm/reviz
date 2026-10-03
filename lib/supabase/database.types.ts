@@ -1428,6 +1428,7 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      seuil_xp_parrainage: { Args: never; Returns: number }
       streak_week: {
         Args: { anchor?: string }
         Returns: {

@@ -288,6 +288,15 @@ Vérifié contre la base hébergée : la même charge utile jouée deux fois ren
 `traite` puis `deja-traite`, laisse un abonnement, une commission, et pose
 `expires_at` à douze mois.
 
+**Seuil de parrainage (3 octobre 2026).** La commission n'est due que si le
+parrain a 3 000 XP ou est ambassadeur (`calculerCommission`, motif
+`parrain_sous_seuil_xp`), et `enregistrer_paiement()` le revérifie avant
+d'écrire (`seuil_xp_parrainage()`). Essai annulé contre la base hébergée : un
+parrain à 2 999 XP n'est pas crédité, un parrain à 3 000 XP et un ambassadeur à
+0 XP le sont, et les trois filleuls ont leur accès. Les 500 XP de parrainage
+partent au premier paiement d'un filleul vérifié, même sous le seuil, une fois
+par filleul (`xp_events.reference_id` = le filleul).
+
 ### Les quatre routes de la correction
 
 `POST /api/corrections/preparer` — `{ copie: {mime, taille}, pages?, sujet?,

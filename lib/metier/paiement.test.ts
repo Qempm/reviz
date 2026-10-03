@@ -42,7 +42,7 @@ const contexte = (
     referredId: 'filleul',
     firstPaymentAt: null,
   },
-  parrain: { id: 'parrain', isAmbassador: false },
+  parrain: { id: 'parrain', isAmbassador: false, xpTotal: 3000 },
   now: MAINTENANT,
   ...partiel,
 })
@@ -176,12 +176,26 @@ describe('deciderPaiement — la commission', () => {
     // `is_ambassador` sur `payment.user_id`, c'est-à-dire sur le filleul.
     const d = deciderPaiement(
       'approved',
-      contexte({ parrain: { id: 'parrain', isAmbassador: true } }),
+      contexte({ parrain: { id: 'parrain', isAmbassador: true, xpTotal: 3000 } }),
     )
     if (d.action !== 'activer') throw new Error('accès attendu')
 
     expect(d.commission?.taux).toBe(TAUX_AMBASSADEUR)
     expect(d.commission?.montantFcfa).toBe(350)
+  })
+
+  it('ne verse rien tant que le parrain n’a pas 3 000 XP', () => {
+    // Arbitrage du 3 octobre 2026 : le parrainage s'ouvre à 3 000 XP. Le
+    // filleul, lui, a bien son accès.
+    const d = deciderPaiement(
+      'approved',
+      contexte({ parrain: { id: 'parrain', isAmbassador: false, xpTotal: 2999 } }),
+    )
+    if (d.action !== 'activer') throw new Error('accès attendu')
+
+    expect(d.commission).toBeNull()
+    expect(d.motifSansCommission).toBe('parrain_sous_seuil_xp')
+    expect(d.abonnement.correctionsLeft).toBe(3)
   })
 
   it('ne verse rien si le filleul n’est pas vérifié', () => {
@@ -240,7 +254,7 @@ describe('deciderPaiement — la commission', () => {
           referredId: 'filleul',
           firstPaymentAt: null,
         },
-        parrain: { id: 'filleul', isAmbassador: true },
+        parrain: { id: 'filleul', isAmbassador: true, xpTotal: 3000 },
       }),
     )
     if (d.action !== 'activer') throw new Error('accès attendu')

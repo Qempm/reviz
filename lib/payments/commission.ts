@@ -9,6 +9,11 @@
  * premier paiement est donc celui qui ouvre la fenêtre, et il est lui-même
  * commissionné.
  *
+ * **Depuis le 3 octobre 2026, le parrain doit avoir 3 000 XP** (sauf
+ * ambassadeur) : le parrainage récompense qui utilise vraiment l'application.
+ * Pas de rattrapage — un paiement de filleul fait avant le seuil ne rapporte
+ * rien, et la fenêtre de 12 mois part du premier paiement commissionné.
+ *
  * Aucun accès à la base ici : ces fonctions sont pures pour être testables et
  * pour que la règle reste lisible d'un seul endroit.
  */
@@ -22,6 +27,13 @@ export const SEUIL_RETRAIT_FCFA = 3000
 /** Durée de la fenêtre de commission après le premier paiement. */
 export const FENETRE_MOIS = 12
 
+/**
+ * XP qu'un parrain doit avoir atteints pour toucher ses commissions (règle
+ * métier 2, arbitrage du 3 octobre 2026). Les ambassadeurs en sont dispensés.
+ * La base porte la même valeur (`public.seuil_xp_parrainage()`).
+ */
+export const SEUIL_XP_PARRAINAGE = 3000
+
 export type StatutVerification = 'none' | 'pending' | 'verified' | 'rejected'
 
 export type Parrainage = {
@@ -34,6 +46,8 @@ export type Parrainage = {
 export type EtatParrain = {
   id: string
   isAmbassador: boolean
+  /** `profiles.xp_total` au moment du paiement du filleul. */
+  xpTotal: number
 }
 
 export type EtatFilleul = {
@@ -45,6 +59,7 @@ export type MotifRefus =
   | 'filleul_non_verifie'
   | 'fenetre_expiree'
   | 'parrain_est_le_filleul'
+  | 'parrain_sous_seuil_xp'
   | 'montant_nul'
 
 export type Commission =
@@ -88,6 +103,13 @@ export function tauxParrain(parrain: EtatParrain): number {
   return parrain.isAmbassador ? TAUX_AMBASSADEUR : TAUX_STANDARD
 }
 
+/** Le parrain touche-t-il ses commissions ? Ambassadeur, ou 3 000 XP atteints. */
+export function parrainDebloque(
+  parrain: Pick<EtatParrain, 'isAmbassador' | 'xpTotal'>,
+): boolean {
+  return parrain.isAmbassador || parrain.xpTotal >= SEUIL_XP_PARRAINAGE
+}
+
 /**
  * Calcule la commission due au parrain pour un paiement réussi du filleul.
  *
@@ -108,6 +130,13 @@ export function calculerCommission(opts: {
   // l'interdit déjà, on ne verse rien si la ligne existait malgré tout.
   if (parrainage.referrerId === parrainage.referredId) {
     return { due: false, reason: 'parrain_est_le_filleul' }
+  }
+
+  // Le parrainage s'ouvre à 3 000 XP, évalués au moment du paiement — comme
+  // le taux. Les ambassadeurs, choisis à la main pour recruter, en sont
+  // dispensés.
+  if (!parrainDebloque(parrain)) {
+    return { due: false, reason: 'parrain_sous_seuil_xp' }
   }
 
   if (filleul.verificationStatus !== 'verified') {

@@ -8,6 +8,10 @@
 /// premier paiement est donc celui qui ouvre la fenêtre, et il est lui-même
 /// commissionné.
 ///
+/// **Depuis le 3 octobre 2026, le parrain doit avoir 3 000 XP** (sauf
+/// ambassadeur). Pas de rattrapage : un paiement de filleul fait avant le
+/// seuil ne rapporte rien.
+///
 /// Côté Flutter, cela sert à expliquer un montant à l'écran. Le crédit réel
 /// est écrit par le webhook serveur, dans `wallet_ledger`.
 library;
@@ -20,6 +24,15 @@ const int seuilRetraitFcfa = 3000;
 
 /// Durée de la fenêtre de commission après le premier paiement.
 const int fenetreMois = 12;
+
+/// XP qu'un parrain doit avoir atteints pour toucher ses commissions. Même
+/// valeur que `SEUIL_XP_PARRAINAGE` (serveur) et `seuil_xp_parrainage()`
+/// (base). Les ambassadeurs en sont dispensés.
+const int seuilXpParrainage = 3000;
+
+/// Le parrain touche-t-il ses commissions ? Ambassadeur, ou 3 000 XP atteints.
+bool parrainDebloque({required bool estAmbassadeur, required int xpTotal}) =>
+    estAmbassadeur || xpTotal >= seuilXpParrainage;
 
 /// Arithmétique de calendrier qui **préserve le caractère UTC**.
 ///
@@ -59,9 +72,16 @@ class Parrainage {
 }
 
 class EtatParrain {
-  const EtatParrain({required this.id, required this.estAmbassadeur});
+  const EtatParrain({
+    required this.id,
+    required this.estAmbassadeur,
+    required this.xpTotal,
+  });
   final String id;
   final bool estAmbassadeur;
+
+  /// `profiles.xp_total` au moment du paiement du filleul.
+  final int xpTotal;
 }
 
 class EtatFilleul {
@@ -74,6 +94,7 @@ enum MotifRefusCommission {
   filleulNonVerifie,
   fenetreExpiree,
   parrainEstLeFilleul,
+  parrainSousSeuilXp,
   montantNul,
 }
 
@@ -142,6 +163,15 @@ Commission calculerCommission({
   // l'interdit déjà ; on ne verse rien si la ligne existait malgré tout.
   if (parrainage.parrainId == parrainage.filleulId) {
     return const CommissionRefusee(MotifRefusCommission.parrainEstLeFilleul);
+  }
+
+  // Le parrainage s'ouvre à 3 000 XP, évalués au moment du paiement — comme
+  // le taux. Les ambassadeurs en sont dispensés.
+  if (!parrainDebloque(
+    estAmbassadeur: parrain.estAmbassadeur,
+    xpTotal: parrain.xpTotal,
+  )) {
+    return const CommissionRefusee(MotifRefusCommission.parrainSousSeuilXp);
   }
 
   if (filleul.verification != StatutVerification.verifie) {

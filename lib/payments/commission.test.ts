@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 import {
   calculerCommission,
   finDeFenetre,
+  parrainDebloque,
   SEUIL_RETRAIT_FCFA,
+  SEUIL_XP_PARRAINAGE,
   soldeDepuisGrandLivre,
   TAUX_AMBASSADEUR,
   TAUX_STANDARD,
@@ -12,8 +14,8 @@ import {
   type Parrainage,
 } from './commission'
 
-const PARRAIN: EtatParrain = { id: 'a', isAmbassador: false }
-const AMBASSADEUR: EtatParrain = { id: 'a', isAmbassador: true }
+const PARRAIN: EtatParrain = { id: 'a', isAmbassador: false, xpTotal: 3000 }
+const AMBASSADEUR: EtatParrain = { id: 'a', isAmbassador: true, xpTotal: 3000 }
 const FILLEUL: EtatFilleul = { id: 'b', verificationStatus: 'verified' }
 
 const parrainage = (firstPaymentAt: Date | null = null): Parrainage => ({
@@ -239,5 +241,61 @@ describe('demande de retrait', () => {
       expect(r.autorise).toBe(false)
       if (!r.autorise) expect(r.reason).toBe('montant_invalide')
     }
+  })
+})
+
+describe('le seuil de 3 000 XP du parrain', () => {
+  const avecXp = (xpTotal: number, isAmbassador = false): EtatParrain => ({
+    id: 'a',
+    isAmbassador,
+    xpTotal,
+  })
+  const commission = (parrain: EtatParrain) =>
+    calculerCommission({
+      parrainage: parrainage(),
+      parrain,
+      filleul: FILLEUL,
+      amountFcfa: 1500,
+      now: JANVIER,
+    })
+
+  it('le seuil est de 3 000 XP', () => {
+    expect(SEUIL_XP_PARRAINAGE).toBe(3000)
+  })
+
+  it('refuse la commission à 2 999 XP', () => {
+    expect(commission(avecXp(2999))).toEqual({
+      due: false,
+      reason: 'parrain_sous_seuil_xp',
+    })
+  })
+
+  it('la verse à 3 000 XP pile', () => {
+    const c = commission(avecXp(3000))
+    expect(c.due).toBe(true)
+    if (c.due) expect(c.amountFcfa).toBe(375)
+  })
+
+  it('dispense l’ambassadeur, même à 0 XP', () => {
+    const c = commission(avecXp(0, true))
+    expect(c.due).toBe(true)
+    if (c.due) expect(c.rate).toBe(TAUX_AMBASSADEUR)
+  })
+
+  it('parrainDebloque dit la même chose', () => {
+    expect(parrainDebloque(avecXp(2999))).toBe(false)
+    expect(parrainDebloque(avecXp(3000))).toBe(true)
+    expect(parrainDebloque(avecXp(0, true))).toBe(true)
+  })
+
+  it('l’auto-parrainage reste refusé avant tout', () => {
+    const c = calculerCommission({
+      parrainage: { referrerId: 'a', referredId: 'a', firstPaymentAt: null },
+      parrain: avecXp(0),
+      filleul: FILLEUL,
+      amountFcfa: 1500,
+      now: JANVIER,
+    })
+    expect(c).toEqual({ due: false, reason: 'parrain_est_le_filleul' })
   })
 })

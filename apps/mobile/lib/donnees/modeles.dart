@@ -29,6 +29,7 @@ class Profil {
     this.anneeEtude,
     this.telephone,
     this.meilleureSerie = 0,
+    this.estAmbassadeur = false,
   });
 
   final String id;
@@ -58,6 +59,9 @@ class Profil {
   /// cours, qui retombe à zéro au premier jour manqué.
   final int meilleureSerie;
 
+  /// Ambassadeur : 35 % de commission, et dispensé du seuil de 3 000 XP.
+  final bool estAmbassadeur;
+
   bool get verifie => statutVerification == 'verified';
   bool get verificationEnCours => statutVerification == 'pending';
 
@@ -81,6 +85,7 @@ class Profil {
     anneeEtude: (l['study_year'] as num?)?.toInt(),
     telephone: l['phone'] as String?,
     meilleureSerie: (l['longest_streak'] as num?)?.toInt() ?? 0,
+    estAmbassadeur: l['is_ambassador'] as bool? ?? false,
   );
 }
 
