@@ -1,8 +1,9 @@
 /// Commissions de parrainage (CLAUDE.md, règle métier 2).
 ///
-/// Port de `lib/payments/commission.ts`. 25 % du montant de chaque paiement du
-/// filleul, 35 % si **le parrain** est ambassadeur, pendant 12 mois à partir
-/// du premier paiement.
+/// Port de `lib/payments/commission.ts`. **Suspendues depuis le 3 octobre
+/// 2026** ([commissionsActives]). À la reprise : 10 % du montant de chaque
+/// paiement du filleul, 15 % si **le parrain** est ambassadeur, pendant 12
+/// mois à partir du premier paiement.
 ///
 /// Un filleul ne compte que s'il est vérifié et a payé au moins une fois : le
 /// premier paiement est donc celui qui ouvre la fenêtre, et il est lui-même
@@ -16,8 +17,14 @@
 /// est écrit par le webhook serveur, dans `wallet_ledger`.
 library;
 
-const double tauxStandard = 0.25;
-const double tauxAmbassadeur = 0.35;
+/// L'interrupteur des commissions, le même que `COMMISSIONS_ACTIVES`
+/// (serveur) et `commissions_actives()` (base). Faux : l'écran des gains ne
+/// promet plus d'argent, et le code parrain ne rapporte que des XP.
+const bool commissionsActives = false;
+
+/// Ramenés de 25 % et 35 % le 3 octobre 2026, pour la reprise.
+const double tauxStandard = 0.10;
+const double tauxAmbassadeur = 0.15;
 
 /// Seuil de retrait, en FCFA (règle métier 2).
 const int seuilRetraitFcfa = 3000;
@@ -91,6 +98,7 @@ class EtatFilleul {
 }
 
 enum MotifRefusCommission {
+  commissionsSuspendues,
   filleulNonVerifie,
   fenetreExpiree,
   parrainEstLeFilleul,
@@ -113,7 +121,7 @@ class CommissionDue extends Commission {
 
   final String parrainId;
 
-  /// Taux appliqué : 0.25 ou 0.35.
+  /// Taux appliqué : 0.10 ou 0.15.
   final double taux;
   final int montantFcfa;
 
@@ -156,8 +164,16 @@ Commission calculerCommission({
   required EtatFilleul filleul,
   required int montantFcfa,
   DateTime? maintenant,
+
+  /// L'interrupteur, [commissionsActives] par défaut. Pour les tests.
+  bool actives = commissionsActives,
 }) {
   final n = maintenant ?? DateTime.now();
+
+  // Suspendues : rien n'est dû, avant toute autre règle.
+  if (!actives) {
+    return const CommissionRefusee(MotifRefusCommission.commissionsSuspendues);
+  }
 
   // Anti-fraude : on ne se parraine pas soi-même (règle métier 3). La base
   // l'interdit déjà ; on ne verse rien si la ligne existait malgré tout.

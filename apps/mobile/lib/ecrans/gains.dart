@@ -24,6 +24,11 @@ import '../theme/typographie.dart';
 
 /// Le portefeuille : solde, code parrain, filleuls, retrait.
 ///
+/// **Commissions suspendues depuis le 3 octobre 2026** ([commissionsActives]) :
+/// l'écran ne promet plus d'argent. Une carte le dit en tête, le solde ne
+/// s'affiche que s'il reste quelque chose à retirer, et le code parrain ne
+/// rapporte que des XP. À la reprise, l'interrupteur suffit.
+///
 /// Trois défauts de l'écran web sont corrigés ici : le code parrain est
 /// réellement copiable, le retrait a un chemin depuis cet écran, et le seuil
 /// de 3 000 F est expliqué avant le clic plutôt que refusé après
@@ -109,9 +114,14 @@ class _Contenu extends ConsumerWidget {
     final peutRetirer = solde >= seuilRetraitFcfa;
     final code = donnees.codeParrain;
     final xp = profil?.xpTotal ?? 0;
+    final suspendues = !ref.watch(commissionsActivesProvider);
     final verrouille =
+        !suspendues &&
         profil != null &&
         !parrainDebloque(estAmbassadeur: profil!.estAmbassadeur, xpTotal: xp);
+    // Un solde d'avant la suspension reste retirable ; un solde nul n'a rien
+    // à montrer tant que rien ne peut le remplir.
+    final montrerSolde = !suspendues || solde > 0;
 
     return ListView(
       padding: const EdgeInsets.symmetric(
@@ -124,64 +134,71 @@ class _Contenu extends ConsumerWidget {
 
         // --- Le seuil de 3 000 XP : tant qu'il n'est pas atteint, c'est la
         //     première chose à savoir sur cet écran.
+        if (suspendues) ...[
+          const _CartePause(),
+          const SizedBox(height: Espaces.x16),
+        ],
+
         if (verrouille) ...[
           _CarteDeblocage(xp: xp),
           const SizedBox(height: Espaces.x16),
         ],
 
         // --- Solde
-        Carte(
-          enfants: [
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        Fr.gains.solde,
-                        style: Typo.labelSm.copyWith(color: Couleurs.attenue),
-                      ),
-                      Text(
-                        '$solde F',
-                        style: Typo.displayHerosMobile.copyWith(
-                          color: Couleurs.texteAccent,
+        if (montrerSolde) ...[
+          Carte(
+            enfants: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          Fr.gains.solde,
+                          style: Typo.labelSm.copyWith(color: Couleurs.attenue),
                         ),
-                      ),
-                    ],
+                        Text(
+                          '$solde F',
+                          style: Typo.displayHerosMobile.copyWith(
+                            color: Couleurs.texteAccent,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                // Le panthéreau et ses pièces : c'est le portefeuille.
-                const Mascotte(etat: EtatMascotte.pieces, taille: 72),
-              ],
-            ),
-
-            if (peutRetirer)
-              Text(
-                Fr.gains.retraitPossible,
-                style: Typo.bodyMd.copyWith(color: Couleurs.attenue),
-              )
-            else ...[
-              BarreProgression(
-                valeur: (solde / seuilRetraitFcfa).clamp(0.0, 1.0),
+                  // Le panthéreau et ses pièces : c'est le portefeuille.
+                  const Mascotte(etat: EtatMascotte.pieces, taille: 72),
+                ],
               ),
-              Text(
-                Fr.gains.resteAvantRetrait(seuilRetraitFcfa - solde),
-                style: Typo.labelSm.copyWith(color: Couleurs.attenue),
+
+              if (peutRetirer)
+                Text(
+                  Fr.gains.retraitPossible,
+                  style: Typo.bodyMd.copyWith(color: Couleurs.attenue),
+                )
+              else ...[
+                BarreProgression(
+                  valeur: (solde / seuilRetraitFcfa).clamp(0.0, 1.0),
+                ),
+                Text(
+                  Fr.gains.resteAvantRetrait(seuilRetraitFcfa - solde),
+                  style: Typo.labelSm.copyWith(color: Couleurs.attenue),
+                ),
+              ],
+
+              Bouton(
+                libelle: Fr.gains.demanderRetrait,
+                icone: Icons.smartphone,
+                onTap: peutRetirer
+                    ? () => ouvrirFeuilleRetrait(context, solde: solde)
+                    : null,
               ),
             ],
-
-            Bouton(
-              libelle: Fr.gains.demanderRetrait,
-              icone: Icons.smartphone,
-              onTap: peutRetirer
-                  ? () => ouvrirFeuilleRetrait(context, solde: solde)
-                  : null,
-            ),
-          ],
-        ),
-        const SizedBox(height: Espaces.x16),
+          ),
+          const SizedBox(height: Espaces.x16),
+        ],
 
         // --- Code parrain
         Carte(
@@ -210,7 +227,11 @@ class _Contenu extends ConsumerWidget {
               ],
             ),
             Text(
-              verrouille ? Fr.gains.aideCodeVerrouille : Fr.gains.aideCode,
+              suspendues
+                  ? Fr.gains.aideCodePause
+                  : verrouille
+                  ? Fr.gains.aideCodeVerrouille
+                  : Fr.gains.aideCode,
               style: Typo.bodyMd.copyWith(color: Couleurs.attenue),
             ),
             if (code != null)
@@ -280,6 +301,42 @@ class _Contenu extends ConsumerWidget {
   }
 }
 
+/// Les commissions sont suspendues : l'écran le dit d'abord, sans détour.
+///
+/// Sur une carte blanche et non sur le jaune : ce n'est pas un appel à
+/// l'action, c'est une information.
+class _CartePause extends StatelessWidget {
+  const _CartePause();
+
+  @override
+  Widget build(BuildContext context) {
+    return Carte(
+      enfants: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(Fr.gains.pauseTitre, style: Typo.headlineMd),
+                  const SizedBox(height: Espaces.x8),
+                  Text(
+                    Fr.gains.pauseDetail,
+                    style: Typo.bodyMd.copyWith(color: Couleurs.attenue),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: Espaces.x8),
+            const Mascotte(etat: EtatMascotte.amis, taille: 72),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
 /// Le parrainage n'est pas encore ouvert : la progression vers 3 000 XP.
 ///
 /// Sur le jaune, comme tout ce qui pousse à l'action : l'étudiant doit voir ce
@@ -342,9 +399,9 @@ class _CarteDeblocage extends StatelessWidget {
               Expanded(
                 child: Text(
                   Fr.gains.deblocageProgression(xp),
-                  style: Typo.labelMd.merge(Typo.chiffres).copyWith(
-                    color: Couleurs.surJaune,
-                  ),
+                  style: Typo.labelMd
+                      .merge(Typo.chiffres)
+                      .copyWith(color: Couleurs.surJaune),
                 ),
               ),
               Text(

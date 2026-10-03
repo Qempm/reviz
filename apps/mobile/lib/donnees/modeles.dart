@@ -59,7 +59,8 @@ class Profil {
   /// cours, qui retombe à zéro au premier jour manqué.
   final int meilleureSerie;
 
-  /// Ambassadeur : 35 % de commission, et dispensé du seuil de 3 000 XP.
+  /// Ambassadeur : 15 % de commission (suspendues), et dispensé du seuil de
+  /// 3 000 XP.
   final bool estAmbassadeur;
 
   bool get verifie => statutVerification == 'verified';

@@ -11,6 +11,7 @@ import '../donnees/push.dart';
 import '../donnees/rappels.dart';
 import '../donnees/reglages.dart';
 import '../metier/acces.dart';
+import '../metier/commission.dart' show commissionsActives;
 import '../metier/notifications.dart';
 import '../metier/plateforme.dart';
 import '../metier/selection.dart';
@@ -186,6 +187,11 @@ final gainsProvider = FutureProvider<DonneesGains>((ref) async {
   ref.watch(authProvider);
   return ref.read(depotGainsProvider).charger();
 });
+
+/// Les commissions de parrainage versent-elles de l'argent ? Un fournisseur
+/// plutôt que la constante lue en direct : les tests de l'écran des gains
+/// essaient les deux états.
+final commissionsActivesProvider = Provider<bool>((_) => commissionsActives);
 
 /// La ligue de la semaine. Invalidé en fin de session, avec le profil.
 final ligueProvider = FutureProvider<DonneesLigue>((ref) {

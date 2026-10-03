@@ -1267,7 +1267,12 @@ void main() {
       aRetravailler: [
         ChapitreARetravailler(
           cours: droit,
-          chapitre: chapitre('ch3', 2, 'Le contrôle de constitutionnalité', 0.25),
+          chapitre: chapitre(
+            'ch3',
+            2,
+            'Le contrôle de constitutionnalité',
+            0.25,
+          ),
         ),
         ChapitreARetravailler(
           cours: droit,
@@ -1386,6 +1391,73 @@ void main() {
       estAmbassadeur: ambassadeur,
     );
 
+    testWidgets('commissions suspendues : le dit, sans solde ni verrou', (
+      tester,
+    ) async {
+      await _poser(
+        tester,
+        const EcranGains(),
+        remplacements: [
+          gainsProvider.overrideWith((_) async => gainsSimples),
+          profilProvider.overrideWith((_) async => avecXp(1280)),
+        ],
+      );
+
+      expect(find.text(Fr.gains.pauseTitre), findsOneWidget);
+      // Rien ne promet d'argent : ni le seuil de 3 000 XP, ni un solde vide.
+      expect(find.text(Fr.gains.deblocageTitre), findsNothing);
+      expect(find.text(Fr.gains.solde), findsNothing);
+      expect(find.text(Fr.gains.demanderRetrait), findsNothing);
+      await tester.scrollUntilVisible(
+        find.text(Fr.gains.aideCodePause),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.text(Fr.gains.aideCodePause), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('commissions suspendues : un solde restant reste retirable', (
+      tester,
+    ) async {
+      await _poser(
+        tester,
+        const EcranGains(),
+        remplacements: [
+          gainsProvider.overrideWith(
+            (_) async => const DonneesGains(
+              soldeFcfa: 3500,
+              codeParrain: 'ABC123',
+              filleuls: 1,
+              filleulsPayants: 1,
+            ),
+          ),
+          profilProvider.overrideWith((_) async => avecXp(1280)),
+        ],
+      );
+
+      expect(find.text(Fr.gains.pauseTitre), findsOneWidget);
+      expect(find.text(Fr.gains.solde), findsOneWidget);
+      final bouton = tester.widget<Bouton>(
+        find.widgetWithText(Bouton, Fr.gains.demanderRetrait),
+      );
+      expect(bouton.onTap, isNotNull);
+    });
+
+    testWidgets('la carte de pause tient à 320 px', (tester) async {
+      await _poser(
+        tester,
+        const EcranGains(),
+        taille: const Size(320, 640),
+        remplacements: [
+          gainsProvider.overrideWith((_) async => gainsSimples),
+          profilProvider.overrideWith((_) async => avecXp(1280)),
+        ],
+      );
+      expect(find.text(Fr.gains.pauseTitre), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('sous 3 000 XP, dit ce qui manque pour ouvrir les gains', (
       tester,
     ) async {
@@ -1394,6 +1466,7 @@ void main() {
         const EcranGains(),
         remplacements: [
           gainsProvider.overrideWith((_) async => gainsSimples),
+          commissionsActivesProvider.overrideWith((_) => true),
           profilProvider.overrideWith((_) async => avecXp(1280)),
         ],
       );
@@ -1418,6 +1491,7 @@ void main() {
         const EcranGains(),
         remplacements: [
           gainsProvider.overrideWith((_) async => gainsSimples),
+          commissionsActivesProvider.overrideWith((_) => true),
           profilProvider.overrideWith((_) async => avecXp(3000)),
         ],
       );
@@ -1439,6 +1513,7 @@ void main() {
         const EcranGains(),
         remplacements: [
           gainsProvider.overrideWith((_) async => gainsSimples),
+          commissionsActivesProvider.overrideWith((_) => true),
           profilProvider.overrideWith(
             (_) async => avecXp(0, ambassadeur: true),
           ),
@@ -1455,6 +1530,7 @@ void main() {
         taille: const Size(320, 640),
         remplacements: [
           gainsProvider.overrideWith((_) async => gainsSimples),
+          commissionsActivesProvider.overrideWith((_) => true),
           profilProvider.overrideWith((_) async => avecXp(1280)),
         ],
       );
@@ -1511,6 +1587,9 @@ void main() {
             ),
           ),
           profilProvider.overrideWith((_) async => avecXp(3200)),
+          // La disposition des commissions actives ; le retrait pendant la
+          // suspension a son propre test.
+          commissionsActivesProvider.overrideWith((_) => true),
         ],
       );
 

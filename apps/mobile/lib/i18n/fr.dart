@@ -355,6 +355,7 @@ class _Boutique {
         : '$jours jours';
     return '$duree d’accès';
   }
+
   String choisirPack(String libelle) => 'Choisir le pack $libelle';
   String resume(String duree, String matieres, String corrections) =>
       '$duree · ${matieres.toLowerCase()} · $corrections';
@@ -442,17 +443,28 @@ class _Gains {
       'Encore ${milliers(n)} F avant de pouvoir retirer.';
 
   final String tonCode = 'Ton code parrain';
+
+  // Commissions suspendues (3 octobre 2026) : le code ne rapporte que des XP.
+  final String pauseTitre = 'Les gains en argent sont en pause';
+  final String pauseDetail =
+      'Inviter ne rapporte pas d’argent pour l’instant. Ton code sert '
+      'toujours : chaque ami vérifié qui prend un pack te rapporte 500 XP. '
+      'On te prévient ici quand les gains reviennent.';
+  final String aideCodePause =
+      'Partage-le : chaque ami vérifié qui prend un pack te rapporte 500 XP.';
+
+  // À la reprise des commissions.
   final String aideCode =
-      'Partage-le : tu touches 25 % de chaque paiement de tes filleuls '
+      'Partage-le : tu touches 10 % de chaque paiement de tes filleuls '
       'pendant 12 mois.';
   final String aideCodeVerrouille =
       'Tu peux déjà le partager. Les paiements de tes filleuls te rapportent '
-      '25 % dès que tu as 3 000 XP.';
+      '10 % dès que tu as 3 000 XP.';
 
   final String deblocageTitre = 'Tes gains s’ouvrent à 3 000 XP';
   final String deblocageDetail =
       'Révise pour gagner des XP. À 3 000, chaque paiement de tes filleuls te '
-      'rapporte 25 % pendant 12 mois.';
+      'rapporte 10 % pendant 12 mois.';
   String deblocageProgression(int xp) =>
       '${milliers(xp)} / ${milliers(3000)} XP';
   String deblocageReste(int xp) => 'Encore ${milliers(xp)} XP';
@@ -785,12 +797,11 @@ class _Aide {
     ),
     (
       'Comment marche le parrainage ?',
-      'Tes gains de parrainage s’ouvrent quand tu atteins 3 000 XP : révise, '
-          'puis invite. Ensuite, quand un filleul paie un pack, 25 % du '
-          'montant vont dans ton portefeuille — 35 % si tu es ambassadeur —, '
-          'à chacun de ses paiements pendant douze mois. Un filleul ne compte '
-          'que s’il est vérifié et qu’il a payé au moins une fois. Le retrait '
-          'part en Mobile Money dès 3 000 F.',
+      'Pour l’instant, il ne rapporte pas d’argent : les commissions sont en '
+          'pause. Ton code sert toujours — chaque ami vérifié qui prend un '
+          'pack avec ton code te rapporte 500 XP, une fois par ami. On te '
+          'préviendra dans l’application quand les gains en argent '
+          'reviendront.',
     ),
     (
       'Ça marche sans réseau ?',
@@ -1063,7 +1074,8 @@ class _Inscription {
 
   final String labelParrain = 'Code parrain (facultatif)';
   final String aideParrain =
-      'Si un camarade t’a donné son code, il touche une commission.';
+      'Si un camarade t’a donné son code : il gagne des XP quand tu prends '
+      'un pack.';
   final String terminer = 'Terminer mon inscription';
   final String choisirUniversite = 'Choisis ton université';
   final String choisirFiliere = 'Choisis ta filière';
@@ -1097,6 +1109,7 @@ class _Matiere {
     final numero = 'Chapitre ${index + 1}';
     return titre == null ? numero : '$numero · $titre';
   }
+
   String reussite(double taux) => '${(taux * 100).round()} % de justes';
   final String reprendre = 'Reprendre';
   final String tesCours = 'Tes cours';
