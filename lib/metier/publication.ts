@@ -13,7 +13,7 @@
  */
 
 /** La version publiée, telle que `pubspec.yaml` la déclare. */
-export const VERSION = '2.6.0'
+export const VERSION = '2.7.0'
 
 /**
  * En dessous, l'application refuse de servir.
@@ -38,11 +38,11 @@ export const VERSION_MINIMALE = '2.0.0'
 export const MAINTENANCE = false
 
 export const NOTES =
-  'Une cloche pour tes notifications : ton cours prêt, ta copie corrigée, ' +
-  'tes gains. Et l’heure de ton rappel du soir, au choix.'
+  'Une nouvelle tenue : un fond crème, de nouvelles polices, et le ' +
+  'panthéreau en 3D, avec sa tête pour icône.'
 
 /** Date de la publication, au format `AAAA-MM-JJ`. */
-export const DATE = '2026-10-01'
+export const DATE = '2026-10-03'
 
 /**
  * Le fichier, quand il existe.
@@ -74,9 +74,9 @@ export type Apk =
 
 export const APK: Apk = {
   publie: true,
-  url: 'https://github.com/Qempm/reviz/releases/download/v2.6.0/reviz-2.6.0.apk',
-  tailleOctets: 62_372_617,
-  sha256: '81bc3b38e0892e68fc29277488600726950e905609aaab75d63d4e2f01001501',
+  url: 'https://github.com/Qempm/reviz/releases/download/v2.7.0/reviz-2.7.0.apk',
+  tailleOctets: 64_759_206,
+  sha256: '37edb59330326f9e2ebbeffe8594bdeb95561cde320d5a4e8f6acf0b496ccc1d',
 }
 
 /**
