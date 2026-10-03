@@ -1047,7 +1047,13 @@ void main() {
         ],
       );
 
-      // Avant le clic, et non après le refus du serveur.
+      // Avant le clic, et non après le refus du serveur. L'encart est sous
+      // la carte héros : on fait défiler jusqu'à lui.
+      await tester.scrollUntilVisible(
+        find.text('Découverte déjà utilisée'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
       expect(find.text('Découverte déjà utilisée'), findsOneWidget);
       expect(find.text('Activer gratuitement'), findsNothing);
     });
@@ -1063,12 +1069,114 @@ void main() {
         ],
       );
 
-      expect(find.text('Activer gratuitement'), findsOneWidget);
-      expect(find.text('Gratuit'), findsOneWidget);
-      expect(find.text('500 F'), findsOneWidget);
+      // Le seul pack payant est en carte héros, avec son bouton.
+      expect(find.text('Payer 500 F'), findsOneWidget);
       // Aucun pack acheté n'est pas un pack expiré.
       expect(find.text('Ton pack est arrivé à terme'), findsNothing);
+      await tester.scrollUntilVisible(
+        find.text('Activer gratuitement'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.text('Activer gratuitement'), findsOneWidget);
       expect(tester.takeException(), isNull);
+    });
+
+    group('la vitrine des packs', () {
+      const quatre = [
+        PackBoutique(
+          code: 'controle',
+          libelle: 'Contrôle',
+          description: 'Une semaine pour un contrôle continu.',
+          prixFcfa: 500,
+          dureeJours: 7,
+          correctionsIncluses: 3,
+          plafondMatieres: 2,
+        ),
+        PackBoutique(
+          code: 'partiel',
+          libelle: 'Partiel',
+          description: 'Un mois sur cinq matières.',
+          prixFcfa: 1500,
+          dureeJours: 30,
+          correctionsIncluses: 10,
+          plafondMatieres: 5,
+        ),
+        PackBoutique(
+          code: 'rattrapage',
+          libelle: 'Rattrapage',
+          description: null,
+          prixFcfa: 2000,
+          dureeJours: 30,
+          correctionsIncluses: 15,
+          plafondMatieres: null,
+        ),
+        PackBoutique(
+          code: 'semestre',
+          libelle: 'Semestre',
+          description: null,
+          prixFcfa: 3500,
+          dureeJours: 120,
+          correctionsIncluses: 30,
+          plafondMatieres: null,
+        ),
+      ];
+
+      Future<void> poserQuatre(WidgetTester tester, {Size? taille}) => _poser(
+        tester,
+        const EcranBoutique(),
+        taille: taille ?? const Size(390, 844),
+        remplacements: [
+          boutiqueProvider.overrideWith(
+            (_) async => const DonneesBoutique(packs: quatre, abonnements: []),
+          ),
+        ],
+      );
+
+      testWidgets('met le Partiel en avant, avec son prix par jour', (
+        tester,
+      ) async {
+        await poserQuatre(tester);
+
+        expect(find.text('Tu prépares quoi en ce moment ?'), findsOneWidget);
+        expect(find.text('Conseillé'), findsOneWidget);
+        expect(find.text(Fr.boutique.payer(1500)), findsOneWidget);
+        expect(find.text('50 F par jour'), findsOneWidget);
+        expect(
+          find.text(
+            'Pour tes partiels, prends le pack Partiel : 1 mois, 5 matières, '
+            '10 corrections.',
+          ),
+          findsOneWidget,
+        );
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('choisir un objectif change le pack en avant', (
+        tester,
+      ) async {
+        await poserQuatre(tester);
+
+        await _taper(tester, find.text('Le rattrapage'));
+
+        expect(find.text(Fr.boutique.payer(2000)), findsOneWidget);
+        expect(find.text(Fr.boutique.payer(1500)), findsNothing);
+      });
+
+      testWidgets('le moins cher par jour porte sa puce', (tester) async {
+        await poserQuatre(tester);
+        await tester.scrollUntilVisible(
+          find.text('Meilleur prix / jour'),
+          200,
+          scrollable: find.byType(Scrollable).first,
+        );
+        expect(find.text('Meilleur prix / jour'), findsOneWidget);
+      });
+
+      testWidgets('ne déborde pas à 320 px', (tester) async {
+        await poserQuatre(tester, taille: const Size(320, 640));
+        expect(tester.takeException(), isNull);
+      });
     });
 
     testWidgets('annonce la fin d’accès sans promettre de reconduction', (

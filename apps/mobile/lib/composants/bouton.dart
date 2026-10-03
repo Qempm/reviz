@@ -3,8 +3,10 @@ import 'package:flutter/services.dart';
 import '../theme/jetons.dart';
 import '../theme/typographie.dart';
 
-/// Les trois variantes de bouton du design system.
-enum VarianteBouton { principal, secondaire, danger }
+/// Les variantes de bouton du design system. `encre` est le bouton posé sur
+/// un aplat jaune (carte héros d'un pack, carte de déblocage) : du jaune sur
+/// du jaune ne se verrait pas.
+enum VarianteBouton { principal, secondaire, danger, encre }
 
 /// Bouton Reviz.
 ///
@@ -62,6 +64,12 @@ class _BoutonState extends State<Bouton> {
     VarianteBouton.secondaire => (
       fond: Couleurs.surfaceConteneur,
       texte: Couleurs.encre,
+      ombre: const [],
+      ombreEnfoncee: const [],
+    ),
+    VarianteBouton.encre => (
+      fond: Couleurs.encre,
+      texte: Colors.white,
       ombre: const [],
       ombreEnfoncee: const [],
     ),

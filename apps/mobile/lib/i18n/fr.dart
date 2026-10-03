@@ -340,7 +340,24 @@ class _Boutique {
       : '$n matières';
 
   final String choisir = 'Choisir ce pack';
-  String payer(int prix) => 'Payer $prix F';
+  String payer(int prix) => 'Payer ${milliers(prix)} F';
+  final String questionObjectif = 'Tu prépares quoi en ce moment ?';
+  final String fcfa = 'F CFA';
+  final String meilleurPrix = 'Meilleur prix / jour';
+  String accesPendant(int jours) {
+    final duree = jours >= 30 && jours % 30 == 0
+        ? '${jours ~/ 30} mois'
+        : jours == 7
+        ? '1 semaine'
+        : jours <= 1
+        ? '$jours jour'
+        : '$jours jours';
+    return '$duree d’accès';
+  }
+  String choisirPack(String libelle) => 'Choisir le pack $libelle';
+  String resume(String duree, String matieres, String corrections) =>
+      '$duree · ${matieres.toLowerCase()} · $corrections';
+  final String essaiTitre = 'Pas encore sûr ? Essaie gratuitement.';
   final String activerDecouverte = 'Activer gratuitement';
   final String decouverteUtilisee = 'Découverte déjà utilisée';
   final String mobileMoney = 'Mobile Money, sans quitter l’application';

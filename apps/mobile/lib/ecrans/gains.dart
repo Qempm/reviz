@@ -357,7 +357,7 @@ class _CarteDeblocage extends StatelessWidget {
           Bouton(
             libelle: Fr.gains.deblocageAction,
             icone: Icons.bolt,
-            variante: VarianteBouton.secondaire,
+            variante: VarianteBouton.encre,
             onTap: () => context.go(Chemins.reviser),
           ),
         ],

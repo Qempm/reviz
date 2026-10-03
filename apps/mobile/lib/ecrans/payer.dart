@@ -4,12 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../composants/bouton.dart';
 import '../composants/carte.dart';
 import '../composants/champ.dart';
-import '../composants/puce.dart';
 import '../donnees/api.dart';
 import '../donnees/modeles.dart';
 import '../donnees/supabase.dart';
 import '../etat/fournisseurs.dart';
 import '../i18n/fr.dart';
+import '../composants/mascotte.dart';
+import '../metier/offre.dart';
 import '../metier/operateurs.dart';
 import '../metier/telephone.dart';
 import '../routage.dart';
@@ -183,40 +184,72 @@ class _EcranPayerState extends ConsumerState<EcranPayer> {
             child: ListView(
               padding: const EdgeInsets.all(Espaces.ecran),
               children: [
-                // --- Ce qu'on achète
-                Carte(
-                  enfants: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: Text(pack.libelle, style: Typo.headlineMd),
+                // --- Ce qu'on achète : le jaune de la carte héros de la
+                //     boutique, qu'on retrouve d'un écran à l'autre.
+                Container(
+                  padding: const EdgeInsets.all(Espaces.x20),
+                  decoration: ShapeDecoration(
+                    color: Couleurs.jaune,
+                    shape: formeContinue(Rayons.heros),
+                    shadows: Ombres.lueurJaune,
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              pack.libelle,
+                              style: Typo.headlineLg.copyWith(
+                                color: Couleurs.surJaune,
+                              ),
+                            ),
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                '${milliers(pack.prixFcfa)} ${Fr.boutique.fcfa}',
+                                style: Typo.displayHerosMobile.copyWith(
+                                  color: Couleurs.surJaune,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: Espaces.x4),
+                            Text(
+                              Fr.boutique.resume(
+                                dureeLisible(pack.dureeJours),
+                                matieresLisibles(pack.plafondMatieres),
+                                correctionsLisibles(pack.correctionsIncluses),
+                              ),
+                              style: Typo.labelSm.copyWith(
+                                color: Couleurs.surJaune,
+                              ),
+                            ),
+                            const SizedBox(height: Espaces.x8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: Espaces.x8,
+                                vertical: Espaces.x4,
+                              ),
+                              decoration: ShapeDecoration(
+                                color: Couleurs.encre.withValues(alpha: 0.1),
+                                shape: formeContinue(Rayons.petit),
+                              ),
+                              child: Text(
+                                prixParJour(pack.prixFcfa, pack.dureeJours),
+                                style: Typo.labelSm.copyWith(
+                                  color: Couleurs.surJaune,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                        Text(
-                          '${pack.prixFcfa} F',
-                          style: Typo.headlineLg.copyWith(
-                            color: Couleurs.texteAccent,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Wrap(
-                      spacing: Espaces.x8,
-                      runSpacing: Espaces.x8,
-                      children: [
-                        Puce(
-                          libelle: Fr.boutique.duree(pack.dureeJours),
-                          icone: Icons.event,
-                        ),
-                        Puce(
-                          libelle: Fr.boutique.corrections(
-                            pack.correctionsIncluses,
-                          ),
-                          icone: Icons.fact_check_outlined,
-                        ),
-                      ],
-                    ),
-                  ],
+                      ),
+                      const SizedBox(width: Espaces.x8),
+                      const Mascotte(etat: EtatMascotte.telephone, taille: 84),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: Espaces.x16),
 
@@ -347,8 +380,8 @@ class _EcranPayerState extends ConsumerState<EcranPayer> {
   }
 }
 
-/// Un opérateur à choisir : même langage que l'option de QCM — fond jaune
-/// doux et anneau jaune quand il est choisi, blanc sinon.
+/// Un opérateur à choisir : la pastille de l'objectif dans la boutique —
+/// l'encre quand il est choisi, le blanc sinon.
 class _ChoixOperateur extends StatelessWidget {
   const _ChoixOperateur({
     required this.operateur,
@@ -382,22 +415,22 @@ class _ChoixOperateur extends StatelessWidget {
             vertical: Espaces.x12,
           ),
           decoration: ShapeDecoration(
-            color: choisi ? Couleurs.jauneDoux : Couleurs.carte,
-            shape: formeContinue(
-              Rayons.normal,
-              bord: BorderSide(
-                color: choisi ? Couleurs.jaune : Couleurs.bordure,
-                width: choisi ? 2 : 1,
-              ),
-            ),
+            color: choisi ? Couleurs.encre : Couleurs.carte,
+            shape: const StadiumBorder(),
+            shadows: choisi ? const [] : Ombres.cartePetite,
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(operateur.libelle, style: Typo.labelMd),
+              Text(
+                operateur.libelle,
+                style: Typo.labelMd.copyWith(
+                  color: choisi ? Colors.white : Couleurs.encre,
+                ),
+              ),
               if (choisi) ...[
                 const SizedBox(width: Espaces.x8),
-                const Icon(Icons.check, size: 18, color: Couleurs.encre),
+                const Icon(Icons.check, size: 18, color: Colors.white),
               ],
             ],
           ),
