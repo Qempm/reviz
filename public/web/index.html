@@ -7,7 +7,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="description" content="Reviz dans ton navigateur : tes cours en QCM et en fiches, tes copies corrigées. Sur ordinateur et sur iPhone.">
-  <meta name="theme-color" content="#F5F5F7">
+  <meta name="theme-color" content="#FCEFD0">
 
   <!-- iPhone : « Sur l'écran d'accueil » ouvre Reviz comme une application. -->
   <meta name="mobile-web-app-capable" content="yes">
@@ -25,20 +25,20 @@
     /* Ce que l'étudiant voit pendant que l'application se télécharge — sur
        une 3G, plusieurs secondes. Retiré dès la première image de Flutter
        (flutter_bootstrap.js). Les couleurs sont celles de l'application. */
-    html, body { margin: 0; height: 100%; background: #F5F5F7; }
+    html, body { margin: 0; height: 100%; background: #FCEFD0; }
     #chargement {
       position: fixed; inset: 0; display: flex; flex-direction: column;
       align-items: center; justify-content: center; gap: 20px;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      color: #6E6E73; font-size: 15px;
+      color: #4A4F4C; font-size: 15px;
     }
     #chargement img { width: 88px; height: 88px; border-radius: 22px; }
     #chargement .barre {
-      width: 120px; height: 6px; border-radius: 3px; background: #E5E5EA; overflow: hidden;
+      width: 120px; height: 6px; border-radius: 3px; background: #EADBB4; overflow: hidden;
     }
     #chargement .barre::after {
       content: ""; display: block; width: 40%; height: 100%; border-radius: 3px;
-      background: #FFC300; animation: aller 1.1s ease-in-out infinite alternate;
+      background: #FFC400; animation: aller 1.1s ease-in-out infinite alternate;
     }
     @keyframes aller { from { transform: translateX(-10%); } to { transform: translateX(160%); } }
     @media (prefers-reduced-motion: reduce) {
