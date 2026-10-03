@@ -156,33 +156,6 @@ const config: Config = {
         'error-container': stitch.errorContainer,
         'on-error-container': stitch.onErrorContainer,
 
-        // --- Landing page (arbitrage du 1er octobre 2026) ----------------
-        // La page d'accueil publique a son propre habit, repris de la
-        // maquette « Page Tarifs » : papier crème, encre, bordures franches.
-        // Il ne sert qu'à `app/page.tsx` ; l'application garde ses neutres.
-        papier: {
-          creme: '#FFF6DE',
-          encre: '#1C1A14',
-          /** Texte secondaire sur le crème ou le blanc. */
-          sourdine: '#5C5442',
-          /** Texte tertiaire, légendes. */
-          pale: '#6B6250',
-          /** Texte secondaire sur le jaune. */
-          brun: '#3B3424',
-          /** Texte secondaire sur l'encre. */
-          sable: '#D8D0BC',
-          bord: '#E9DDBE',
-          'bord-doux': '#E2D5B2',
-          pointille: '#D9CA9F',
-          puce: '#FFF3D1',
-          'puce-bord': '#EADBAE',
-          /** Ombre portée sous les téléphones. */
-          ombre: '#E2D2A6',
-          jaune: '#FFC83D',
-          /** Ombre du bouton jaune posé sur l'encre. */
-          'jaune-ombre': '#8A6A00',
-        },
-
         // --- 2. Alias métier reviz.* (contrat CLAUDE.md) -----------------
         reviz: {
           /**
@@ -200,8 +173,14 @@ const config: Config = {
           blue: stitch.tertiaryContainer,
           /** Encre : tout le texte principal. */
           ink: stitch.onSurface,
-          /** Texte secondaire — brun chaud, jamais un gris froid. */
+          /** Texte secondaire, tiré vers l'encre : 7,4:1 sur le crème. */
           muted: stitch.onSurfaceVariant,
+          /** Orange d'un petit texte d'urgence : l'orange flamme y serait illisible. */
+          'orange-deep': stitch.secondary,
+          /** Crème clair : puces, encarts, remplissages. */
+          'surface-low': stitch.surfaceContainerLow,
+          /** Crème soutenu : bandeaux, pistes de progression. */
+          'surface-container': stitch.surfaceContainer,
 
           // Compléments indispensables, absents de CLAUDE.md
           /** Surface des cartes. */
@@ -239,8 +218,11 @@ const config: Config = {
       },
 
       fontFamily: {
-        // Nunito Sans — et non Nunito (voir docs/DESIGN.md § 10, écart 2).
-        sans: ['var(--font-nunito-sans)', 'Nunito Sans', 'system-ui', 'sans-serif'],
+        // Identité du 3 octobre 2026 (docs/DESIGN.md § 11 ter) : Inter pour
+        // le texte, Fredoka pour les titres et les chiffres héros — les mêmes
+        // que l'application. Chargées par `next/font` dans `app/layout.tsx`.
+        sans: ['var(--font-inter)', 'Inter', 'system-ui', 'sans-serif'],
+        titre: ['var(--font-fredoka)', 'Fredoka', 'var(--font-inter)', 'system-ui', 'sans-serif'],
       },
 
       fontSize: {
@@ -311,8 +293,16 @@ const config: Config = {
         header: '0 4px 20px rgba(26,26,26,0.04)',
         // Deux couches, comme dans l'application : une courte au contact,
         // une longue et diffuse autour.
-        card: '0 1px 2px rgba(0,0,0,0.03), 0 8px 24px rgba(0,0,0,0.05)',
-        'card-sm': '0 1px 1px rgba(0,0,0,0.03), 0 4px 12px rgba(0,0,0,0.04)',
+        // Teintées de l'encre #101818, 10 % au plus en tout (§ 11 ter).
+        card: '0 1px 2px rgba(16,24,24,0.04), 0 10px 24px rgba(16,24,24,0.08)',
+        'card-sm': '0 1px 2px rgba(16,24,24,0.04), 0 6px 16px rgba(16,24,24,0.06)',
+        /** La lueur jaune sous un bouton ou un bloc jaune. */
+        lueur: '0 1px 2px rgba(217,164,0,0.25), 0 12px 22px -6px rgba(255,184,0,0.55)',
+        'lueur-large': '0 2px 4px rgba(217,164,0,0.3), 0 24px 44px -14px rgba(255,184,0,0.6)',
+        /** Un téléphone posé sur la page. */
+        telephone: '0 2px 4px rgba(16,24,24,0.12), 0 30px 60px -16px rgba(16,24,24,0.38)',
+        /** Une pastille qui flotte au-dessus d'une image. */
+        pastille: '0 1px 2px rgba(16,24,24,0.06), 0 14px 30px rgba(16,24,24,0.14)',
         float: '0 8px 24px rgba(26,26,26,0.06)',
         hero: '0 8px 24px rgba(254,106,43,0.22)',
         'glow-yellow': '0 8px 24px rgba(255,195,0,0.15)',

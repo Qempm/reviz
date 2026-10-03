@@ -14,7 +14,7 @@ import {
 
 /**
  * « Tu prépares quoi en ce moment ? » : l'étudiant dit ce qui l'attend, la
- * grille met en avant le pack qui y répond.
+ * grille met en avant le pack qui y répond — en jaune, la couleur de l'action.
  *
  * Le seul morceau interactif de la page d'accueil, donc le seul composant
  * client : tout le reste est rendu sur le serveur. Les packs arrivent déjà
@@ -42,8 +42,8 @@ export function SelecteurPacks({
   return (
     <>
       <div className="flex flex-col items-center gap-3.5">
-        <p className="text-lg font-black">Tu prépares quoi en ce moment ?</p>
-        <div className="flex flex-wrap justify-center gap-2.5">
+        <p className="font-titre text-[22px]">Tu prépares quoi en ce moment ?</p>
+        <div className="flex flex-wrap justify-center gap-2">
           {packs.map((p) => {
             const on = p.code === actif.code
             return (
@@ -52,10 +52,10 @@ export function SelecteurPacks({
                 type="button"
                 aria-pressed={on}
                 onClick={() => setChoix(p.code)}
-                className={`min-h-12 rounded-full border-2 px-5 text-[15px] font-extrabold text-papier-encre transition-colors ${
+                className={`min-h-12 rounded-full px-5 text-[15px] transition-colors ${
                   on
-                    ? 'border-papier-encre bg-papier-jaune shadow-[0_3px_0_#1C1A14]'
-                    : 'border-papier-bord-doux bg-white shadow-[0_3px_0_#E2D5B2]'
+                    ? 'bg-reviz-ink font-bold text-white'
+                    : 'bg-reviz-card font-semibold text-reviz-ink shadow-card-sm'
                 }`}
               >
                 {objectifDe(p).bouton}
@@ -63,56 +63,52 @@ export function SelecteurPacks({
             )
           })}
         </div>
-        <p aria-live="polite" className="text-center text-[15px] font-bold text-papier-sourdine">
+        <p aria-live="polite" className="max-w-[640px] text-center text-[15px] font-medium text-reviz-muted">
           {phraseConseil(actif)}
         </p>
       </div>
 
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(250px,1fr))] items-stretch gap-5 pt-3">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(min(250px,100%),1fr))] items-stretch gap-[18px] pt-2">
         {packs.map((p) => {
           const on = p.code === actif.code
           return (
             <article
               key={p.code}
-              className={`flex flex-col gap-[18px] rounded-[26px] border-2 p-[26px] transition-transform duration-150 motion-reduce:transition-none ${
-                on
-                  ? '-translate-y-2 border-papier-encre bg-papier-jaune shadow-[0_8px_0_#1C1A14]'
-                  : 'border-papier-bord bg-white shadow-[0_4px_0_#E9DDBE]'
+              className={`flex flex-col gap-[18px] rounded-[28px] p-[26px] transition-transform duration-150 motion-reduce:transition-none ${
+                on ? '-translate-y-2 bg-reviz-yellow shadow-lueur-large' : 'bg-reviz-card shadow-card'
               }`}
             >
               <div className="flex min-h-[30px] items-center justify-between gap-2">
-                <h3 className="text-[22px] font-black tracking-[-0.01em]">{p.label}</h3>
+                <h3 className="font-titre text-[26px]">{p.label}</h3>
                 {/* « Conseillé » suit le choix : c'est le conseil pour ce
                     que l'étudiant vient de dire qu'il prépare. */}
                 {on && (
-                  <span className="whitespace-nowrap rounded-full bg-papier-encre px-[11px] py-[5px] text-xs font-extrabold text-white">
+                  <span className="whitespace-nowrap rounded-full bg-reviz-ink px-[11px] py-[5px] text-xs font-bold text-white">
                     Conseillé
                   </span>
                 )}
                 {!on && p.code === meilleurParJour && (
-                  <span className="whitespace-nowrap rounded-full border-2 border-papier-encre px-2.5 py-1 text-xs font-extrabold">
+                  <span className="whitespace-nowrap rounded-full bg-reviz-orange-soft px-2.5 py-1 text-xs font-bold text-[#A8461C]">
                     Meilleur prix / jour
                   </span>
                 )}
               </div>
               <div className="flex flex-col gap-2">
                 <p className="flex items-baseline gap-1.5">
-                  <span className="text-[50px] font-black leading-none tracking-[-0.03em]">
-                    {nombreLisible(p.prixFcfa)}
-                  </span>
-                  <span className="text-base font-extrabold">F CFA</span>
+                  <span className="font-titre text-[52px] leading-none">{nombreLisible(p.prixFcfa)}</span>
+                  <span className="text-[15px] font-bold">F CFA</span>
                 </p>
                 <span
-                  className={`self-start rounded-[10px] px-2.5 py-[5px] text-[13px] font-extrabold ${
-                    on ? 'bg-papier-encre/10 text-papier-brun' : 'bg-papier-puce text-papier-pale'
+                  className={`self-start rounded-[10px] px-2.5 py-[5px] text-[13px] font-semibold ${
+                    on ? 'bg-reviz-ink/10' : 'bg-reviz-surface-low text-reviz-muted'
                   }`}
                 >
                   {prixParJour(p.prixFcfa, p.jours)}
                 </span>
               </div>
               <ul
-                className={`flex flex-col gap-3 border-t-2 border-dashed pt-4 text-base font-bold ${
-                  on ? 'border-papier-encre/35' : 'border-papier-bord'
+                className={`flex flex-col gap-3 border-t-2 border-dashed pt-4 text-base font-semibold ${
+                  on ? 'border-reviz-ink/25' : 'border-[#EADBB4]'
                 }`}
               >
                 <li className="flex items-center gap-2.5">
@@ -128,17 +124,13 @@ export function SelecteurPacks({
                   {correctionsLisibles(p.corrections)}
                 </li>
               </ul>
-              <p
-                className={`flex-grow text-[15px] font-semibold leading-normal ${
-                  on ? 'text-papier-brun' : 'text-papier-pale'
-                }`}
-              >
+              <p className={`flex-grow text-[15px] leading-normal ${on ? 'text-[#3B3424]' : 'text-reviz-muted'}`}>
                 {p.description}
               </p>
               {on ? (
                 <a
                   href={lien}
-                  className="flex min-h-[52px] items-center justify-center rounded-2xl border-2 border-papier-encre bg-papier-encre text-base font-black text-white no-underline shadow-[0_4px_0_#1C1A14] active:translate-y-[2px] active:shadow-[0_2px_0_#1C1A14]"
+                  className="flex min-h-[54px] items-center justify-center rounded-[20px] bg-reviz-ink text-base font-bold text-white no-underline transition-transform active:scale-[0.97] motion-reduce:transition-none"
                 >
                   Commencer avec {p.label}
                 </a>
@@ -146,7 +138,7 @@ export function SelecteurPacks({
                 <button
                   type="button"
                   onClick={() => setChoix(p.code)}
-                  className="min-h-[52px] rounded-2xl border-2 border-papier-encre bg-white text-base font-black text-papier-encre shadow-[0_4px_0_#1C1A14] active:translate-y-[2px] active:shadow-[0_2px_0_#1C1A14]"
+                  className="min-h-[54px] rounded-[20px] bg-reviz-cream text-base font-bold text-reviz-ink transition-transform active:scale-[0.97] motion-reduce:transition-none"
                 >
                   Choisir {p.label}
                 </button>

@@ -1,16 +1,25 @@
 import type { Metadata, Viewport } from 'next'
-import { Nunito_Sans } from 'next/font/google'
+import { Fredoka, Inter } from 'next/font/google'
 import './globals.css'
 
 /**
- * Nunito Sans — police unique du design system (docs/DESIGN.md § 3).
- * Fonte variable : on ne fige pas de graisse ici, tailwind.config.ts porte
- * l'échelle typographique (500 corps, 700 labels, 800 titres).
+ * Les deux polices de l'identité du 3 octobre 2026 (docs/DESIGN.md § 11 ter),
+ * les mêmes que l'application : Inter pour le texte (fonte variable, toutes
+ * les graisses), Fredoka pour les titres et les chiffres héros, en sa seule
+ * graisse 600. `tailwind.config.ts` les expose en `font-sans` et
+ * `font-titre`.
  */
-const nunitoSans = Nunito_Sans({
+const inter = Inter({
   subsets: ['latin'],
   display: 'swap',
-  variable: '--font-nunito-sans',
+  variable: '--font-inter',
+})
+
+const fredoka = Fredoka({
+  subsets: ['latin'],
+  weight: '600',
+  display: 'swap',
+  variable: '--font-fredoka',
 })
 
 export const metadata: Metadata = {
@@ -42,10 +51,10 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    // Plus de feuille Material Symbols : aucune des deux pages publiques ne
-    // s'en sert depuis le retrait des écrans web, et elle faisait télécharger
-    // une police d'icônes à chaque visiteur — sur un forfait data limité.
-    <html lang="fr" className={nunitoSans.variable}>
+    // Plus de feuille Material Symbols : aucune des pages publiques ne s'en
+    // sert depuis le retrait des écrans web, et elle faisait télécharger une
+    // police d'icônes à chaque visiteur — sur un forfait data limité.
+    <html lang="fr" className={`${inter.variable} ${fredoka.variable}`}>
       <body className="bg-surface text-on-surface text-body-md font-sans">
         {children}
       </body>

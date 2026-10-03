@@ -478,8 +478,9 @@ visible : posé au bas des 108 dp, il coupait le visage.
   contracte puis revient sur ressort, une seule pilule de navigation.
 - Le mouvement réduit, à un seul point (`MouvementReduit`).
 - Mobile d'abord, zones tactiles de 48 px, un seul CTA principal par écran.
-- La page d'accueil publique `/` garde son habit « Page Tarifs » (jetons
-  `papier.*`, arbitrage du 1er octobre).
+- La page d'accueil publique `/` prend la même identité (maquette validée le
+  3 octobre sur le canevas « Reviz — page d'accueil ») : l'habit « Page
+  Tarifs » du 1er octobre et ses jetons `papier.*` sont retirés.
 
 ## 11 bis. Arbitrage du 29 septembre 2026 — la deuxième version
 

@@ -55,7 +55,7 @@ une valeur.
 - Mobile d'abord (390 px), zones tactiles ≥ 48 px, un seul CTA principal par écran, tutoiement, textes courts.
 - Pas de mode sombre au MVP.
 - **Voir avant de conclure** : `flutter test test_apercus --update-goldens` rend les écrans en PNG avec des données factices, la vraie police et les vraies icônes, dans `apps/mobile/test_apercus/goldens/` (ignoré par git). C'est ainsi que se juge un changement visuel sans téléphone ni compte.
-- Web : `tailwind.config.ts` porte les mêmes valeurs pour les pages publiques (`/app`, `/confidentialite`, `/paiement/retour`). **Exception arbitrée le 1er octobre 2026 : la page d'accueil `/`** a son propre habit, repris de la maquette « Page Tarifs » — papier crème `#FFF6DE`, encre `#1C1A14`, jaune `#FFC83D`, Nunito 900, bordures de 2 px et ombres franches — via les jetons `papier.*`. L'application ne change pas.
+- Web : `tailwind.config.ts` porte les mêmes valeurs pour toutes les pages publiques, **page d'accueil `/` comprise** depuis le 3 octobre 2026 (maquette validée sur le canevas « Reviz — page d'accueil ») : crème, cartes blanches à ombres douces, jaune pour l'action, `font-titre` (Fredoka) et `font-sans` (Inter) chargées par `next/font` dans `app/layout.tsx`. L'habit « Page Tarifs » et ses jetons `papier.*` sont retirés. Captures de la page : `apps/mobile/test_apercus/studio_test.dart` (×3), réduites à ×2 en WebP dans `public/landing/`.
 
 ## Modèle de données (Supabase, schéma `public`)
 
