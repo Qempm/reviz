@@ -297,6 +297,17 @@ parrain à 2 999 XP n'est pas crédité, un parrain à 3 000 XP et un ambassadeu
 partent au premier paiement d'un filleul vérifié, même sous le seuil, une fois
 par filleul (`xp_events.reference_id` = le filleul).
 
+**Commissions suspendues (3 octobre 2026).** `calculerCommission` refuse tout,
+motif `commissions_suspendues`, tant que `COMMISSIONS_ACTIVES` est faux ; et
+`enregistrer_paiement()` n'inscrit plus rien tant que `commissions_actives()`
+rend `false`, quoi que l'appelant transmette. Les 500 XP de parrainage, eux,
+continuent. Taux de reprise : 10 % et 15 % (la contrainte
+`referrals_taux_connu` accepte aussi 25 % et 35 %, pour les parrainages
+d'avant). Essai annulé contre la base hébergée : un parrain à 3 000 XP et un
+ambassadeur ne sont pas crédités, les filleuls ont leur accès, et les taux de
+10 % et 15 % passent la contrainte. Au moment de la suspension, aucune
+commission n'avait encore été versée (grand livre à 0 F).
+
 ### Les quatre routes de la correction
 
 `POST /api/corrections/preparer` — `{ copie: {mime, taille}, pages?, sujet?,

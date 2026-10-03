@@ -82,7 +82,7 @@ export default function Telechargement() {
           </li>
           <li>Retourner des fiches, chapitre par chapitre.</li>
           <li>Photographier une copie et recevoir une note détaillée.</li>
-          <li>Voir le classement de ta faculté, et tes gains de parrainage.</li>
+          <li>Voir le classement de ta faculté, et inviter ta promo.</li>
         </ul>
       </section>
 

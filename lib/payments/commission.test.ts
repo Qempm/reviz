@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
-  calculerCommission,
+  calculerCommission as calculerCommissionBrute,
+  COMMISSIONS_ACTIVES,
   finDeFenetre,
   parrainDebloque,
   SEUIL_RETRAIT_FCFA,
@@ -26,8 +27,40 @@ const parrainage = (firstPaymentAt: Date | null = null): Parrainage => ({
 
 const JANVIER = new Date('2026-01-15T10:00:00Z')
 
+/**
+ * Les commissions sont suspendues ; la règle, elle, reste prête pour leur
+ * reprise. Elle se teste donc interrupteur levé.
+ */
+const calculerCommission = (
+  opts: Parameters<typeof calculerCommissionBrute>[0],
+) => calculerCommissionBrute({ actives: true, ...opts })
+
+describe('suspension des commissions', () => {
+  it('est en vigueur', () => {
+    expect(COMMISSIONS_ACTIVES).toBe(false)
+  })
+
+  it('ne verse rien, même à un ambassadeur au-delà du seuil', () => {
+    const c = calculerCommissionBrute({
+      parrainage: parrainage(),
+      parrain: AMBASSADEUR,
+      filleul: FILLEUL,
+      amountFcfa: 3500,
+      now: JANVIER,
+    })
+    expect(c).toEqual({ due: false, reason: 'commissions_suspendues' })
+  })
+})
+
+describe('taux de reprise', () => {
+  it('10 % pour un parrain, 15 % pour un ambassadeur', () => {
+    expect(TAUX_STANDARD).toBe(0.1)
+    expect(TAUX_AMBASSADEUR).toBe(0.15)
+  })
+})
+
 describe('calcul des commissions', () => {
-  it('verse 25 % au parrain standard', () => {
+  it('verse 10 % au parrain standard', () => {
     const c = calculerCommission({
       parrainage: parrainage(),
       parrain: PARRAIN,
@@ -39,12 +72,12 @@ describe('calcul des commissions', () => {
     expect(c.due).toBe(true)
     if (c.due) {
       expect(c.rate).toBe(TAUX_STANDARD)
-      expect(c.amountFcfa).toBe(875)
+      expect(c.amountFcfa).toBe(350)
       expect(c.referrerId).toBe('a')
     }
   })
 
-  it('verse 35 % à l’ambassadeur', () => {
+  it('verse 15 % à l’ambassadeur', () => {
     const c = calculerCommission({
       parrainage: parrainage(),
       parrain: AMBASSADEUR,
@@ -56,7 +89,7 @@ describe('calcul des commissions', () => {
     expect(c.due).toBe(true)
     if (c.due) {
       expect(c.rate).toBe(TAUX_AMBASSADEUR)
-      expect(c.amountFcfa).toBe(1225)
+      expect(c.amountFcfa).toBe(525)
     }
   })
 
@@ -156,13 +189,13 @@ describe('calcul des commissions', () => {
       parrainage: parrainage(),
       parrain: PARRAIN,
       filleul: FILLEUL,
-      // 25 % de 501 = 125,25
-      amountFcfa: 501,
+      // 10 % de 503 = 50,3
+      amountFcfa: 503,
       now: JANVIER,
     })
     expect(c.due).toBe(true)
     if (c.due) expect(Number.isInteger(c.amountFcfa)).toBe(true)
-    if (c.due) expect(c.amountFcfa).toBe(125)
+    if (c.due) expect(c.amountFcfa).toBe(50)
   })
 
   it('gère le 29 février sans déborder', () => {
@@ -273,7 +306,7 @@ describe('le seuil de 3 000 XP du parrain', () => {
   it('la verse à 3 000 XP pile', () => {
     const c = commission(avecXp(3000))
     expect(c.due).toBe(true)
-    if (c.due) expect(c.amountFcfa).toBe(375)
+    if (c.due) expect(c.amountFcfa).toBe(150)
   })
 
   it('dispense l’ambassadeur, même à 0 XP', () => {

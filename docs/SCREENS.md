@@ -29,7 +29,7 @@ ouvrait le site.
 | `/corriger` | `corriger.dart` | Jusqu'à quatre pages, cours pré-choisi, type d'épreuve, barème ; envoi par URL signée, historique. |
 | `/corrections/:id` | `correction.dart` | Attente, note, barème ligne par ligne, notions manquées, « Réviser : chapitre », copie illisible, échec. |
 | `/boutique` | `boutique.dart` | « Tu prépares quoi ? » : le pack conseillé en carte héros jaune (prix par jour, « Conseillé »), les autres en cartes compactes, Découverte à part, l'accès en cours. |
-| `/gains` | `gains.dart` | Sous 3 000 XP (hors ambassadeur), carte de déblocage du parrainage ; solde, code parrain copiable, filleuls, feuille de retrait. |
+| `/gains` | `gains.dart` | Commissions suspendues (3 octobre 2026) : carte « gains en pause », code parrain à 500 XP, filleuls ; le solde et la feuille de retrait n'apparaissent que s'il reste un solde. Commissions actives : carte de déblocage sous 3 000 XP (hors ambassadeur), solde, code, filleuls, retrait. |
 | `/classement` | `classement.dart` | Podium 2·1·3 et tableau, pour sa faculté. |
 | `/ligue` | `ligue.dart` | Ligue de la semaine : division, compte à rebours, zones de montée et de descente, bilan de la semaine passée. Attend la migration `20260930130000_ligues.sql`. |
 | `/profil` | `profil.dart` | Identité, vérification de carte, niveau, XP des sept jours en barres, meilleure série, réglages, déconnexion. |

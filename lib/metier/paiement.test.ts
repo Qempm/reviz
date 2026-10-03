@@ -44,6 +44,9 @@ const contexte = (
   },
   parrain: { id: 'parrain', isAmbassador: false, xpTotal: 3000 },
   now: MAINTENANT,
+  // Les commissions sont suspendues ; la décision se teste interrupteur
+  // levé, et la suspension a son propre cas.
+  commissionsActives: true,
   ...partiel,
 })
 
@@ -160,13 +163,30 @@ describe('deciderPaiement — l’accès', () => {
 })
 
 describe('deciderPaiement — la commission', () => {
-  it('verse 25 % au parrain ordinaire', () => {
+  it('ne verse rien tant que les commissions sont suspendues', () => {
+    // Arbitrage du 3 octobre 2026 : sans l'interrupteur, l'accès s'ouvre et
+    // personne n'est payé.
+    const d = deciderPaiement(
+      'approved',
+      contexte({
+        commissionsActives: undefined,
+        parrain: { id: 'parrain', isAmbassador: true, xpTotal: 9000 },
+      }),
+    )
+    if (d.action !== 'activer') throw new Error('accès attendu')
+
+    expect(d.commission).toBeNull()
+    expect(d.motifSansCommission).toBe('commissions_suspendues')
+    expect(d.abonnement.correctionsLeft).toBe(3)
+  })
+
+  it('verse 10 % au parrain ordinaire', () => {
     const d = deciderPaiement('approved', contexte())
     if (d.action !== 'activer') throw new Error('accès attendu')
 
     expect(d.commission).toEqual({
       parrainId: 'parrain',
-      montantFcfa: 250,
+      montantFcfa: 100,
       taux: TAUX_STANDARD,
     })
   })
@@ -181,7 +201,7 @@ describe('deciderPaiement — la commission', () => {
     if (d.action !== 'activer') throw new Error('accès attendu')
 
     expect(d.commission?.taux).toBe(TAUX_AMBASSADEUR)
-    expect(d.commission?.montantFcfa).toBe(350)
+    expect(d.commission?.montantFcfa).toBe(150)
   })
 
   it('ne verse rien tant que le parrain n’a pas 3 000 XP', () => {
@@ -242,7 +262,7 @@ describe('deciderPaiement — la commission', () => {
       }),
     )
     if (d.action !== 'activer') throw new Error('accès attendu')
-    expect(d.commission?.montantFcfa).toBe(250)
+    expect(d.commission?.montantFcfa).toBe(100)
   })
 
   it('refuse un auto-parrainage même si la ligne existe', () => {
@@ -287,7 +307,7 @@ describe('deciderPaiement — la commission', () => {
   })
 
   it('arrondit à l’unité de FCFA', () => {
-    // Le franc CFA n'a pas de subdivision : 333 × 0,25 = 83,25 → 83.
+    // Le franc CFA n'a pas de subdivision : 333 × 0,10 = 33,3 → 33.
     const d = deciderPaiement(
       'approved',
       contexte({
@@ -301,6 +321,6 @@ describe('deciderPaiement — la commission', () => {
       }),
     )
     if (d.action !== 'activer') throw new Error('accès attendu')
-    expect(d.commission?.montantFcfa).toBe(83)
+    expect(d.commission?.montantFcfa).toBe(33)
   })
 })

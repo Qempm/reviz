@@ -521,14 +521,13 @@ export default async function Accueil() {
           <div className="flex flex-wrap items-center gap-6 rounded-[40px] bg-reviz-yellow p-7 shadow-lueur-large md:gap-10 md:p-[52px]">
             <div className="flex shrink-0">
               <Panthere pose="amis" taille={170} className="h-auto w-[130px] md:w-[170px]" />
-              <Panthere pose="pieces" taille={170} className="-ml-7 h-auto w-[130px] md:w-[170px]" />
+              <Panthere pose="cadeau" taille={170} className="-ml-7 h-auto w-[130px] md:w-[170px]" />
             </div>
             <div className="flex flex-[1_1_360px] flex-col gap-3">
-              <h2 className="font-titre text-[32px] leading-[1.05] sm:text-[48px]">Atteins 3 000 XP, invite ta promo</h2>
+              <h2 className="font-titre text-[32px] leading-[1.05] sm:text-[48px]">Invite ta promo, gagne des XP</h2>
               <p className="text-[17px] leading-relaxed text-[#3B3424] sm:text-lg">
-                Révise jusqu’à 3 000 XP : ton parrainage s’ouvre. Ensuite, chaque fois qu’un camarade que tu as invité
-                paie un pack, 25 % du montant arrivent dans ton portefeuille, pendant douze mois. Tu retires en Mobile
-                Money dès 3 000 F.
+                Donne ton code à tes camarades : chaque ami vérifié qui prend un pack te rapporte 500 XP, de quoi
+                monter dans ta ligue. Et la veille du contrôle, on révise mieux à plusieurs.
               </p>
             </div>
           </div>

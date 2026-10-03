@@ -102,6 +102,8 @@ export type ContextePaiement = {
    */
   parrain: EtatParrain | null
   now?: Date
+  /** L'interrupteur des commissions, `COMMISSIONS_ACTIVES` par défaut. */
+  commissionsActives?: boolean
 }
 
 export type CommissionAVerser = {
@@ -172,6 +174,7 @@ export function deciderPaiement(
     filleul: contexte.payeur,
     amountFcfa: contexte.paiement.amountFcfa,
     now,
+    actives: contexte.commissionsActives,
   })
 
   if (!commission.due) {

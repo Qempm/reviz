@@ -63,7 +63,7 @@ function fausseBase(opts: { xpParrain: number; ambassadeur?: boolean; dejaRecomp
   return { admin: admin as never, rpc }
 }
 
-describe('traiterTransaction — parrainage et seuil de 3 000 XP', () => {
+describe('traiterTransaction — parrainage, commissions suspendues', () => {
   beforeEach(() => attribuerXp.mockClear())
 
   it('sous le seuil : aucune commission, mais les 500 XP du filleul', async () => {
@@ -81,21 +81,21 @@ describe('traiterTransaction — parrainage et seuil de 3 000 XP', () => {
     })
   })
 
-  it('au seuil : la commission part, et les 500 XP aussi', async () => {
+  it('au seuil : pas de commission (suspendues), mais les 500 XP', async () => {
     const { admin, rpc } = fausseBase({ xpParrain: 3000 })
     await traiterTransaction(admin, { reference: 'tx-1', statut: 'approved', brut: {} })
 
     const args = rpc.mock.calls[0]![1]
-    expect(args.p_parrain).toBe('parrain')
-    expect(args.p_commission_fcfa).toBe(375)
+    expect(args.p_parrain).toBeUndefined()
+    expect(args.p_commission_fcfa).toBeUndefined()
     expect(attribuerXp).toHaveBeenCalledTimes(1)
   })
 
-  it('un ambassadeur touche sa commission sans les 3 000 XP', async () => {
+  it('un ambassadeur non plus ne touche rien', async () => {
     const { admin, rpc } = fausseBase({ xpParrain: 0, ambassadeur: true })
     await traiterTransaction(admin, { reference: 'tx-1', statut: 'approved', brut: {} })
 
-    expect(rpc.mock.calls[0]![1].p_commission_fcfa).toBe(525)
+    expect(rpc.mock.calls[0]![1].p_commission_fcfa).toBeUndefined()
   })
 
   it('les 500 XP ne se versent qu’une fois par filleul', async () => {

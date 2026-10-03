@@ -1,9 +1,11 @@
 /**
  * Commissions de parrainage (CLAUDE.md, règle métier 2).
  *
- * 25 % du montant de chaque paiement du filleul, 35 % si le parrain est
- * ambassadeur, pendant 12 mois à partir du premier paiement. Créditées dans
- * `wallet_ledger` au webhook de paiement réussi.
+ * **Suspendues depuis le 3 octobre 2026** (`COMMISSIONS_ACTIVES`) : le
+ * propriétaire, seul, ne pouvait pas tenir 25 % de chaque paiement. Le jour où
+ * elles reprennent, c'est à 10 % du montant de chaque paiement du filleul,
+ * 15 % si le parrain est ambassadeur, pendant 12 mois à partir du premier
+ * paiement. Créditées dans `wallet_ledger` au webhook de paiement réussi.
  *
  * Un filleul ne compte que s'il est vérifié et a payé au moins une fois : le
  * premier paiement est donc celui qui ouvre la fenêtre, et il est lui-même
@@ -18,8 +20,23 @@
  * pour que la règle reste lisible d'un seul endroit.
  */
 
-export const TAUX_STANDARD = 0.25
-export const TAUX_AMBASSADEUR = 0.35
+/**
+ * L'interrupteur des commissions. Faux : aucun paiement de filleul ne
+ * rapporte d'argent, quels que soient le seuil et le statut du parrain. La
+ * base porte le même (`public.commissions_actives()`), et l'application aussi
+ * (`commissionsActives`, `apps/mobile/lib/metier/commission.dart`) : la
+ * reprise se fait aux trois endroits, avec une migration.
+ */
+export const COMMISSIONS_ACTIVES = false
+
+/**
+ * Taux ramenés de 25 % et 35 % le 3 octobre 2026 : 10 % reste motivant sur
+ * les packs chers, sans peser sur une marge qui doit déjà payer l'IA et
+ * FedaPay. La base accepte encore 25 % et 35 % pour les parrainages
+ * enregistrés avant.
+ */
+export const TAUX_STANDARD = 0.1
+export const TAUX_AMBASSADEUR = 0.15
 
 /** Seuil de retrait, en FCFA (règle métier 2). */
 export const SEUIL_RETRAIT_FCFA = 3000
@@ -56,6 +73,7 @@ export type EtatFilleul = {
 }
 
 export type MotifRefus =
+  | 'commissions_suspendues'
   | 'filleul_non_verifie'
   | 'fenetre_expiree'
   | 'parrain_est_le_filleul'
@@ -66,7 +84,7 @@ export type Commission =
   | {
       due: true
       referrerId: string
-      /** Taux appliqué : 0.25 ou 0.35. */
+      /** Taux appliqué : 0.10 ou 0.15. */
       rate: number
       amountFcfa: number
       /** Fin de la fenêtre de 12 mois, telle qu'elle doit être enregistrée. */
@@ -122,9 +140,16 @@ export function calculerCommission(opts: {
   /** Montant du paiement du filleul, en FCFA. */
   amountFcfa: number
   now?: Date
+  /** L'interrupteur, `COMMISSIONS_ACTIVES` par défaut. Pour les tests. */
+  actives?: boolean
 }): Commission {
   const now = opts.now ?? new Date()
   const { parrainage, parrain, filleul } = opts
+
+  // Suspendues : rien n'est dû, avant toute autre règle.
+  if (!(opts.actives ?? COMMISSIONS_ACTIVES)) {
+    return { due: false, reason: 'commissions_suspendues' }
+  }
 
   // Anti-fraude : on ne se parraine pas soi-même (règle métier 3). La base
   // l'interdit déjà, on ne verse rien si la ligne existait malgré tout.

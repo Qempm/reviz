@@ -199,7 +199,7 @@ export const FAQ: Array<{ question: string; reponse: string }> = [
   {
     question: 'Comment marche le parrainage ?',
     reponse:
-      'Tes gains de parrainage s’ouvrent quand tu atteins 3 000 XP : révise, puis invite. Ensuite, quand un filleul paie un pack, 25 % du montant vont dans ton portefeuille, à chacun de ses paiements pendant douze mois. Le retrait part en Mobile Money dès 3 000 F.',
+      'Pour l’instant, il ne rapporte pas d’argent : les commissions sont en pause. Ton code sert toujours — chaque ami vérifié qui prend un pack avec ton code te rapporte 500 XP, une fois par ami. On te préviendra dans l’application quand les gains en argent reviendront.',
   },
   {
     question: 'Ça marche sans réseau ?',
