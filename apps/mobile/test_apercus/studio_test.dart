@@ -41,6 +41,7 @@ import 'package:reviz/ecrans/fiches.dart';
 import 'package:reviz/ecrans/gains.dart';
 import 'package:reviz/ecrans/inscription.dart';
 import 'package:reviz/ecrans/ligue.dart';
+import 'package:reviz/ecrans/matiere.dart';
 import 'package:reviz/ecrans/mise_a_jour.dart';
 import 'package:reviz/ecrans/notifications.dart';
 import 'package:reviz/ecrans/notifications_reglages.dart';
@@ -1439,6 +1440,69 @@ void main() {
       t,
       '31-reglages-notifications',
       const EcranReglagesNotifications(),
+    ),
+  );
+
+  // ---- Une matière : sa maîtrise et ce qu'il faut reprendre.
+  ApercuChapitre fragile(String id, int index, String titre, double taux) =>
+      ApercuChapitre(
+        id: id,
+        index: index,
+        titre: titre,
+        nbQuestions: 6,
+        nbFiches: 4,
+        nbTentees: 6,
+        taux: taux,
+        aRevoir: taux < 0.5,
+      );
+  final matiere = [
+    matiereProvider('m1').overrideWith(
+      (_) async => DonneesMatiere(
+        id: 'm1',
+        nom: 'Droit constitutionnel',
+        stat: const StatMatiere(
+          matiereId: 'm1',
+          matiereNom: 'Droit constitutionnel',
+          questionsFaites: 24,
+          scoreMoyen: 0.57,
+          aRevoir: false,
+        ),
+        cours: [_cours[0]],
+        aRetravailler: [
+          ChapitreARetravailler(
+            cours: _cours[0],
+            chapitre: fragile(
+              'ch3',
+              2,
+              'Le contrôle de constitutionnalité',
+              0.33,
+            ),
+          ),
+          ChapitreARetravailler(
+            cours: _cours[0],
+            chapitre: fragile('ch4', 3, 'La séparation des pouvoirs', 0.5),
+          ),
+        ],
+      ),
+    ),
+  ];
+  testWidgets(
+    '32-matiere',
+    (t) => _cliche(
+      t,
+      '32-matiere',
+      const EcranMatiere(matiereId: 'm1'),
+      remplacements: matiere,
+    ),
+  );
+  testWidgets(
+    '32-matiere-long',
+    (t) => _cliche(
+      t,
+      '32-matiere-long',
+      const EcranMatiere(matiereId: 'm1'),
+      remplacements: matiere,
+      hauteur: 1500,
     ),
   );
 }
