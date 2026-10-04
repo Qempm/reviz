@@ -13,7 +13,7 @@
  */
 
 /** La version publiée, telle que `pubspec.yaml` la déclare. */
-export const VERSION = '2.8.2'
+export const VERSION = '2.8.3'
 
 /**
  * En dessous, l'application refuse de servir.
@@ -38,7 +38,8 @@ export const VERSION_MINIMALE = '2.0.0'
 export const MAINTENANCE = false
 
 export const NOTES =
-  'Reviz a son adresse : revizapp.fun. Ton code parrain y renvoie tes amis.'
+  'Sans réseau, tout se lit : tes cours, ton chemin, tes QCM, tes fiches et ' +
+  'tes corrections restent sur ton téléphone.'
 
 /** Date de la publication, au format `AAAA-MM-JJ`. */
 export const DATE = '2026-10-04'
@@ -73,9 +74,9 @@ export type Apk =
 
 export const APK: Apk = {
   publie: true,
-  url: 'https://github.com/Qempm/reviz/releases/download/v2.8.2/reviz-2.8.2.apk',
-  tailleOctets: 65_082_305,
-  sha256: '78ed0898f74e07362895963fa66bdd7ed17456bb17343f4cccaa4ddb0c10f469',
+  url: 'https://github.com/Qempm/reviz/releases/download/v2.8.3/reviz-2.8.3.apk',
+  tailleOctets: 65_819_515,
+  sha256: '313d99ea4d11027ad46118a0b31f2c0116356bc6d4d5ebf5b9d4500d11b1d009',
 }
 
 /**
