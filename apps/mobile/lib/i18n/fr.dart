@@ -743,7 +743,8 @@ class _MiseAJour {
   // --- Réseau
   final String horsLigne = 'Pas de connexion';
   final String horsLigneDetail =
-      'Tes QCM déjà chargés restent jouables. Le reste attendra le réseau.';
+      'Tes cours, tes QCM et tes fiches restent là. Déposer, payer ou faire '
+      'corriger attendra le réseau.';
 
   // --- Mise à jour conseillée
   final String conseillee = 'Une nouvelle version est là';
@@ -805,9 +806,10 @@ class _Aide {
     ),
     (
       'Ça marche sans réseau ?',
-      'Oui pour réviser : une série finie sans réseau est gardée sur ton '
-          'téléphone et part toute seule quand la connexion revient, avec tes '
-          'XP et ta série. Il faut du réseau pour déposer un cours ou faire '
+      'Oui pour réviser : tes cours prêts sont gardés sur ton téléphone — '
+          'chemin, QCM, fiches, corrections déjà reçues. Une série finie sans '
+          'réseau part toute seule quand la connexion revient, avec tes XP et '
+          'ta série. Il faut du réseau pour déposer un cours, payer ou faire '
           'corriger une copie — un bandeau te prévient quand la connexion '
           'tombe.',
     ),

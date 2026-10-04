@@ -14,6 +14,7 @@ import '../metier/maitrise.dart';
 import '../metier/notifications.dart';
 import '../metier/selection.dart';
 import 'api.dart';
+import 'cache.dart';
 import 'modeles.dart';
 import 'supabase.dart';
 
@@ -43,35 +44,44 @@ class DepotProfil {
     final id = supabase.auth.currentUser?.id;
     if (id == null) return null;
 
-    final ligne = await supabase
-        .from('profiles')
-        .select(
-          'id, first_name, xp_total, current_streak, last_validated_on, '
-          'faculty_id, referral_code, avatar_key, verification_status, '
-          'study_year, phone, longest_streak, is_ambassador, '
-          'universities(name), faculties(name)',
-        )
-        .eq('id', id)
-        .maybeSingle();
+    final ligne = await lu(
+      'profil',
+      () async => await supabase
+          .from('profiles')
+          .select(
+            'id, first_name, xp_total, current_streak, last_validated_on, '
+            'faculty_id, referral_code, avatar_key, verification_status, '
+            'study_year, phone, longest_streak, is_ambassador, '
+            'universities(name), faculties(name)',
+          )
+          .eq('id', id)
+          .maybeSingle(),
+    );
 
     if (ligne == null) return null;
     return Profil.depuis(ligne);
   }
 
   Future<List<Universite>> universites() async {
-    final lignes = await supabase
-        .from('universities')
-        .select('id, name')
-        .order('name', ascending: true);
+    final lignes = await lu(
+      'universites',
+      () async => await supabase
+          .from('universities')
+          .select('id, name')
+          .order('name', ascending: true),
+    );
     return _garder(lignes, Universite.depuis);
   }
 
   Future<List<Faculte>> facultes(String universiteId) async {
-    final lignes = await supabase
-        .from('faculties')
-        .select('id, name, university_id')
-        .eq('university_id', universiteId)
-        .order('name', ascending: true);
+    final lignes = await lu(
+      'facultes/$universiteId',
+      () async => await supabase
+          .from('faculties')
+          .select('id, name, university_id')
+          .eq('university_id', universiteId)
+          .order('name', ascending: true),
+    );
     return _garder(lignes, Faculte.depuis);
   }
 
@@ -96,11 +106,14 @@ class DepotProfil {
   /// cascade, même pour le rôle de service. La route vide donc l'identité et
   /// retire le contenu personnel, en laissant les lignes financières sans nom
   /// dessus (voir `docs/API.md`).
-  Future<Reponse<bool>> supprimer(ApiReviz api) {
-    return api.poster<bool>(
+  Future<Reponse<bool>> supprimer(ApiReviz api) async {
+    final reponse = await api.poster<bool>(
       '/api/profile/delete',
       depuis: (data) => data['anonymise'] as bool? ?? true,
     );
+    // Le compte n'existe plus : ses copies hors ligne non plus.
+    if (reponse is ReponseSucces) await CacheLectures.instance.effacer();
+    return reponse;
   }
 
   /// Dépose la photo de sa carte étudiante, et lance la vérification.
@@ -239,14 +252,14 @@ class DepotAccueil {
     final profil = await const DepotProfil().mien();
     if (profil == null) return null;
 
-    // Les constructeurs de requête de supabase_flutter sont des `Future` par
-    // `Thenable`, mais pas des `Future` au sens du type : on les enveloppe
-    // explicitement pour que `Future.wait` les accepte.
+    // Chaque lecture passe par la copie hors ligne (`cache.dart`) : sans
+    // réseau, l'accueil s'affiche avec ce qu'on savait au dernier passage.
     final resultats = await Future.wait<dynamic>([
-      Future<dynamic>.value(supabase.rpc('streak_week')),
-      Future<dynamic>.value(supabase.rpc('daily_goal')),
-      Future<dynamic>.value(
-        supabase
+      lu('accueil/semaine', () async => await supabase.rpc('streak_week')),
+      lu('accueil/objectif', () async => await supabase.rpc('daily_goal')),
+      lu(
+        'accueil/matieres',
+        () async => await supabase
             .from('subject_stats')
             .select(
               'subject_id, subject_name, questions_answered, average_score, '
@@ -255,8 +268,9 @@ class DepotAccueil {
             .order('questions_answered', ascending: false)
             .limit(4),
       ),
-      Future<dynamic>.value(
-        supabase
+      lu(
+        'accueil/dernier-cours',
+        () async => await supabase
             .from('course_overview')
             .select(_colonnesCours)
             .eq('status', 'ready')
@@ -265,8 +279,9 @@ class DepotAccueil {
             .limit(1)
             .maybeSingle(),
       ),
-      Future<dynamic>.value(
-        supabase
+      lu(
+        'accueil/examen',
+        () async => await supabase
             .from('course_overview')
             .select(_colonnesCours)
             .gte('exam_date', _aujourdhuiIso())
@@ -354,8 +369,9 @@ class DepotMatiere {
 
   Future<DonneesMatiere> charger(String matiereId) async {
     final resultats = await Future.wait<dynamic>([
-      Future<dynamic>.value(
-        supabase
+      lu(
+        'matiere/$matiereId/stat',
+        () async => await supabase
             .from('subject_stats')
             .select(
               'subject_id, subject_name, questions_answered, average_score, '
@@ -364,8 +380,9 @@ class DepotMatiere {
             .eq('subject_id', matiereId)
             .maybeSingle(),
       ),
-      Future<dynamic>.value(
-        supabase
+      lu(
+        'matiere/$matiereId/cours',
+        () async => await supabase
             .from('course_overview')
             .select(
               'id, title, status, is_demo, subject_id, subject_name, '
@@ -378,7 +395,10 @@ class DepotMatiere {
     ]);
 
     final stat = DepotAccueil._un(resultats[0], StatMatiere.depuis);
-    final cours = _garder(resultats[1] as List? ?? const [], ApercuCours.depuis);
+    final cours = _garder(
+      resultats[1] as List? ?? const [],
+      ApercuCours.depuis,
+    );
 
     // Les chapitres de chaque cours prêt, en parallèle : un étudiant a
     // rarement plus de trois cours par matière.
@@ -391,7 +411,9 @@ class DepotMatiere {
       for (var i = 0; i < prets.length; i++)
         for (final ch in chapitres[i])
           if (ch.aRevoir ||
-              (ch.taux != null && ch.nbTentees > 0 && ch.taux! < seuilRetravail))
+              (ch.taux != null &&
+                  ch.nbTentees > 0 &&
+                  ch.taux! < seuilRetravail))
             ChapitreARetravailler(cours: prets[i], chapitre: ch),
     ]..sort((a, b) => (a.chapitre.taux ?? 0).compareTo(b.chapitre.taux ?? 0));
 
@@ -413,27 +435,33 @@ class DepotCours {
   /// La RLS filtre : mes cours, ceux partagés dans ma faculté, et les
   /// démonstrations. Aucun filtre à écrire ici.
   Future<List<ApercuCours>> liste() async {
-    final lignes = await supabase
-        .from('course_overview')
-        .select(
-          'id, title, status, is_demo, subject_id, subject_name, exam_date, '
-          'nb_chapitres, nb_questions, nb_fiches, nb_tentees, created_at',
-        )
-        .order('is_demo', ascending: false)
-        .order('created_at', ascending: false);
+    final lignes = await lu(
+      'cours',
+      () async => await supabase
+          .from('course_overview')
+          .select(
+            'id, title, status, is_demo, subject_id, subject_name, exam_date, '
+            'nb_chapitres, nb_questions, nb_fiches, nb_tentees, created_at',
+          )
+          .order('is_demo', ascending: false)
+          .order('created_at', ascending: false),
+    );
 
     return _garder(lignes, ApercuCours.depuis);
   }
 
   Future<ApercuCours?> un(String id) async {
-    final ligne = await supabase
-        .from('course_overview')
-        .select(
-          'id, title, status, is_demo, subject_id, subject_name, exam_date, '
-          'nb_chapitres, nb_questions, nb_fiches, nb_tentees',
-        )
-        .eq('id', id)
-        .maybeSingle();
+    final ligne = await lu(
+      'cours/$id',
+      () async => await supabase
+          .from('course_overview')
+          .select(
+            'id, title, status, is_demo, subject_id, subject_name, exam_date, '
+            'nb_chapitres, nb_questions, nb_fiches, nb_tentees',
+          )
+          .eq('id', id)
+          .maybeSingle(),
+    );
 
     if (ligne == null) return null;
     return ApercuCours.depuis(ligne);
@@ -476,14 +504,17 @@ class DepotCours {
       'is_weak';
 
   Future<List<ApercuChapitre>> chapitres(String coursId) async {
-    final lignes = await supabase
-        .from('chapter_stats')
-        .select(colonnesChapitres)
-        .eq('course_id', coursId)
-        // Croissant **explicite** : en Dart, `order()` trie par défaut en
-        // ordre décroissant (l'inverse du client JavaScript). Le chemin
-        // commençait par le dernier chapitre.
-        .order('index', ascending: true);
+    final lignes = await lu(
+      'chapitres/$coursId',
+      () async => await supabase
+          .from('chapter_stats')
+          .select(colonnesChapitres)
+          .eq('course_id', coursId)
+          // Croissant **explicite** : en Dart, `order()` trie par défaut en
+          // ordre décroissant (l'inverse du client JavaScript). Le chemin
+          // commençait par le dernier chapitre.
+          .order('index', ascending: true),
+    );
 
     return _garder(lignes, ApercuChapitre.depuis);
   }
@@ -499,11 +530,14 @@ class DepotCours {
     final chapitresDuCours = await chapitres(coursId);
     if (chapitresDuCours.isEmpty) return const [];
 
-    final lignes = await supabase
-        .from('questions')
-        .select('id, chapter_id, chapters!inner(course_id)')
-        .eq('chapters.course_id', coursId)
-        .eq('type', 'mcq');
+    final lignes = await lu(
+      'qcm/$coursId',
+      () async => await supabase
+          .from('questions')
+          .select('id, chapter_id, chapters!inner(course_id)')
+          .eq('chapters.course_id', coursId)
+          .eq('type', 'mcq'),
+    );
     final qcmParChapitre = <String, List<String>>{};
     for (final l in lignes) {
       final id = l['id'] as String?;
@@ -514,27 +548,17 @@ class DepotCours {
 
     final tentatives = <Tentative>[];
     final ids = [for (final l in qcmParChapitre.values) ...l];
-    // Par paquets : la liste part dans l'adresse de la requête, et un
-    // paquet de cinquante questions reste sous le plafond de mille lignes
-    // qu'applique PostgREST.
-    for (var i = 0; i < ids.length; i += 50) {
-      final paquet = ids.sublist(i, min(i + 50, ids.length));
-      final reponses = await supabase
-          .from('attempts')
-          .select('question_id, is_correct, answered_at')
-          .inFilter('question_id', paquet);
-      for (final r in reponses) {
-        final id = r['question_id'] as String?;
-        final le = DateTime.tryParse(r['answered_at'] as String? ?? '');
-        if (id == null || le == null) continue;
-        tentatives.add(
-          Tentative(
-            questionId: id,
-            juste: r['is_correct'] as bool? ?? false,
-            le: le,
-          ),
-        );
-      }
+    for (final r in await _tentatives(coursId, ids)) {
+      final id = r['question_id'] as String?;
+      final le = DateTime.tryParse(r['answered_at'] as String? ?? '');
+      if (id == null || le == null) continue;
+      tentatives.add(
+        Tentative(
+          questionId: id,
+          juste: r['is_correct'] as bool? ?? false,
+          le: le,
+        ),
+      );
     }
 
     final maitrises = cheminDuCours([
@@ -548,6 +572,60 @@ class DepotCours {
       for (var i = 0; i < chapitresDuCours.length; i++)
         ChapitreDuChemin(chapitre: chapitresDuCours[i], maitrise: maitrises[i]),
     ];
+  }
+
+  /// Les réponses de l'étudiant aux QCM d'un cours, lignes brutes.
+  ///
+  /// Une seule copie par cours, partagée par le chemin et le choix des
+  /// questions d'une série : hors ligne, les deux se calculent avec ce qu'on
+  /// savait au dernier passage.
+  ///
+  /// Par paquets : la liste part dans l'adresse de la requête, et un paquet
+  /// de cinquante questions reste sous le plafond de mille lignes
+  /// qu'applique PostgREST.
+  Future<List<dynamic>> _tentatives(String coursId, List<String> ids) async {
+    if (ids.isEmpty) return const [];
+    final brut = await lu('tentatives/$coursId', () async {
+      final toutes = <dynamic>[];
+      for (var i = 0; i < ids.length; i += 50) {
+        final paquet = ids.sublist(i, min(i + 50, ids.length));
+        toutes.addAll(
+          await supabase
+              .from('attempts')
+              .select('question_id, is_correct, answered_at')
+              .inFilter('question_id', paquet),
+        );
+      }
+      return toutes;
+    });
+    return brut is List ? brut : const [];
+  }
+
+  /// Toutes les questions QCM d'un cours, lignes brutes, gardées pour le
+  /// hors-ligne. Une série d'un chapitre filtre ici, pas dans la requête :
+  /// une seule copie sert alors toutes les séries du cours.
+  Future<List<QuestionQcm>> _questionsDuCours(String coursId) async {
+    final lignes = await lu(
+      'questions/$coursId',
+      () async => await supabase
+          .from('questions')
+          .select(
+            'id, statement, options, answer, explanation, probability, '
+            'chapter_id, chapters!inner(course_id)',
+          )
+          .eq('chapters.course_id', coursId)
+          .eq('type', 'mcq'),
+    );
+    return _garder(lignes as List? ?? const [], QuestionQcm.depuis);
+  }
+
+  /// Prépare un cours pour le hors-ligne : sa fiche, son chemin (chapitres,
+  /// QCM, historique), ses questions et ses fiches passent tous par la copie.
+  Future<void> precharger(String coursId) async {
+    await un(coursId);
+    await chemin(coursId);
+    await _questionsDuCours(coursId);
+    await const DepotFiches().duCours(coursId);
   }
 
   /// Les questions d'une session : QCM seulement, choisies par
@@ -570,28 +648,23 @@ class DepotCours {
     int combien = 10,
     Random? hasard,
   }) async {
-    var requete = supabase
-        .from('questions')
-        .select(
-          'id, statement, options, answer, explanation, probability, '
-          'chapter_id, chapters!inner(course_id)',
-        )
-        .eq('chapters.course_id', coursId)
-        .eq('type', 'mcq');
-    if (chapitreId != null) requete = requete.eq('chapter_id', chapitreId);
-
-    final questions = _garder(await requete, QuestionQcm.depuis);
+    final duCours = await _questionsDuCours(coursId);
+    final questions = chapitreId == null
+        ? duCours
+        : [
+            for (final q in duCours)
+              if (q.chapitreId == chapitreId) q,
+          ];
     if (questions.isEmpty) return questions;
 
     // La dernière réponse de l'étudiant à chacune. La politique d'`attempts`
-    // ne laisse voir que les siennes.
+    // ne laisse voir que les siennes. Lue pour tout le cours, comme le
+    // chemin : la même copie sert les deux hors ligne.
     final historique = <String, DerniereReponse>{};
     try {
-      final reponses = await supabase
-          .from('attempts')
-          .select('question_id, is_correct, answered_at')
-          .inFilter('question_id', [for (final q in questions) q.id])
-          .order('answered_at', ascending: false);
+      final reponses = [
+        ...await _tentatives(coursId, [for (final q in duCours) q.id]),
+      ]..sort((a, b) => '${b['answered_at']}'.compareTo('${a['answered_at']}'));
       for (final r in reponses) {
         final id = r['question_id'] as String?;
         final le = DateTime.tryParse(r['answered_at'] as String? ?? '');
@@ -633,11 +706,14 @@ class DepotCours {
   /// sur la faculté, sinon la liste contiendrait celles de toutes les
   /// universités du pays.
   Future<List<Matiere>> matieres(String faculteId) async {
-    final lignes = await supabase
-        .from('subjects')
-        .select('id, name, faculty_id')
-        .eq('faculty_id', faculteId)
-        .order('name', ascending: true);
+    final lignes = await lu(
+      'matieres/$faculteId',
+      () async => await supabase
+          .from('subjects')
+          .select('id, name, faculty_id')
+          .eq('faculty_id', faculteId)
+          .order('name', ascending: true),
+    );
 
     return _garder(lignes, Matiere.depuis);
   }
@@ -759,11 +835,14 @@ class DepotFiches {
   /// moins qu'un aller-retour par fiche, et l'étudiant qui révise dans un
   /// amphi sans réseau peut finir son paquet.
   Future<List<Fiche>> duCours(String coursId) async {
-    final lignes = await supabase
-        .from('flashcards')
-        .select('id, front, back, chapters!inner(title, index, course_id)')
-        .eq('chapters.course_id', coursId)
-        .order('id', ascending: true);
+    final lignes = await lu(
+      'fiches/$coursId',
+      () async => await supabase
+          .from('flashcards')
+          .select('id, front, back, chapters!inner(title, index, course_id)')
+          .eq('chapters.course_id', coursId)
+          .order('id', ascending: true),
+    );
 
     // Chapitre par chapitre, dans l'ordre du cours : PostgREST ne trie pas
     // les lignes par une colonne de la table jointe, on le fait ici.
@@ -804,8 +883,9 @@ class DepotBoutique {
 
   Future<DonneesBoutique> charger() async {
     final resultats = await Future.wait<dynamic>([
-      Future<dynamic>.value(
-        supabase
+      lu(
+        'boutique/packs',
+        () async => await supabase
             .from('packs')
             .select(
               'code, label, description, price_fcfa, duration_days, '
@@ -813,8 +893,9 @@ class DepotBoutique {
             )
             .order('price_fcfa', ascending: true),
       ),
-      Future<dynamic>.value(
-        supabase
+      lu(
+        'boutique/abonnements',
+        () async => await supabase
             .from('subscriptions')
             .select(
               'pack_code, starts_at, ends_at, corrections_left, '
@@ -870,13 +951,16 @@ class DepotBoutique {
   /// n'est qu'une commodité.
   Future<String?> dernierTelephone() async {
     try {
-      final ligne = await supabase
-          .from('payments')
-          .select('phone')
-          .not('phone', 'is', null)
-          .order('created_at', ascending: false)
-          .limit(1)
-          .maybeSingle();
+      final ligne = await lu(
+        'dernier-telephone',
+        () async => await supabase
+            .from('payments')
+            .select('phone')
+            .not('phone', 'is', null)
+            .order('created_at', ascending: false)
+            .limit(1)
+            .maybeSingle(),
+      );
       return ligne?['phone'] as String?;
     } catch (_) {
       return null;
@@ -904,9 +988,12 @@ class DepotGains {
     final profil = await const DepotProfil().mien();
 
     final resultats = await Future.wait<dynamic>([
-      Future<dynamic>.value(supabase.rpc('wallet_balance')),
-      Future<dynamic>.value(
-        supabase.from('referrals').select('referred_id, first_payment_at'),
+      lu('gains/solde', () async => await supabase.rpc('wallet_balance')),
+      lu(
+        'gains/parrainages',
+        () async => await supabase
+            .from('referrals')
+            .select('referred_id, first_payment_at'),
       ),
     ]);
 
@@ -971,10 +1058,14 @@ class DepotClassement {
   /// rend aucun identifiant — « c'est toi » se lit sur `est_moi`.
   Future<DonneesClassement> charger({int limite = 20}) async {
     final resultats = await Future.wait<dynamic>([
-      Future<dynamic>.value(
-        supabase.rpc('classement_faculte', params: {'limite': limite}),
+      lu(
+        'classement/$limite',
+        () async => await supabase.rpc(
+          'classement_faculte',
+          params: {'limite': limite},
+        ),
       ),
-      Future<dynamic>.value(supabase.rpc('mon_rang_faculte')),
+      lu('classement/rang', () async => await supabase.rpc('mon_rang_faculte')),
     ]);
 
     return DonneesClassement(
@@ -989,7 +1080,7 @@ class DepotClassement {
   /// La ligue de la semaine : même contrat que le classement, une fonction
   /// étroite qui ne rend ni identifiant ni téléphone.
   Future<DonneesLigue> maLigue() async {
-    final brut = await supabase.rpc('ma_ligue');
+    final brut = await lu('ligue', () async => await supabase.rpc('ma_ligue'));
     if (brut is! Map) {
       return DonneesLigue(
         division: 1,
@@ -1014,14 +1105,17 @@ class DepotCorrections {
   /// La politique « Je lis mes corrections » filtre déjà sur `auth.uid()` :
   /// aucune route n'est nécessaire pour lire sa propre liste.
   Future<List<Correction>> mes({int limite = 20}) async {
-    final lignes = await supabase
-        .from('corrections')
-        .select(
-          'id, course_id, status, grade, max_grade, rubric, feedback, '
-          'model_used, created_at',
-        )
-        .order('created_at', ascending: false)
-        .limit(limite);
+    final lignes = await lu(
+      'corrections/$limite',
+      () async => await supabase
+          .from('corrections')
+          .select(
+            'id, course_id, status, grade, max_grade, rubric, feedback, '
+            'model_used, created_at',
+          )
+          .order('created_at', ascending: false)
+          .limit(limite),
+    );
 
     return _garder(lignes, Correction.depuis);
   }
@@ -1031,17 +1125,37 @@ class DepotCorrections {
   /// Et non en direct, bien que la RLS l'autoriserait : la route relance le
   /// traitement quand un réessai attend, si bien que l'attente de l'étudiant
   /// devient le moteur des reprises (voir `lib/jobs/immediat.ts`).
-  Future<Reponse<Correction>> une(ApiReviz api, String id) {
-    return api.obtenir<Correction>(
-      '/api/corrections/$id',
-      depuis: (data) {
-        final lue = Correction.depuis(data);
-        if (lue == null) {
-          throw StateError('Correction illisible dans la réponse.');
-        }
-        return lue;
-      },
-    );
+  ///
+  /// Sa réponse est gardée : une copie déjà corrigée se relit hors ligne.
+  Future<Reponse<Correction>> une(ApiReviz api, String id) async {
+    try {
+      // La route rend une enveloppe : on garde sa charge utile. Un échec de
+      // la route lève, pour que la copie prenne le relais ; sans copie, il
+      // remonte tel quel.
+      final brut = await lu('correction/$id', () async {
+        final r = await api.obtenir<Map<String, dynamic>>(
+          '/api/corrections/$id',
+          depuis: (data) => data,
+        );
+        return switch (r) {
+          ReponseSucces(:final data) => data,
+          ReponseEchec() => throw _EchecRoute(r),
+        };
+      });
+      final lue = brut is Map
+          ? Correction.depuis(Map<String, dynamic>.from(brut))
+          : null;
+      if (lue == null) {
+        return const Reponse.echec('Correction illisible dans la réponse.');
+      }
+      return Reponse.succes(lue);
+    } on _EchecRoute catch (e) {
+      return Reponse.echec(
+        e.reponse.erreur,
+        motif: e.reponse.motif,
+        statut: e.reponse.statut,
+      );
+    }
   }
 
   /// Dépose une copie : préparation, envoi direct au stockage, confirmation.
@@ -1138,6 +1252,13 @@ class DepotCorrections {
   }
 }
 
+/// L'échec d'une route lue à travers la copie : il porte la réponse, pour
+/// être rendu tel quel quand aucune copie n'existe.
+class _EchecRoute implements Exception {
+  const _EchecRoute(this.reponse);
+  final ReponseEchec<Map<String, dynamic>> reponse;
+}
+
 /// Hors de toute classe : `compute` n'accepte qu'une fonction de premier
 /// niveau (ou statique), qu'il puisse envoyer à un autre isolat.
 String _empreinteSha256(List<int> octets) => sha256.convert(octets).toString();
@@ -1151,11 +1272,14 @@ class DepotNotifications {
   const DepotNotifications();
 
   Future<List<NotificationReviz>> liste() async {
-    final lignes = await supabase
-        .from('notifications')
-        .select('id, kind, reference_id, data, read_at, created_at')
-        .order('created_at', ascending: false)
-        .limit(50);
+    final lignes = await lu(
+      'notifications',
+      () async => await supabase
+          .from('notifications')
+          .select('id, kind, reference_id, data, read_at, created_at')
+          .order('created_at', ascending: false)
+          .limit(50),
+    );
     return _garder(lignes, NotificationReviz.depuis);
   }
 
@@ -1170,11 +1294,14 @@ class DepotNotifications {
   Future<PrefsPush> prefs() async {
     final id = supabase.auth.currentUser?.id;
     if (id == null) return const PrefsPush();
-    final ligne = await supabase
-        .from('profiles')
-        .select('notifications')
-        .eq('id', id)
-        .maybeSingle();
+    final ligne = await lu(
+      'prefs-push',
+      () async => await supabase
+          .from('profiles')
+          .select('notifications')
+          .eq('id', id)
+          .maybeSingle(),
+    );
     return PrefsPush.depuis(ligne?['notifications']);
   }
 

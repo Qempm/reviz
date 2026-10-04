@@ -2330,7 +2330,7 @@ void main() {
   });
 
   group('bandeaux transversaux', () {
-    testWidgets('le hors-ligne dit que les QCM chargés restent jouables', (
+    testWidgets('le hors-ligne dit que cours, QCM et fiches restent là', (
       tester,
     ) async {
       await _poser(tester, const Scaffold(body: BandeauHorsLigne()));
@@ -2338,7 +2338,8 @@ void main() {
       expect(find.text('Pas de connexion'), findsOneWidget);
       // Un bandeau et non une page : couper l'écran serait pire que le
       // manque de réseau.
-      expect(find.textContaining('restent jouables'), findsOneWidget);
+      expect(find.text(Fr.miseAJour.horsLigneDetail), findsOneWidget);
+      expect(find.textContaining('restent là'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 

@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../donnees/api.dart';
+import '../donnees/cache.dart';
 import '../donnees/depots.dart';
 import '../donnees/modeles.dart';
 import '../donnees/reseau.dart';
@@ -95,6 +96,31 @@ final cheminProvider = FutureProvider.family<List<ChapitreDuChemin>, String>((
   coursId,
 ) {
   return ref.read(depotCoursProvider).chemin(coursId);
+});
+
+/// Le hors-ligne : dès que le réseau est là, chaque cours prêt passe par la
+/// copie — chapitres, chemin, questions, historique, fiches. L'étudiant qui
+/// ouvre l'application dans un amphi sans couverture retrouve alors tous ses
+/// QCM, même ceux d'un cours qu'il n'avait pas rouvert depuis.
+///
+/// Un cours préparé il y a moins de douze heures n'est pas relu : le forfait
+/// data de l'étudiant ne doit pas payer deux fois la même chose. Ce qu'il
+/// ouvre lui-même se relit de toute façon en ligne (réseau d'abord).
+final prechargementProvider = FutureProvider<void>((ref) async {
+  if (ref.watch(reseauProvider).value != true) return;
+  if (supabase.auth.currentUser == null) return;
+  final cours = await ref.watch(coursProvider.future);
+  final depot = ref.read(depotCoursProvider);
+  for (final c in cours) {
+    if (!c.pret || c.nbQuestions == 0) continue;
+    try {
+      final le = await CacheLectures.instance.datee('questions/${c.id}');
+      if (le != null && DateTime.now().difference(le).inHours < 12) continue;
+      await depot.precharger(c.id);
+    } catch (_) {
+      // Un cours qui ne se prépare pas n'empêche pas les suivants.
+    }
+  }
 });
 
 /// Les séries finies hors ligne, en attente du réseau. Une seule instance :

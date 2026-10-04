@@ -50,6 +50,9 @@ dependencies:
   # plus large refusait de résoudre.
   intl: ^0.20.2
   shared_preferences: ^2.5.5
+  # Les lectures gardées pour le hors-ligne (`donnees/cache.dart`) : un
+  # fichier par lecture, dans le dossier de l'application.
+  path_provider: ^2.1.5
   url_launcher: ^6.3.2
   connectivity_plus: ^7.3.1
   package_info_plus: ^10.2.1

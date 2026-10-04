@@ -82,6 +82,9 @@ class _Transversal extends ConsumerWidget {
 
     final horsLigne = ref.watch(reseauProvider).value == false;
 
+    // En ligne, les cours prêts se gardent pour le hors-ligne.
+    ref.watch(prechargementProvider);
+
     // Le réseau revient (ou l'application s'ouvre connectée) : les séries
     // finies hors ligne partent, et les compteurs se relisent.
     ref.listen(reseauProvider, (_, suivant) async {

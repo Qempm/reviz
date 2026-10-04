@@ -199,14 +199,21 @@ class _SessionState extends ConsumerState<_Session> {
 
     setState(() => _enCours = true);
 
-    final reponse = await ref
-        .read(depotCoursProvider)
-        .terminerSession(
-          api: ref.read(apiProvider),
-          coursId: widget.coursId,
-          reponses: _reponses,
-          sessionId: _sessionId,
-        );
+    // Aucune interface réseau : inutile d'attendre l'échec de l'appel, la
+    // série part directement dans la file.
+    final reponse = ref.read(reseauProvider).value == false
+        ? const Reponse<ResultatSession>.echec(
+            'Pas de connexion pour l’instant. Vérifie ton réseau et réessaie.',
+            motif: 'reseau',
+          )
+        : await ref
+              .read(depotCoursProvider)
+              .terminerSession(
+                api: ref.read(apiProvider),
+                coursId: widget.coursId,
+                reponses: _reponses,
+                sessionId: _sessionId,
+              );
 
     if (!mounted) return;
 
