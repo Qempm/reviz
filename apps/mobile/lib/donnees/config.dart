@@ -13,7 +13,7 @@ import 'package:flutter/foundation.dart';
 /// flutter build apk \
 ///   --dart-define=SUPABASE_URL=https://xxx.supabase.co \
 ///   --dart-define=SUPABASE_ANON_KEY=... \
-///   --dart-define=API_BASE=https://reviz-eight.vercel.app
+///   --dart-define=API_BASE=https://revizapp.fun
 /// ```
 ///
 /// `npm run apk` les passe depuis `.env.local` et refuse de compiler s'il en
@@ -25,7 +25,7 @@ abstract final class Config {
 
   static const _apiBaseCompilee = String.fromEnvironment(
     'API_BASE',
-    defaultValue: 'https://reviz-eight.vercel.app',
+    defaultValue: 'https://revizapp.fun',
   );
 
   /// Racine des routes REST de Next.js.

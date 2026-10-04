@@ -74,7 +74,7 @@ consulter.**
    |---|---|
    | `SUPABASE_URL` | la même que `NEXT_PUBLIC_SUPABASE_URL` |
    | `SUPABASE_ANON_KEY` | la même que `NEXT_PUBLIC_SUPABASE_ANON_KEY` — **la clé anonyme, jamais celle de service** |
-   | `API_BASE` | `https://reviz-eight.vercel.app` |
+   | `API_BASE` | `https://revizapp.fun` |
    | `APP_STORE_APPLE_ID` | le nombre noté au § 3.3 |
    | `CONTACT_WHATSAPP` | facultatif, comme pour l'APK |
 
@@ -100,9 +100,9 @@ Xcode), un profil de signature introuvable (refaire *Fetch profiles*).
    part.
 3. Fiche App Store, à remplir avant de soumettre :
    - catégorie **Éducation**, âge **4+** ;
-   - URL de confidentialité : <https://reviz-eight.vercel.app/confidentialite>
+   - URL de confidentialité : <https://revizapp.fun/confidentialite>
      (relue par le propriétaire avant la soumission) ;
-   - URL d'assistance : <https://reviz-eight.vercel.app> ;
+   - URL d'assistance : <https://revizapp.fun> ;
    - captures d'écran **6,9 pouces** (1320 × 2868) — les bancs d'aperçu
      (`flutter test test_apercus --update-goldens`) peuvent les rendre à
      cette taille ;

@@ -2,7 +2,7 @@
  * Chronomètre la préparation d'un cours, **de la relance au statut « prêt »**,
  * contre le vrai déploiement.
  *
- *   API_BASE=https://reviz-eight.vercel.app node scripts/mesure-lecture.mjs
+ *   API_BASE=https://revizapp.fun node scripts/mesure-lecture.mjs
  *
  * Ce qui est mesuré, c'est l'enchaînement : le script dépose un PDF de douze
  * chapitres, met la lecture en file, demande **une seule fois**

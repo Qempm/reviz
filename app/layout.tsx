@@ -25,7 +25,7 @@ const fredoka = Fredoka({
 export const metadata: Metadata = {
   // Adresse absolue de l'image de partage (`app/opengraph-image.png`) :
   // WhatsApp et Facebook n'affichent pas un aperçu en chemin relatif.
-  metadataBase: new URL('https://reviz-eight.vercel.app'),
+  metadataBase: new URL('https://revizapp.fun'),
   title: 'Reviz',
   description:
     'Révise tes cours, entraîne-toi sur des QCM et fais corriger tes copies.',

@@ -476,7 +476,7 @@ class _Gains {
 
   String messagePartage(String code) =>
       'Rejoins-moi sur Reviz pour réviser tes cours en QCM. Télécharge '
-      'l’application sur reviz-eight.vercel.app/app et entre mon code $code '
+      'l’application sur revizapp.fun/app et entre mon code $code '
       'à l’inscription.';
 
   final String aucunFilleul = 'Aucun filleul pour l’instant';

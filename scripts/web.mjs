@@ -81,5 +81,5 @@ console.log(`
 Version web posée dans public/web/ (${mo(taille(cible))} sur disque).
   main.dart.js : ${mo(statSync(path.join(cible, 'main.dart.js')).size)}
 
-À committer avec le reste, puis : https://reviz-eight.vercel.app/web
+À committer avec le reste, puis : https://revizapp.fun/web
 `)

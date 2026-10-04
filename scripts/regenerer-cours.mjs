@@ -1,7 +1,7 @@
 /**
  * Régénère les questions d'un cours resté sur des questions de secours.
  *
- *   API_BASE=https://reviz-eight.vercel.app node scripts/regenerer-cours.mjs <course_id>
+ *   API_BASE=https://revizapp.fun node scripts/regenerer-cours.mjs <course_id>
  *
  * Le 29 septembre 2026, faute de clé IA en production, chaque chapitre des
  * cours traités a reçu la question de secours (« Relis … et résume-le en
