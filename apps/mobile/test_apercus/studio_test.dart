@@ -38,6 +38,7 @@ import 'package:reviz/ecrans/correction.dart';
 import 'package:reviz/ecrans/corriger.dart';
 import 'package:reviz/ecrans/cours.dart';
 import 'package:reviz/ecrans/fiches.dart';
+import 'package:reviz/ecrans/galerie.dart';
 import 'package:reviz/ecrans/gains.dart';
 import 'package:reviz/ecrans/inscription.dart';
 import 'package:reviz/ecrans/ligue.dart';
@@ -1495,6 +1496,12 @@ void main() {
       remplacements: matiere,
     ),
   );
+  // ---- Le design system : chaque composant, tel que l'app le dessine.
+  testWidgets(
+    '33-galerie-long',
+    (t) => _cliche(t, '33-galerie-long', const Galerie(), hauteur: 4400),
+  );
+
   testWidgets(
     '32-matiere-long',
     (t) => _cliche(
