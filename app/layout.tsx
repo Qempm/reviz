@@ -23,12 +23,26 @@ const fredoka = Fredoka({
 })
 
 export const metadata: Metadata = {
-  // Adresse absolue de l'image de partage (`app/opengraph-image.png`) :
+  // Adresse absolue de l'image de partage (`app/opengraph-image.jpg`) :
   // WhatsApp et Facebook n'affichent pas un aperçu en chemin relatif.
+  // L'image est un JPEG de 112 Ko : WhatsApp ignore les aperçus au-delà
+  // d'environ 300 Ko, et le PNG en pesait 314. Next ajoute à son adresse
+  // une empreinte de son contenu : la changer suffit à faire relire
+  // l'aperçu par les messageries.
   metadataBase: new URL('https://revizapp.fun'),
   title: 'Reviz',
   description:
     'Révise tes cours, entraîne-toi sur des QCM et fais corriger tes copies.',
+  openGraph: {
+    title: 'Reviz — ton cours, ton niveau, ta note',
+    description:
+      'Des QCM tirés de ton propre cours, et tu vois chapitre par chapitre ce que tu maîtrises. 3 jours gratuits, sans abonnement.',
+    url: 'https://revizapp.fun',
+    siteName: 'Reviz',
+    locale: 'fr_FR',
+    type: 'website',
+  },
+  twitter: { card: 'summary_large_image' },
   // Pas de `manifest` : il n'y a plus d'application web à installer depuis le
   // navigateur, et celui de `public/` désignait trois icônes qui n'ont jamais
   // existé — soit trois 404 à chaque visite des deux pages publiques. La
