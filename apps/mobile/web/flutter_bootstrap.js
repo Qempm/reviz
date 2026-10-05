@@ -9,5 +9,7 @@ _flutter.loader.load({
     await appRunner.runApp();
     const chargement = document.getElementById('chargement');
     if (chargement) chargement.remove();
+    // Le moteur de rendu se garde pour le hors-ligne (index.html, sw.js).
+    if (window.revizGarderMoteur) window.revizGarderMoteur();
   },
 });

@@ -20,7 +20,8 @@
  * qui.
  */
 
-import { cpSync, existsSync, readdirSync, rmSync, statSync } from 'node:fs'
+import { createHash } from 'node:crypto'
+import { cpSync, existsSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
 import { defines, echouer, lancerFlutter, MOBILE, RACINE } from './flutter-commun.mjs'
@@ -66,6 +67,50 @@ cpSync(source, cible, { recursive: true })
 // pour rien.
 rmSync(path.join(cible, 'canvaskit'), { recursive: true, force: true })
 
+// Le service worker de Flutter ne fait que se désinscrire : le nôtre
+// (`apps/mobile/web/sw.js`) garde l'application pour le hors-ligne. On lui
+// donne la liste des fichiers à garder et une version tirée de leur contenu :
+// une nouvelle compilation remplace l'ancienne copie d'un coup.
+rmSync(path.join(cible, 'flutter_service_worker.js'), { force: true })
+
+/** Ce qui n'a rien à faire dans la copie hors ligne. */
+const HORS_COPIE = new Set([
+  'sw.js',
+  '.last_build_id',
+  'assets/NOTICES', // les licences : 1,4 Mo, lues par personne hors ligne
+  'icons/Icon-512.png', // pour le manifeste seulement
+  'icons/Icon-maskable-512.png',
+])
+
+function lister(dossier, prefixe = '') {
+  const fichiers = []
+  for (const nom of readdirSync(dossier).sort()) {
+    const chemin = path.join(dossier, nom)
+    const relatif = prefixe + nom
+    if (statSync(chemin).isDirectory()) {
+      // Les écrans de lancement, iOS les lit lui-même à l'installation.
+      if (relatif === 'lancement') continue
+      fichiers.push(...lister(chemin, relatif + '/'))
+    } else if (!HORS_COPIE.has(relatif)) {
+      fichiers.push(relatif)
+    }
+  }
+  return fichiers
+}
+
+const aGarder = lister(cible)
+const empreinte = createHash('sha256')
+for (const f of aGarder) empreinte.update(f).update(readFileSync(path.join(cible, f)))
+const version = empreinte.digest('hex').slice(0, 12)
+const sw = path.join(cible, 'sw.js')
+if (!existsSync(sw)) echouer('public/web/sw.js manque : apps/mobile/web/sw.js a-t-il disparu ?')
+writeFileSync(
+  sw,
+  readFileSync(sw, 'utf8')
+    .replace("'__VERSION__'", JSON.stringify(version))
+    .replace('__FICHIERS__', JSON.stringify(aGarder, null, 2)),
+)
+
 function taille(dossier) {
   let total = 0
   for (const nom of readdirSync(dossier)) {
@@ -80,6 +125,7 @@ const mo = (o) => `${(o / 1024 / 1024).toFixed(1)} Mo`
 console.log(`
 Version web posée dans public/web/ (${mo(taille(cible))} sur disque).
   main.dart.js : ${mo(statSync(path.join(cible, 'main.dart.js')).size)}
+  hors ligne   : ${aGarder.length} fichiers gardés par sw.js (version ${version})
 
 À committer avec le reste, puis : https://revizapp.fun/web
 `)

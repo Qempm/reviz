@@ -17,6 +17,22 @@ const nextConfig = {
       { source: '/web/', destination: '/web/index.html' },
     ]
   },
+  // Le service worker de la version web (`apps/mobile/web/sw.js`) vit dans
+  // /web/, mais la page, elle, est servie à /web — Next.js redirige /web/
+  // vers /web. Sa portée doit donc couvrir /web, ce qu'un script de /web/ ne
+  // peut obtenir que si le serveur le permet. Et jamais de cache HTTP sur
+  // lui : une nouvelle version doit être vue dès la visite suivante.
+  async headers() {
+    return [
+      {
+        source: '/web/sw.js',
+        headers: [
+          { key: 'Service-Worker-Allowed', value: '/web' },
+          { key: 'Cache-Control', value: 'no-cache' },
+        ],
+      },
+    ]
+  },
 }
 
 export default nextConfig

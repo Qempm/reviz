@@ -48,13 +48,20 @@ export default function Telechargement() {
           l'installer, on dit à qui n'en a pas où aller. */}
       <section className="rounded-card bg-reviz-card p-space-16 shadow-card">
         <h2 className="text-headline-md text-reviz-ink">
-          Sur ordinateur ou sur iPhone
+          Sur iPhone ou sur ordinateur
         </h2>
         <p className="mt-space-8 text-body-md text-reviz-muted">
-          Pas besoin d’installer quoi que ce soit : Reviz s’ouvre dans ton
-          navigateur, avec le même compte. Sur iPhone, « Partager » puis « Sur
-          l’écran d’accueil » le garde à portée de main.
+          Reviz s’ouvre dans ton navigateur, avec le même compte. Sur iPhone,
+          installe-le depuis Safari : il a son icône, s’ouvre en plein écran,
+          et tes cours restent là même sans réseau.
         </p>
+        {/* La version iPhone sans compte développeur Apple : l'app web
+            installée (apps/mobile/web/sw.js, index.html). */}
+        <ol className="mt-space-12 flex flex-col gap-space-8 text-body-md text-reviz-ink">
+          <li>1. Ouvre Reviz dans <strong>Safari</strong>, avec le bouton ci-dessous.</li>
+          <li>2. Touche <strong>Partager</strong>, en bas de l’écran.</li>
+          <li>3. Choisis <strong>« Sur l’écran d’accueil »</strong>, puis <strong>« Ajouter »</strong>.</li>
+        </ol>
         <a
           href="/web"
           className="mt-space-12 flex h-12 items-center justify-center rounded-xl border-2 border-reviz-ink bg-reviz-card text-label-lg text-reviz-ink"
