@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../composants/bouton.dart';
 import '../composants/carte.dart';
 import '../donnees/api.dart';
+import '../donnees/push_navigateur.dart';
 import '../donnees/reglages.dart';
 import '../etat/fournisseurs.dart';
 import '../i18n/fr.dart';
@@ -106,6 +107,15 @@ class _EtatReglages extends ConsumerState<EcranReglagesNotifications> {
                 Espaces.x32,
               ),
               children: [
+                // Le web : le Web Push de l'app installée (iPhone sans
+                // compte Apple), selon où en est le navigateur.
+                if (ref.watch(etatPushNavigateurProvider) case final etat
+                    when etat != EtatPushNavigateur.nonSupporte &&
+                        etat != EtatPushNavigateur.accorde) ...[
+                  CartePushNavigateur(etat: etat),
+                  const SizedBox(height: Espaces.x16),
+                ],
+
                 if (_autorisees == false) ...[
                   Carte(
                     enfants: [
@@ -214,6 +224,57 @@ class _EtatReglages extends ConsumerState<EcranReglagesNotifications> {
 
 /// Une ligne et un `Switch`, comme les réglages du profil — et non un
 /// `SwitchListTile`, que la carte (un `DecoratedBox`) masquerait.
+/// La carte du Web Push : installer l'app d'abord (iPhone dans Safari),
+/// activer, ou revenir sur un refus. Aussi posée sur l'accueil.
+class CartePushNavigateur extends ConsumerWidget {
+  const CartePushNavigateur({required this.etat, this.plusTard, super.key});
+
+  final EtatPushNavigateur etat;
+
+  /// Sur l'accueil seulement : l'invitation peut s'écarter.
+  final VoidCallback? plusTard;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final f = Fr.notifications;
+    final (titre, detail) = switch (etat) {
+      EtatPushNavigateur.aInstaller => (
+        f.webInstallerTitre,
+        f.webInstallerDetail,
+      ),
+      EtatPushNavigateur.refuse => (f.webRefuseTitre, f.webRefuseDetail),
+      _ => (f.webActiverTitre, f.webActiverDetail),
+    };
+
+    Future<void> activer() async {
+      // Tout de suite, dans le toucher : Safari refuse sinon.
+      final ok = await ref.read(servicePushProvider).demanderPermission();
+      ref.invalidate(etatPushNavigateurProvider);
+      ref.invalidate(pushDisponibleProvider);
+      if (ok && context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(f.webActivees)));
+      }
+    }
+
+    return Carte(
+      enfants: [
+        Text(titre, style: Typo.headlineSm),
+        Text(detail, style: Typo.bodyMd.copyWith(color: Couleurs.attenue)),
+        if (etat == EtatPushNavigateur.aDemander)
+          Bouton(
+            libelle: f.webActiver,
+            icone: Icons.notifications_active_outlined,
+            onTap: activer,
+          ),
+        if (plusTard != null)
+          TextButton(onPressed: plusTard, child: Text(f.webPlusTard)),
+      ],
+    );
+  }
+}
+
 class _Interrupteur extends StatelessWidget {
   const _Interrupteur({
     required this.titre,

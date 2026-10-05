@@ -85,6 +85,7 @@ export type Database = {
       }
       appareils: {
         Row: {
+          abonnement: Json | null
           created_at: string
           plateforme: string
           token: string
@@ -92,6 +93,7 @@ export type Database = {
           vu_le: string
         }
         Insert: {
+          abonnement?: Json | null
           created_at?: string
           plateforme: string
           token: string
@@ -99,6 +101,7 @@ export type Database = {
           vu_le?: string
         }
         Update: {
+          abonnement?: Json | null
           created_at?: string
           plateforme?: string
           token?: string
@@ -1342,6 +1345,7 @@ export type Database = {
         }[]
       }
       cloturer_ligues: { Args: never; Returns: number }
+      commissions_actives: { Args: never; Returns: boolean }
       consommer_correction: { Args: { p_user: string }; Returns: number }
       copier_contenu_cours: {
         Args: { p_cible: string; p_source: string }

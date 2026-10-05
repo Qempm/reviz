@@ -98,6 +98,25 @@ class _Notifications {
   final String bloqueesDetail =
       'Autorise-les pour recevoir tes rappels et ce qui t’arrive.';
   final String autoriser = 'Autoriser les notifications';
+
+  // --- Web Push : l'app web installée (iPhone sans compte Apple)
+  final String webInstallerTitre =
+      'Installe Reviz pour recevoir les notifications';
+  final String webInstallerDetail =
+      'Sur iPhone, les notifications n’arrivent que dans l’app installée : '
+      'dans Safari, touche Partager, puis « Sur l’écran d’accueil ». Ouvre '
+      'ensuite Reviz depuis son icône.';
+  final String webActiverTitre = 'Reçois tes notifications';
+  final String webActiverDetail =
+      'Ton cours prêt, ta copie corrigée, ton paiement confirmé : Reviz te '
+      'prévient, même l’app fermée.';
+  final String webActiver = 'Activer les notifications';
+  final String webPlusTard = 'Plus tard';
+  final String webRefuseTitre = 'Notifications refusées';
+  final String webRefuseDetail =
+      'Pour les recevoir : Réglages de l’iPhone › Notifications › Reviz, puis '
+      'autorise. Sur ordinateur, dans les réglages du site de ton navigateur.';
+  final String webActivees = 'Notifications activées';
   final String enregistrementImpossible =
       'Ton choix n’a pas pu être enregistré. Réessaie.';
   final String canalNom = 'Ce qui t’arrive';

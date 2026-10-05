@@ -17,7 +17,7 @@
 //
 // `scripts/web.mjs` remplace VERSION et FICHIERS à chaque `npm run web`.
 
-const VERSION = "7485b39b0daa";
+const VERSION = "9246bbddc5d7";
 const FICHIERS = [
   "assets/AssetManifest.bin",
   "assets/AssetManifest.bin.json",
@@ -139,6 +139,57 @@ self.addEventListener('message', (event) => {
           if (reponse.ok) await cache.put(url, reponse);
         } catch (_) {}
       }
+    })(),
+  );
+});
+
+// ------------------------------------------------------------ Notifications
+//
+// Le Web Push (lib/notifications/webpush.ts) : sur iPhone, l'app web
+// installée reçoit ainsi « cours prêt », « copie corrigée », « paiement
+// confirmé »… Apple exige qu'un push affiche une notification : on
+// l'affiche toujours, et on prévient la page ouverte pour qu'elle relise.
+
+self.addEventListener('push', (event) => {
+  let m = {};
+  try {
+    m = event.data ? event.data.json() : {};
+  } catch (_) {
+    m = { titre: 'Reviz', corps: event.data ? event.data.text() : '' };
+  }
+  event.waitUntil(
+    (async () => {
+      await self.registration.showNotification(m.titre || 'Reviz', {
+        body: m.corps || '',
+        icon: 'icons/Icon-192.png',
+        badge: 'icons/Icon-192.png',
+        tag: m.id || undefined,
+        data: { lien: m.lien || '/accueil' },
+      });
+      for (const client of await self.clients.matchAll({ type: 'window' })) {
+        client.postMessage({ type: 'reviz-push', evenement: 'recu' });
+      }
+    })(),
+  );
+});
+
+// Toucher la notification ouvre Reviz sur la bonne page : la fenêtre déjà
+// ouverte si elle existe, sinon une nouvelle.
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const lien = (event.notification.data && event.notification.data.lien) || '/accueil';
+  event.waitUntil(
+    (async () => {
+      const fenetres = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+      for (const client of fenetres) {
+        if ('focus' in client) {
+          await client.focus();
+          client.postMessage({ type: 'reviz-push', evenement: 'ouvrir', lien });
+          return;
+        }
+      }
+      const base = self.registration.scope.replace(/\/?$/, '');
+      await self.clients.openWindow(`${base}#${lien}`);
     })(),
   );
 });

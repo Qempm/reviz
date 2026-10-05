@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../donnees/api.dart';
@@ -9,6 +10,7 @@ import '../donnees/supabase.dart';
 import '../donnees/version.dart';
 import '../donnees/file_hors_ligne.dart';
 import '../donnees/push.dart';
+import '../donnees/push_navigateur.dart';
 import '../donnees/rappels.dart';
 import '../donnees/reglages.dart';
 import '../metier/acces.dart';
@@ -334,4 +336,10 @@ final servicePushProvider = Provider(
 /// réglages n'affichent ses catégories que si oui.
 final pushDisponibleProvider = FutureProvider<bool>(
   (ref) => ref.read(servicePushProvider).disponible(),
+);
+
+/// Le Web Push dans ce navigateur : à installer d'abord (iPhone dans
+/// Safari), à demander, accordé, refusé. Relu après chaque demande.
+final etatPushNavigateurProvider = Provider<EtatPushNavigateur>(
+  (_) => kIsWeb ? etatPushNavigateur() : EtatPushNavigateur.nonSupporte,
 );

@@ -16,7 +16,7 @@ type Ligne = { id: string; user_id: string; kind: string; reference_id: string |
 function base(
   lignes: Ligne[],
   profils: Array<{ id: string; notifications: unknown }>,
-  appareils: Array<{ token: string; user_id: string }>,
+  appareils: Array<{ token: string; user_id: string; plateforme?: string; abonnement?: unknown }>,
 ) {
   const supprimes: string[] = []
   const admin = {
@@ -57,7 +57,7 @@ function reseau(morts: string[] = []) {
 describe('envoi des notifications en attente', () => {
   it('sans Firebase, ne réserve rien et n’envoie rien', async () => {
     const { admin } = base([], [], [])
-    expect(await envoyerEnAttente(admin, { compte: null })).toEqual({
+    expect(await envoyerEnAttente(admin, { compte: null, vapid: null })).toEqual({
       reservees: 0,
       envoyes: 0,
       jetonsSupprimes: 0,
@@ -91,7 +91,7 @@ describe('envoi des notifications en attente', () => {
       ],
     )
     const { f, envois } = reseau(['koffi-mort'])
-    const bilan = await envoyerEnAttente(admin, { compte, f })
+    const bilan = await envoyerEnAttente(admin, { compte, f, vapid: null })
 
     // Awa : le cours, sur ses deux appareils ; pas la ligue, coupée.
     expect(envois.filter((e) => e.token.startsWith('awa'))).toEqual([
@@ -102,5 +102,38 @@ describe('envoi des notifications en attente', () => {
     expect(envois.some((e) => e.token.startsWith('yao'))).toBe(false)
     expect(bilan).toEqual({ reservees: 4, envoyes: 2, jetonsSupprimes: 1 })
     expect(supprimes).toEqual(['koffi-mort'])
+  })
+
+  it('l’app web installée reçoit par Web Push, même sans Firebase', async () => {
+    const { admin, supprimes } = base(
+      [{ id: 'n1', user_id: 'awa', kind: 'cours_pret', reference_id: 'c1', data: { titre: 'Droit' } }],
+      [{ id: 'awa', notifications: {} }],
+      [
+        // L'iPhone d'Awa (app web installée), et un vieil abonnement mort.
+        { token: 'https://web.push.apple.com/awa', user_id: 'awa', plateforme: 'web', abonnement: { p256dh: 'BNc', auth: 'tBH' } },
+        { token: 'https://web.push.apple.com/vieux', user_id: 'awa', plateforme: 'web', abonnement: { p256dh: 'BNc', auth: 'tBH' } },
+        // Un téléphone Android : sans Firebase, il est sauté, sans erreur.
+        { token: 'awa-android', user_id: 'awa', plateforme: 'android' },
+      ],
+    )
+    const envois: Array<{ endpoint: string; charge: unknown }> = []
+    const bilan = await envoyerEnAttente(admin, {
+      compte: null,
+      vapid: { publique: 'pub', privee: 'priv', sujet: 'https://revizapp.fun' },
+      expediteur: async (abonnement, charge) => {
+        envois.push({ endpoint: abonnement.endpoint, charge: JSON.parse(charge) })
+        if (abonnement.endpoint.endsWith('vieux')) {
+          throw Object.assign(new Error('Gone'), { statusCode: 410 })
+        }
+        return { statusCode: 201 }
+      },
+    })
+
+    expect(envois[0]).toEqual({
+      endpoint: 'https://web.push.apple.com/awa',
+      charge: { titre: 'Ton cours est prêt', corps: expect.any(String), lien: '/cours/c1', id: 'n1' },
+    })
+    expect(bilan).toEqual({ reservees: 1, envoyes: 1, jetonsSupprimes: 1 })
+    expect(supprimes).toEqual(['https://web.push.apple.com/vieux'])
   })
 })

@@ -1317,12 +1317,29 @@ class DepotNotifications {
     ApiReviz api, {
     required String token,
     required String plateforme,
+    Map<String, String>? abonnement,
   }) {
     return api.poster<bool>(
       '/api/notifications/appareil',
-      corps: {'token': token, 'plateforme': plateforme},
+      corps: {
+        'token': token,
+        'plateforme': plateforme,
+        'abonnement': ?abonnement,
+      },
       depuis: (_) => true,
     );
+  }
+
+  /// La clé publique du Web Push, ou `null` si le serveur n'en a pas.
+  Future<String?> cleVapid(ApiReviz api) async {
+    final r = await api.obtenir<String>(
+      '/api/notifications/vapid',
+      depuis: (data) => data['cle'] as String,
+    );
+    return switch (r) {
+      ReponseSucces(:final data) => data,
+      ReponseEchec() => null,
+    };
   }
 
   Future<Reponse<bool>> oublierAppareil(ApiReviz api, String token) {

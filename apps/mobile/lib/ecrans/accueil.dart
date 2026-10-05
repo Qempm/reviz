@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../composants/apparition.dart';
 import '../composants/blason_ligue.dart';
 import '../composants/bouton.dart';
@@ -15,6 +16,7 @@ import '../composants/progression.dart';
 import '../donnees/api.dart';
 import '../donnees/depots.dart';
 import '../donnees/modeles.dart';
+import '../donnees/push_navigateur.dart';
 import '../etat/fournisseurs.dart';
 import '../i18n/fr.dart';
 import '../metier/acces.dart';
@@ -23,6 +25,7 @@ import '../metier/serie.dart';
 import '../routage.dart';
 import '../theme/jetons.dart';
 import '../theme/typographie.dart';
+import 'notifications_reglages.dart' show CartePushNavigateur;
 
 /// Tableau de bord.
 ///
@@ -157,6 +160,10 @@ class _Contenu extends StatelessWidget {
           // Un compte sans pack : le pack gratuit, proposé ici et pas au
           // fond du profil. Rien ne s'affiche une fois qu'il a servi.
           const _CarteGratuit(),
+
+          // L'app web installée (iPhone sans compte Apple) : l'invitation à
+          // activer les notifications, qui exige un toucher.
+          const _InvitationPush(),
 
           if (examen != null && joursExamen != null) ...[
             const SizedBox(height: Espaces.x12),
@@ -441,6 +448,58 @@ class _Panne extends StatelessWidget {
 /// Avant, le pack gratuit n'était proposé nulle part : il fallait aller dans
 /// Profil → packs pour le trouver, et l'étudiant qui voulait déposer son
 /// premier cours se heurtait à un refus. La carte l'active en un appui.
+/// Sur le web, quand les notifications sont possibles mais pas encore
+/// demandées : une carte pour les activer. « Plus tard » l'écarte une
+/// semaine.
+class _InvitationPush extends ConsumerStatefulWidget {
+  const _InvitationPush();
+
+  @override
+  ConsumerState<_InvitationPush> createState() => _InvitationPushState();
+}
+
+class _InvitationPushState extends ConsumerState<_InvitationPush> {
+  static const _cle = 'reviz.push.plus-tard';
+  bool _ecartee = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _lire();
+  }
+
+  Future<void> _lire() async {
+    try {
+      final p = await SharedPreferences.getInstance();
+      final le = DateTime.tryParse(p.getString(_cle) ?? '');
+      final ecartee = le != null && DateTime.now().difference(le).inDays < 7;
+      if (mounted) setState(() => _ecartee = ecartee);
+    } catch (_) {
+      if (mounted) setState(() => _ecartee = false);
+    }
+  }
+
+  Future<void> _plusTard() async {
+    setState(() => _ecartee = true);
+    try {
+      final p = await SharedPreferences.getInstance();
+      await p.setString(_cle, DateTime.now().toIso8601String());
+    } catch (_) {}
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final etat = ref.watch(etatPushNavigateurProvider);
+    if (_ecartee || etat != EtatPushNavigateur.aDemander) {
+      return const SizedBox.shrink();
+    }
+    return Padding(
+      padding: const EdgeInsets.only(top: Espaces.x12),
+      child: CartePushNavigateur(etat: etat, plusTard: _plusTard),
+    );
+  }
+}
+
 class _CarteGratuit extends ConsumerStatefulWidget {
   const _CarteGratuit();
 

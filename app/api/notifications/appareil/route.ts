@@ -17,10 +17,27 @@ import { createAdminClient } from '@/lib/supabase/admin'
  * sien.
  */
 
-const appareilSchema = z.object({
-  token: z.string().min(20).max(4096),
-  plateforme: z.enum(['android', 'ios']),
-})
+const appareilSchema = z.union([
+  z.object({
+    token: z.string().min(20).max(4096),
+    plateforme: z.enum(['android', 'ios']),
+  }),
+  // L'app web installée (iPhone sans compte Apple) : le jeton est l'adresse
+  // d'envoi de l'abonnement, qui vit chez un service de push connu, et les
+  // deux clés servent à chiffrer le message.
+  z.object({
+    token: z
+      .string()
+      .url()
+      .max(4096)
+      .refine((u) => u.startsWith('https://'), 'adresse d’envoi non sécurisée'),
+    plateforme: z.literal('web'),
+    abonnement: z.object({
+      p256dh: z.string().min(20).max(512),
+      auth: z.string().min(8).max(256),
+    }),
+  }),
+])
 
 const oubliSchema = z.object({ token: z.string().min(20).max(4096) })
 
@@ -51,6 +68,7 @@ export async function POST(request: Request) {
       {
         token: analyse.data.token,
         plateforme: analyse.data.plateforme,
+        abonnement: analyse.data.plateforme === 'web' ? analyse.data.abonnement : null,
         user_id: appelant.user.id,
         vu_le: new Date().toISOString(),
       },

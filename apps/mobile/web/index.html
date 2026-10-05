@@ -135,6 +135,52 @@
       });
     }
 
+    // Les notifications (Web Push), appelées par l'application
+    // (lib/donnees/push_web_js.dart). Sur iPhone, seulement dans l'app
+    // installée sur l'écran d'accueil, et la demande d'autorisation doit
+    // partir d'un toucher.
+    window.revizPush = {
+      etat: function () {
+        var ua = navigator.userAgent;
+        var ios = /iPhone|iPad|iPod/.test(ua) ||
+          (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        var installee = window.navigator.standalone === true ||
+          (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+        var possible = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+        if (!possible) return ios && !installee ? 'a-installer' : 'non-supporte';
+        var p = Notification.permission;
+        return p === 'granted' ? 'accorde' : p === 'denied' ? 'refuse' : 'a-demander';
+      },
+      demander: function () {
+        return Notification.requestPermission().then(function (p) { return String(p); });
+      },
+      abonner: function (cle) {
+        var brut = atob((cle + '='.repeat((4 - cle.length % 4) % 4)).replace(/-/g, '+').replace(/_/g, '/'));
+        var octets = new Uint8Array(brut.length);
+        for (var i = 0; i < brut.length; i++) octets[i] = brut.charCodeAt(i);
+        return navigator.serviceWorker.ready.then(function (r) {
+          return r.pushManager.getSubscription().then(function (s) {
+            return s || r.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: octets });
+          });
+        }).then(function (s) { return JSON.stringify(s.toJSON()); });
+      },
+      desabonner: function () {
+        return navigator.serviceWorker.ready.then(function (r) {
+          return r.pushManager.getSubscription();
+        }).then(function (s) {
+          if (!s) return '';
+          var adresse = s.endpoint;
+          return s.unsubscribe().then(function () { return adresse; });
+        });
+      },
+      ecouter: function (rappel) {
+        if (!('serviceWorker' in navigator)) return;
+        navigator.serviceWorker.addEventListener('message', function (e) {
+          if (e.data && e.data.type === 'reviz-push') rappel(JSON.stringify(e.data));
+        });
+      },
+    };
+
     // Appelé quand Reviz a dessiné sa première image : le service worker
     // garde le moteur de rendu (CanvasKit) et les polices que la page vient
     // de charger. Sans eux, l'application gardée ne pourrait pas se dessiner
