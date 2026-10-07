@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
   codeDepuisNom,
+  memeNom,
   nettoyerNom,
   nomValide,
   normaliserNom,
+  sigleDe,
   trouverParNom,
 } from './referentiel'
 
@@ -58,6 +60,28 @@ describe('trouverParNom', () => {
     expect(trouverParNom(lignes, 'f.s.e.g')?.id).toBe('1')
     expect(trouverParNom(lignes, 'FACULTE DE DROIT')?.id).toBe('2')
     expect(trouverParNom(lignes, 'Faculté de médecine')).toBeNull()
+  })
+
+  it('retrouve une école par son sigle ou son nom sans sigle', () => {
+    const lignes = [
+      { id: '1', name: 'Université Cheikh Anta Diop de Dakar (UCAD)' },
+      { id: '2', name: 'Faculté des Sciences Économiques et de Gestion (FASEG)' },
+      { id: '3', name: 'Institut National Polytechnique Félix Houphouët-Boigny (INP-HB)' },
+    ]
+    expect(trouverParNom(lignes, 'UCAD')?.id).toBe('1')
+    expect(trouverParNom(lignes, 'u.c.a.d')?.id).toBe('1')
+    expect(trouverParNom(lignes, 'Université Cheikh Anta Diop de Dakar')?.id).toBe('1')
+    expect(trouverParNom(lignes, 'faseg')?.id).toBe('2')
+    expect(trouverParNom(lignes, 'INP HB')?.id).toBe('3')
+    expect(trouverParNom(lignes, 'Université de Dakar')).toBeNull()
+    expect(trouverParNom(lignes, 'FSEG')).toBeNull()
+  })
+
+  it('ne lit un sigle qu’en fin de nom', () => {
+    expect(sigleDe('Université de Lomé (UL)')).toBe('ul')
+    expect(sigleDe('Université de Lomé')).toBeNull()
+    expect(sigleDe('Faculté (ancienne) de droit')).toBeNull()
+    expect(memeNom('', 'Université de Lomé (UL)')).toBe(false)
   })
 
   it('nettoie les espaces du nom rangé', () => {

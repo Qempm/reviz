@@ -70,11 +70,36 @@ String normaliserNom(String nom) {
   return sortie.join(' ');
 }
 
+final _sigleFinal = RegExp(r'\(([^()]+)\)\s*$');
+
+/// Le sigle rangé en fin de nom, entre parenthèses : « Université Cheikh
+/// Anta Diop de Dakar (UCAD) » → « ucad ». `null` sans parenthèses.
+///
+/// Le catalogue écrit les écoles et les filières ainsi depuis le 7 octobre
+/// 2026 : l'étudiant tape « UCAD » ou « FASEG », pas le nom officiel.
+String? sigleDe(String nom) {
+  final m = _sigleFinal.firstMatch(nom);
+  if (m == null) return null;
+  final sigle = normaliserNom(m.group(1)!);
+  return sigle.isEmpty ? null : sigle;
+}
+
+/// La saisie désigne-t-elle ce nom rangé ? Le nom entier, le nom sans son
+/// sigle, ou le sigle seul.
+bool memeNom(String saisie, String range) {
+  final cible = normaliserNom(saisie);
+  if (cible.isEmpty) return false;
+  if (normaliserNom(range) == cible) return true;
+  final sigle = sigleDe(range);
+  if (sigle == null) return false;
+  return sigle == cible ||
+      normaliserNom(range.replaceFirst(_sigleFinal, '')) == cible;
+}
+
 /// L'élément de `entrees` dont le nom est « le même » que `saisie`.
 T? trouverParNom<T>(List<T> entrees, String Function(T) nom, String saisie) {
-  final cible = normaliserNom(saisie);
   for (final e in entrees) {
-    if (normaliserNom(nom(e)) == cible) return e;
+    if (memeNom(saisie, nom(e))) return e;
   }
   return null;
 }

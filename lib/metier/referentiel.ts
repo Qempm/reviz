@@ -58,11 +58,39 @@ export function codeDepuisNom(nom: string): string {
   return (initiales || mots.map((m) => m[0]).join('')).slice(0, 12).toUpperCase()
 }
 
+/**
+ * Le sigle rangé en fin de nom, entre parenthèses : « Université Cheikh Anta
+ * Diop de Dakar (UCAD) » → « ucad ». `null` sans parenthèses.
+ *
+ * Le catalogue écrit les écoles et les filières ainsi depuis le 7 octobre
+ * 2026 : l'étudiant tape « UCAD » ou « FASEG », pas le nom officiel.
+ */
+export function sigleDe(nom: string): string | null {
+  const m = /\(([^()]+)\)\s*$/.exec(nom)
+  if (!m) return null
+  const sigle = normaliserNom(m[1])
+  return sigle.length > 0 ? sigle : null
+}
+
+/**
+ * La saisie désigne-t-elle ce nom rangé ? Le nom entier, le nom sans son
+ * sigle, ou le sigle seul : « UCAD », « Université Cheikh Anta Diop de
+ * Dakar » et « Université Cheikh Anta Diop de Dakar (UCAD) » sont la même
+ * école.
+ */
+export function memeNom(saisie: string, range: string): boolean {
+  const cible = normaliserNom(saisie)
+  if (cible.length === 0) return false
+  if (normaliserNom(range) === cible) return true
+  const sigle = sigleDe(range)
+  if (sigle === null) return false
+  return sigle === cible || normaliserNom(range.replace(/\([^()]+\)\s*$/, '')) === cible
+}
+
 /** Le premier élément dont le nom est « le même » que `nom`, ou `null`. */
 export function trouverParNom<T extends { name: string }>(
   lignes: T[],
   nom: string,
 ): T | null {
-  const cible = normaliserNom(nom)
-  return lignes.find((l) => normaliserNom(l.name) === cible) ?? null
+  return lignes.find((l) => memeNom(nom, l.name)) ?? null
 }
