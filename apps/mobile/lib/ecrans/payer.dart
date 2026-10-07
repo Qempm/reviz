@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../composants/bouton.dart';
 import '../composants/carte.dart';
 import '../composants/champ.dart';
+import '../composants/lien_site.dart';
 import '../donnees/api.dart';
 import '../donnees/modeles.dart';
 import '../donnees/supabase.dart';
@@ -370,7 +371,12 @@ class _EcranPayerState extends ConsumerState<EcranPayer> {
                   style: Typo.labelSm.copyWith(color: Couleurs.attenue),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: Espaces.x24),
+                LienSite(
+                  page: PageSite.conditions,
+                  avant: Fr.legal.avantPaiement,
+                  lien: Fr.legal.lesConditions,
+                ),
+                const SizedBox(height: Espaces.x16),
               ],
             ),
           ),

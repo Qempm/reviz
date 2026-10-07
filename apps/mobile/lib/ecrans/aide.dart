@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../composants/bouton.dart';
 import '../composants/carte.dart';
+import '../composants/lien_site.dart';
 import '../donnees/config.dart';
 import '../etat/fournisseurs.dart';
 import '../i18n/fr.dart';
@@ -102,6 +103,24 @@ class EcranAide extends ConsumerWidget {
                         onTap: _ecrire,
                       ),
                     ],
+                  ],
+                ),
+
+                const SizedBox(height: Espaces.x16),
+
+                Carte(
+                  enfants: [
+                    Text(Fr.legal.titre, style: Typo.headlineMd),
+                    LienSite(
+                      page: PageSite.conditions,
+                      lien: Fr.legal.conditions,
+                      centre: false,
+                    ),
+                    LienSite(
+                      page: PageSite.confidentialite,
+                      lien: Fr.legal.confidentialite,
+                      centre: false,
+                    ),
                   ],
                 ),
 

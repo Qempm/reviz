@@ -28,6 +28,7 @@ abstract final class Fr {
   static const avatar = _Avatar();
   static const carte = _Carte();
   static const aide = _Aide();
+  static const legal = _Legal();
   static const mascotte = _Mascotte();
   static const referentiel = _Referentiel();
   static const niveaux = _Niveaux();
@@ -878,6 +879,19 @@ class _Aide {
       'Reviz.';
 
   final String versionTitre = 'Cette version';
+}
+
+/// Les conditions et la confidentialité : des pages du site
+/// (`/conditions`, `/confidentialite`), que l'application ouvre.
+class _Legal {
+  const _Legal();
+
+  final String avantInscription = 'En créant ton compte, tu acceptes ';
+  final String avantPaiement = 'En payant, tu acceptes ';
+  final String lesConditions = 'les conditions d’utilisation et de vente';
+  final String titre = 'Conditions et confidentialité';
+  final String conditions = 'Conditions d’utilisation et de vente';
+  final String confidentialite = 'Confidentialité';
 }
 
 class _Carte {

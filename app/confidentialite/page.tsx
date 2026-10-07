@@ -80,7 +80,10 @@ export default function Confidentialite() {
         </section>
       ))}
 
-      <footer className="text-label-sm text-reviz-muted">
+      <footer className="flex flex-wrap gap-space-16 text-label-sm text-reviz-muted">
+        <Link href="/conditions" className="underline">
+          Conditions d’utilisation et de vente
+        </Link>
         <Link href="/" className="underline">
           Revenir à l’accueil
         </Link>

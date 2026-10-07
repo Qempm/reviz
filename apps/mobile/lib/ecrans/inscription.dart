@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../composants/bouton.dart';
 import '../composants/champ.dart';
 import '../composants/champ_recherche.dart';
+import '../composants/lien_site.dart';
 import '../donnees/api.dart';
 import '../etat/fournisseurs.dart';
 import '../i18n/fr.dart';
@@ -223,6 +224,12 @@ class _EcranInscriptionState extends ConsumerState<EcranInscription> {
                       : Fr.inscription.terminer,
                   icone: Icons.check,
                   onTap: _enCours ? null : _terminer,
+                ),
+                const SizedBox(height: Espaces.x8),
+                LienSite(
+                  page: PageSite.conditions,
+                  avant: Fr.legal.avantInscription,
+                  lien: Fr.legal.lesConditions,
                 ),
 
                 if (_erreur != null) ...[

@@ -603,6 +603,7 @@ export default async function Accueil() {
             <Link href="/app" className="text-reviz-muted underline underline-offset-4">Installer</Link>
             <a href="#prix" className="text-reviz-muted underline underline-offset-4">Prix</a>
             <a href="#questions" className="text-reviz-muted underline underline-offset-4">Questions</a>
+            <Link href="/conditions" className="text-reviz-muted underline underline-offset-4">Conditions</Link>
             <Link href="/confidentialite" className="text-reviz-muted underline underline-offset-4">Confidentialité</Link>
           </p>
         </div>
