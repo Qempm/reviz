@@ -1,4 +1,4 @@
-import type { ZodType } from 'zod'
+import type { ZodType, ZodTypeDef } from 'zod'
 import { completeAnthropic } from './anthropic'
 import { complete, EmptyContentError, extractJson, HttpError } from './client'
 import { estimateCost, MODELS, readApiKey, type ModelKey } from './providers'
@@ -114,8 +114,11 @@ export type UsageRecorder = (entry: {
 export type RunOptions<T> = {
   task: AiTask
   messages: ChatMessage[]
-  /** Par défaut, le schéma associé à la tâche. */
-  schema?: ZodType<T>
+  /**
+   * Par défaut, le schéma associé à la tâche. L'entrée est inconnue : c'est
+   * la sortie du modèle, avant toute validation.
+   */
+  schema?: ZodType<T, ZodTypeDef, unknown>
   jobId?: string
   temperature?: number
   maxTokens?: number
@@ -175,7 +178,7 @@ export type RunResult<T> = {
 export async function runAiTask<T = unknown>(
   opts: RunOptions<T>,
 ): Promise<RunResult<T>> {
-  const schema = (opts.schema ?? TASK_SCHEMAS[opts.task]) as ZodType<T>
+  const schema = (opts.schema ?? TASK_SCHEMAS[opts.task]) as ZodType<T, ZodTypeDef, unknown>
   const env = opts.env ?? process.env
   const vision = needsVision(opts.messages)
   const horloge = opts.now ?? (() => new Date())

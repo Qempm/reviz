@@ -16,6 +16,7 @@ export type MotifXp =
   | 'streak_bonus'
   | 'course_added'
   | 'correction_done'
+  | 'mastery_check'
   | 'referral'
   | 'adjustment'
 
@@ -40,6 +41,8 @@ export const BAREME: Record<Exclude<MotifXp, 'streak_bonus' | 'adjustment'>, num
   daily_goal: 30,
   course_added: 25,
   correction_done: 40,
+  // Un chapitre jugé maîtrisé par le tuteur (11 octobre 2026).
+  mastery_check: 30,
   referral: 500,
 }
 

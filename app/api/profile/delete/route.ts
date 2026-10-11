@@ -98,6 +98,14 @@ export async function POST(request: Request) {
     }
   }
 
+  // Les sessions du tuteur gardent ce que l'étudiant a écrit : elles partent
+  // avec le compte (leurs messages suivent, en cascade).
+  const { error: erreurTuteur } = await admin
+    .from('tuteur_sessions')
+    .delete()
+    .eq('user_id', userId)
+  if (erreurTuteur) console.error('[compte] tuteur non effacé', erreurTuteur.message)
+
   const { data: resultat, error } = await admin.rpc('anonymiser_compte', {
     p_user: userId,
   })
