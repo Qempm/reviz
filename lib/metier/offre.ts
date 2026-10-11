@@ -197,6 +197,11 @@ export const FAQ: Array<{ question: string; reponse: string }> = [
       'Oui : le pack Découverte s’active en un appui, sans payer, pour essayer sur une matière pendant 3 jours avec une correction de copie. Réviser les cours déjà déposés reste gratuit, même sans pack.',
   },
   {
+    question: 'C’est quoi, le tuteur ?',
+    reponse:
+      'Après une série de QCM sur un chapitre, le tuteur te pose trois questions ouvertes, tirées de ton cours. Tu réponds avec tes mots ; il juge le fond, pas l’orthographe, et te dit si le chapitre est maîtrisé ou ce qu’il te reste à revoir. Chaque compte a un essai offert ; ensuite, il fait partie des packs.',
+  },
+  {
     question: 'Comment marche le parrainage ?',
     reponse:
       'Pour l’instant, il ne rapporte pas d’argent : les commissions sont en pause. Ton code sert toujours — chaque ami vérifié qui prend un pack avec ton code te rapporte 500 XP, une fois par ami. On te préviendra dans l’application quand les gains en argent reviendront.',

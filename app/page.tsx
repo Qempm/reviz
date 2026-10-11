@@ -1,16 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { APK, tailleLisible, VERSION } from '@/lib/metier/publication'
-import {
-  chargerPacks,
-  correctionsLisibles,
-  FAQ,
-  matieresLisibles,
-  meilleurPrixParJour,
-  PACK_CONSEILLE,
-} from '@/lib/metier/offre'
-import { operateursDuPays } from '@/lib/metier/operateurs'
-import { SelecteurPacks } from './SelecteurPacks'
+import { FAQ } from '@/lib/metier/offre'
 
 /**
  * La page d'accueil publique : pourquoi Reviz plutôt que ChatGPT, et où la
@@ -28,21 +19,22 @@ import { SelecteurPacks } from './SelecteurPacks'
  * sont de vrais écrans de l'application (`test_apercus/studio_test.dart`),
  * le panthéreau est celui de l'application.
  *
- * Les prix viennent de la table `packs` (`lib/metier/offre.ts`), relus toutes
- * les heures ; les opérateurs, de `lib/metier/operateurs.ts` ; le bouton de
- * téléchargement, de `lib/metier/publication.ts`, comme `/app`.
+ * **Plus aucun prix sur la page** (11 octobre 2026, à la demande du
+ * propriétaire : les tarifs faisaient fuir avant même l'installation). Les
+ * packs et leurs prix se découvrent dans l'application, après l'essai
+ * gratuit. Le téléchargement revient à chaque étape de la page, et une barre
+ * le garde sous le pouce sur téléphone. Le bouton vient de
+ * `lib/metier/publication.ts`, comme `/app`.
  */
-
-export const revalidate = 3600
 
 export const metadata = {
   title: 'Reviz — ton cours, ton niveau, ta note',
   description:
-    'Reviz transforme ton propre cours en QCM et en fiches, se souvient de tes erreurs et corrige tes copies d’après ton cours et ton année. Gratuit pour commencer, sans abonnement, paiement Mobile Money.',
+    'Reviz transforme ton propre cours en QCM et en fiches, vérifie que tu as vraiment compris chaque chapitre et corrige tes copies d’après ton cours et ton année. Gratuit pour commencer, sans abonnement.',
   openGraph: {
     title: 'Reviz — ton cours, ton niveau, ta note',
     description:
-      'Des QCM tirés de ton propre cours, des copies corrigées d’après ton année. Gratuit pour commencer.',
+      'Des QCM tirés de ton propre cours, un tuteur qui vérifie que tu as compris, des copies corrigées d’après ton année. Gratuit pour commencer.',
     locale: 'fr_FR',
     type: 'website',
   },
@@ -160,10 +152,22 @@ const ETAPES = [
     texte: 'Dix questions par série, les plus probables à l’examen d’abord. Chaque chapitre se gagne en trois couronnes.',
   },
   {
+    pose: 'curieux',
+    titre: 'Vérifie ta maîtrise',
+    texte: 'Après ta série, ton tuteur te pose trois questions. Tu réponds avec tes mots, il te dit ce qui est acquis.',
+  },
+  {
     pose: 'stylo',
     titre: 'Fais corriger ta copie',
-    texte: 'Photographie jusqu’à quatre pages. Tu reçois une note détaillée, les notions manquées et les chapitres à revoir.',
+    texte: 'Photographie jusqu’à huit pages. Tu reçois une note sur 20, les notions manquées et les chapitres à revoir.',
   },
+]
+
+const TUTEUR = [
+  'Trois questions ouvertes sur le chapitre que tu viens de réviser, tirées de ton cours.',
+  'Tu réponds avec tes mots : il juge le fond, pas l’orthographe.',
+  'Chaque réponse est jugée tout de suite : juste, en partie, ou pas encore.',
+  'À la fin, « chapitre maîtrisé » ou les notions précises à revoir.',
 ]
 
 const ECRANS = [
@@ -186,34 +190,30 @@ const RAISONS = [
 ]
 
 const ENGAGEMENTS = [
-  'Paiement unique, jamais de prélèvement',
-  'Tes cours restent à toi, même après ton pack',
+  'Sans abonnement, jamais de prélèvement',
+  'Tes cours restent à toi, pour toujours',
   'Sur Android, et dans le navigateur d’un ordinateur ou d’un iPhone',
 ]
 
-/** Les pays, et les opérateurs payables dans l'application (`operateurs.ts`). */
-const PAYS = [
-  { code: 'BJ', nom: 'Bénin' },
-  { code: 'TG', nom: 'Togo' },
-  { code: 'CI', nom: 'Côte d’Ivoire' },
-  { code: 'SN', nom: 'Sénégal' },
-]
-
-const NOMS_OPERATEURS: Record<string, string> = {
-  mtn: 'MTN',
-  moov: 'Moov',
-  celtiis: 'Celtiis',
-  togocel: 'Togocel',
-  free: 'Free',
+/** Le bouton jaune de téléchargement, repris à chaque étape de la page. */
+function BoutonTelecharger({
+  libelle = 'Télécharger l’application',
+  className = '',
+}: {
+  libelle?: string
+  className?: string
+}) {
+  return (
+    <a href={LIEN} className={`${BOUTON_JAUNE} whitespace-nowrap ${className}`}>
+      <IconeTelecharger />
+      {libelle}
+    </a>
+  )
 }
 
-export default async function Accueil() {
-  const packs = await chargerPacks()
-  const payants = packs.filter((p) => p.prixFcfa > 0)
-  const decouverte = packs.find((p) => p.prixFcfa === 0)
-
+export default function Accueil() {
   return (
-    <div id="haut" className="min-h-screen overflow-x-hidden bg-reviz-cream text-reviz-ink">
+    <div id="haut" className="min-h-screen overflow-x-hidden bg-reviz-cream pb-[88px] text-reviz-ink md:pb-0">
       {/* --- Barre du haut */}
       <header className="sticky top-0 z-20 border-b border-[#EBDDB8] bg-reviz-cream/90 pt-safe backdrop-blur-md">
         <div className={`${CONTENU} flex h-[76px] items-center justify-between gap-4`}>
@@ -223,7 +223,7 @@ export default async function Accueil() {
           </Link>
           <nav aria-label="Sections" className="hidden items-center gap-8 text-[15px] font-semibold md:flex">
             <a href="#comment" className="text-reviz-ink no-underline hover:underline">Comment ça marche</a>
-            <a href="#prix" className="text-reviz-ink no-underline hover:underline">Prix</a>
+            <a href="#tuteur" className="text-reviz-ink no-underline hover:underline">Le tuteur</a>
             <a href="#questions" className="text-reviz-ink no-underline hover:underline">Questions</a>
           </nav>
           <a
@@ -255,14 +255,11 @@ export default async function Accueil() {
               <span className="mt-2 inline-block rounded-3xl bg-reviz-yellow px-4 pb-1 leading-[1.05]">Ta note.</span>
             </h1>
             <p className="max-w-[540px] text-[17px] leading-relaxed text-reviz-muted sm:text-xl">
-              Reviz transforme ton propre cours en QCM, se souvient de tes erreurs et corrige tes copies d’après ce que
-              ton professeur a enseigné.
+              Reviz transforme ton propre cours en QCM, vérifie que tu as vraiment compris chaque chapitre, et corrige
+              tes copies d’après ce que ton professeur a enseigné.
             </p>
             <div className="flex w-full flex-wrap gap-3">
-              <a href={LIEN} className={`${BOUTON_JAUNE} flex-[1_1_260px] sm:flex-none`}>
-                <IconeTelecharger />
-                Télécharger l’application
-              </a>
+              <BoutonTelecharger className="flex-[1_1_260px] sm:flex-none" />
               <a href="#comment" className={`${BOUTON_BLANC} flex-[1_1_220px] sm:flex-none`}>
                 Voir comment ça marche
               </a>
@@ -273,7 +270,7 @@ export default async function Accueil() {
               Sur ordinateur ou iPhone ? Ouvre Reviz dans ton navigateur
             </a>
             <ul className="flex flex-wrap gap-2">
-              {['Gratuit pour commencer', 'Sans abonnement', 'Paiement Mobile Money'].map((t) => (
+              {['Gratuit pour commencer', 'Sans abonnement', 'Léger, même sans réseau'].map((t) => (
                 <li key={t} className={PUCE}>
                   <Coche />
                   {t}
@@ -363,9 +360,9 @@ export default async function Accueil() {
         <section id="comment" className={`${CONTENU} flex scroll-mt-24 flex-col gap-10 pt-16 md:pt-[104px]`}>
           <div className="flex flex-col items-center gap-3.5">
             <h2 className={TITRE_SECTION}>Comment ça marche</h2>
-            <p className={SOUS_TITRE}>Trois gestes, et ton cours devient une révision qui te ressemble.</p>
+            <p className={SOUS_TITRE}>Quatre gestes, et ton cours devient une révision qui te ressemble.</p>
           </div>
-          <ol className="grid grid-cols-[repeat(auto-fit,minmax(min(300px,100%),1fr))] gap-5">
+          <ol className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {ETAPES.map((e, i) => (
               <li key={e.titre} className={`${CARTE} flex flex-col gap-2.5 px-7 pb-7 pt-6`}>
                 <div className="flex items-end justify-between">
@@ -386,6 +383,47 @@ export default async function Accueil() {
                 <figcaption className="text-center font-titre text-lg">{e.legende}</figcaption>
               </figure>
             ))}
+          </div>
+          <div className="flex flex-col items-center gap-2">
+            <BoutonTelecharger className="w-full sm:w-auto" />
+            <p className="text-sm font-medium text-reviz-muted">Gratuit pour commencer, sans abonnement</p>
+          </div>
+        </section>
+
+        {/* --- Le tuteur de maîtrise (2.9.0) */}
+        <section id="tuteur" className={`${CONTENU} scroll-mt-24 pt-16 md:pt-[104px]`}>
+          <div className="flex flex-wrap items-center gap-10 rounded-[40px] bg-reviz-card p-6 shadow-card md:gap-16 md:p-14">
+            <div className="flex min-w-0 flex-[1_1_380px] flex-col items-start gap-5">
+              <span className={ETIQUETTE}>
+                <Panthere pose="curieux" taille={340} className="-my-1 h-7 w-7" />
+                Nouveau
+              </span>
+              <h2 className="text-balance font-titre text-[32px] leading-[1.05] sm:text-[44px] lg:text-[52px]">
+                Tu crois avoir compris&nbsp;? Ton tuteur vérifie.
+              </h2>
+              <p className="text-[17px] leading-relaxed text-reviz-muted sm:text-lg">
+                Réussir un QCM, ce n’est pas encore savoir expliquer. Après ta série, Reviz te fait parler du chapitre,
+                comme à l’oral.
+              </p>
+              <ul className="flex flex-col gap-3 text-base font-medium">
+                {TUTEUR.map((t) => (
+                  <li key={t} className="flex items-start gap-2.5">
+                    <CocheJaune />
+                    <span className="pt-0.5">{t}</span>
+                  </li>
+                ))}
+              </ul>
+              <BoutonTelecharger libelle="Essayer le tuteur" className="mt-2 w-full sm:w-auto" />
+              <p className="text-sm font-medium text-reviz-muted">Un essai offert à chaque nouveau compte.</p>
+            </div>
+            <div className="relative flex min-w-0 flex-[1_1_300px] justify-center">
+              <div className="absolute inset-x-[6%] bottom-[4%] top-[10%] rounded-[48px] bg-reviz-yellow" />
+              <Telephone
+                src="/landing/ecran-tuteur.webp"
+                alt="Le tuteur : une réponse jugée juste, puis « Chapitre maîtrisé ! » avec la notion encore à revoir"
+                className="relative w-[240px] sm:w-[282px]"
+              />
+            </div>
           </div>
         </section>
 
@@ -413,8 +451,8 @@ export default async function Accueil() {
                 Pensé pour l’amphi, pas pour la Silicon Valley
               </h2>
               <p className="text-[17px] leading-relaxed text-reviz-muted sm:text-lg">
-                Tout est en français, tous les prix sont en F CFA, et l’application tient sur un Android milieu de gamme,
-                même la veille d’un contrôle avec une connexion qui coupe.
+                Tout est en français, et l’application tient sur un Android milieu de gamme, même la veille d’un
+                contrôle avec une connexion qui coupe.
               </p>
               <ul className="flex flex-col gap-2.5 text-base font-medium">
                 {ENGAGEMENTS.map((t) => (
@@ -447,73 +485,19 @@ export default async function Accueil() {
           </div>
         </section>
 
-        {/* --- Prix */}
-        <section id="prix" className={`${CONTENU} flex scroll-mt-24 flex-col gap-8 pt-[72px] md:pt-[120px]`}>
-          <div className="flex flex-col items-center gap-3.5 text-center">
-            <span className={ETIQUETTE}>
-              <svg width="16" height="16" viewBox="0 0 24 24" strokeWidth="2.2" {...trait} className="text-reviz-ink" aria-hidden>
-                <rect x="6" y="2.5" width="12" height="19" rx="3" />
-                <path d="M11 18h2" />
-              </svg>
-              Paiement unique en Mobile Money
-            </span>
-            <h2 className="text-balance font-titre text-[38px] leading-[1.02] sm:text-[56px] lg:text-[68px]">
-              Des packs, pas d’abonnement.
-            </h2>
-            <p className={SOUS_TITRE}>
-              Tu paies une fois, pour une durée précise. À la fin, rien n’est prélevé : l’accès s’arrête, et tes cours
-              restent à toi pour réviser gratuitement.
-            </p>
-          </div>
-
-          <SelecteurPacks
-            packs={payants}
-            conseille={PACK_CONSEILLE}
-            meilleurParJour={meilleurPrixParJour(packs)}
-            lien={LIEN}
-          />
-
-          {decouverte && (
-            <div className="flex flex-wrap items-center gap-5 rounded-[28px] border-2 border-dashed border-reviz-border bg-reviz-surface-low py-[18px] pl-3 pr-6">
-              <Panthere pose="cadeau" taille={104} alt="Le panthéreau te tend un cadeau" className="h-[104px] w-[104px] shrink-0" />
-              <div className="flex flex-[1_1_280px] flex-col gap-1">
-                <p className="font-titre text-2xl">Pas encore sûr ? Essaie gratuitement.</p>
-                <p className="text-[15px] leading-normal text-reviz-muted">
-                  Pack {decouverte.label} : {decouverte.jours} jours, {matieresLisibles(decouverte.matieres).toLowerCase()},{' '}
-                  {correctionsLisibles(decouverte.corrections)}. Il s’active en un appui, sans rien payer.
-                </p>
-              </div>
-              <a href={LIEN} className={`${BOUTON_BLANC} min-h-[54px] text-base`}>
-                Commencer l’essai gratuit
-              </a>
+        {/* --- Essai gratuit : pas un prix, une invitation. Les packs se
+            découvrent dans l'application. */}
+        <section className={`${CONTENU} pt-16 md:pt-[104px]`}>
+          <div className="flex flex-wrap items-center gap-5 rounded-[32px] border-2 border-dashed border-reviz-border bg-reviz-surface-low py-5 pl-3 pr-6 md:gap-8 md:py-7 md:pr-9">
+            <Panthere pose="cadeau" taille={104} alt="Le panthéreau te tend un cadeau" className="h-[104px] w-[104px] shrink-0" />
+            <div className="flex flex-[1_1_300px] flex-col gap-1.5">
+              <p className="font-titre text-[26px] leading-tight sm:text-[32px]">Essaie gratuitement, dès ce soir.</p>
+              <p className="text-[15px] leading-normal text-reviz-muted sm:text-base">
+                Ton premier pack s’active en un appui, sans rien payer : dépose un cours, fais tes séries, vérifie ta
+                maîtrise et fais corriger une copie.
+              </p>
             </div>
-          )}
-        </section>
-
-        {/* --- Mobile Money */}
-        <section className={`${CONTENU} flex flex-col gap-8 pt-16 md:pt-[104px]`}>
-          <div className="flex flex-col items-center gap-2.5 text-center">
-            <h2 className="font-titre text-[30px] leading-[1.05] sm:text-[44px]">Paie avec ton Mobile Money</h2>
-            <p className="text-[17px] text-reviz-muted">Dans l’application, sans la quitter : la demande arrive sur ton téléphone.</p>
-          </div>
-          <div className="grid grid-cols-[repeat(auto-fit,minmax(min(240px,100%),1fr))] gap-4">
-            {PAYS.map((p) => (
-              <div key={p.code} className="flex flex-col gap-4 rounded-3xl bg-reviz-card p-[22px] shadow-card-sm">
-                <div className="flex items-center gap-3">
-                  <span className="flex h-[42px] w-[42px] items-center justify-center rounded-[14px] bg-reviz-ink text-[13px] font-bold tracking-[0.04em] text-white">
-                    {p.code}
-                  </span>
-                  <span className="font-titre text-[21px]">{p.nom}</span>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {operateursDuPays(p.code).map((o) => (
-                    <span key={o} className={PUCE}>
-                      {NOMS_OPERATEURS[o] ?? o}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            ))}
+            <BoutonTelecharger libelle="Commencer gratuitement" className="w-full sm:w-auto" />
           </div>
         </section>
 
@@ -568,7 +552,7 @@ export default async function Accueil() {
               <div className="flex flex-col gap-2">
                 <p className="font-titre text-[28px] leading-[1.05] sm:text-[44px]">Ton premier pack est offert.</p>
                 <p className="text-[17px] leading-relaxed text-[#D8D2C2]">
-                  Installe Reviz, dépose un cours, et révise ce soir. Trois jours pour essayer, sans payer.
+                  Installe Reviz, dépose un cours, et révise ce soir. Sans rien payer pour commencer.
                 </p>
               </div>
             </div>
@@ -602,13 +586,25 @@ export default async function Accueil() {
           </p>
           <p className="flex flex-wrap gap-[18px] pb-8">
             <Link href="/app" className="text-reviz-muted underline underline-offset-4">Installer</Link>
-            <a href="#prix" className="text-reviz-muted underline underline-offset-4">Prix</a>
+            <a href="#tuteur" className="text-reviz-muted underline underline-offset-4">Le tuteur</a>
             <a href="#questions" className="text-reviz-muted underline underline-offset-4">Questions</a>
             <Link href="/conditions" className="text-reviz-muted underline underline-offset-4">Conditions</Link>
             <Link href="/confidentialite" className="text-reviz-muted underline underline-offset-4">Confidentialité</Link>
           </p>
         </div>
       </footer>
+
+      {/* --- Sur téléphone, le téléchargement reste sous le pouce. La
+          réserve `pb-[88px]` de la racine l'empêche de couvrir le pied. */}
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-[#EBDDB8] bg-reviz-cream/95 px-4 pt-3 backdrop-blur-md md:hidden">
+        <a
+          href={LIEN}
+          className="mb-[calc(12px+env(safe-area-inset-bottom,0px))] flex min-h-[56px] items-center justify-center gap-2.5 rounded-[18px] bg-reviz-yellow text-[17px] font-bold text-reviz-ink no-underline shadow-lueur active:scale-[0.98] motion-reduce:transition-none"
+        >
+          <IconeTelecharger />
+          Télécharger Reviz · c’est gratuit
+        </a>
+      </div>
     </div>
   )
 }
