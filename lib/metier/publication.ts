@@ -13,7 +13,7 @@
  */
 
 /** La version publiée, telle que `pubspec.yaml` la déclare. */
-export const VERSION = '2.9.0'
+export const VERSION = '2.10.0'
 
 /**
  * En dessous, l'application refuse de servir.
@@ -38,8 +38,8 @@ export const VERSION_MINIMALE = '2.0.0'
 export const MAINTENANCE = false
 
 export const NOTES =
-  'Nouveau : le tuteur vérifie que tu sais expliquer un chapitre, en trois ' +
-  'questions. Et tes copies se corrigent jusqu’à 8 pages.'
+  'Ton tuteur est maintenant partout : une bulle sur chaque cours, et à la ' +
+  'fin de chaque série. Et tu peux payer par carte bancaire.'
 
 /** Date de la publication, au format `AAAA-MM-JJ`. */
 export const DATE = '2026-10-11'
@@ -74,9 +74,9 @@ export type Apk =
 
 export const APK: Apk = {
   publie: true,
-  url: 'https://github.com/Qempm/reviz/releases/download/v2.9.0/reviz-2.9.0.apk',
-  tailleOctets: 65_917_991,
-  sha256: '7a4e423d2200a8fdc036a88a01e57c19b95f698b07ddfffcd98800ed581b9859',
+  url: 'https://github.com/Qempm/reviz/releases/download/v2.10.0/reviz-2.10.0.apk',
+  tailleOctets: 66_016_519,
+  sha256: '4112572a2553fe8641dcf5eb30508f149ed90186e8443ff5869ecd98af5f680f',
 }
 
 /**
