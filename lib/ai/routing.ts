@@ -1,4 +1,5 @@
 import type { ZodType } from 'zod'
+import { completeAnthropic } from './anthropic'
 import { complete, EmptyContentError, extractJson, HttpError } from './client'
 import { estimateCost, MODELS, readApiKey, type ModelKey } from './providers'
 import { TASK_SCHEMAS, type AiTask } from './schemas'
@@ -7,7 +8,9 @@ import {
   EMPTY_USAGE,
   type Attempt,
   type ChatMessage,
+  type EffortClaude,
   type ModelSpec,
+  type TokenUsage,
 } from './types'
 
 /**
@@ -30,7 +33,10 @@ export const ROUTES: Record<AiTask, ModelKey[]> = {
   // cher de la pile. Vision et moins cher d'abord, raisonnement élevé en
   // rattrapage (une correction est une note, la qualité compte plus que le
   // coût sur un cas rare), Qwen en dernier ressort.
-  correction: ['deepseekVision', 'glmPro', 'qwenVlFlash'],
+  //
+  // Depuis le 11 octobre 2026, Claude Haiku 5.5 corrige en premier
+  // (arbitrage du propriétaire) ; la chaîne d'avant reste le secours.
+  correction: ['claudeHaiku', 'deepseekVision', 'glmPro', 'qwenVlFlash'],
   // Lecture de photo : GLM 5.3 Flash a la vision native et passe avant Qwen,
   // dont le modèle vision est qwen3-vl-flash et non qwen3.8-flash.
   student_card: ['deepseekVision', 'glmFlash', 'qwenVlFlash'],
@@ -38,6 +44,8 @@ export const ROUTES: Record<AiTask, ModelKey[]> = {
   // les mêmes raisons. Pas de raisonnement — recopier n'est pas raisonner, et
   // le payer serait payer pour rien.
   transcription: ['deepseekVision', 'glmFlash', 'qwenVlFlash'],
+  // Le tuteur de maîtrise : Claude, DeepSeek Flash en secours.
+  tuteur: ['claudeHaiku', 'deepseekFlash'],
 }
 
 /**
@@ -47,15 +55,28 @@ export const ROUTES: Record<AiTask, ModelKey[]> = {
  * génération de QCM a besoin de latitude et de place, sous peine de JSON
  * tronqué (§ 1.4).
  */
-const TASK_PARAMS: Record<AiTask, { temperature: number; maxTokens: number }> = {
+type ParamsTache = {
+  temperature: number
+  maxTokens: number
+  /**
+   * Claude n'accepte pas de température : son levier est l'effort. Sa
+   * réflexion compte dans `max_tokens`, d'où un plafond à part.
+   */
+  claude?: { effort: EffortClaude; maxTokens: number }
+}
+
+const TASK_PARAMS: Record<AiTask, ParamsTache> = {
   questions: { temperature: 0.7, maxTokens: 8000 },
   flashcards: { temperature: 0.7, maxTokens: 8000 },
   exam_predictions: { temperature: 0.7, maxTokens: 8000 },
-  correction: { temperature: 0.2, maxTokens: 4000 },
+  // Une note : effort moyen, la qualité compte plus que quelques jetons.
+  correction: { temperature: 0.2, maxTokens: 4000, claude: { effort: 'medium', maxTokens: 8000 } },
   student_card: { temperature: 0.2, maxTokens: 2000 },
   // Température au plancher : une transcription qui paraphrase n'est pas
   // une transcription. Et de la place, parce qu'une page dense est longue.
   transcription: { temperature: 0, maxTokens: 12000 },
+  // Une question courte et un retour de deux phrases : effort bas.
+  tuteur: { temperature: 0.4, maxTokens: 1500, claude: { effort: 'low', maxTokens: 4000 } },
 }
 
 /** Codes HTTP qui justifient un réessai chez le même fournisseur. */
@@ -80,6 +101,8 @@ function needsVision(messages: ChatMessage[]): boolean {
 
 export type UsageRecorder = (entry: {
   jobId?: string
+  /** L'étudiant à qui l'appel a servi, pour le coût par compte. */
+  userId?: string
   provider: string
   model: string
   promptTokens: number
@@ -201,20 +224,32 @@ export async function runAiTask<T = unknown>(
       let outcome: Attempt['outcome'] = 'network_error'
 
       try {
-        const res = await complete({
-          spec,
-          messages: opts.messages,
-          apiKey,
-          temperature: opts.temperature ?? params.temperature,
-          maxTokens: opts.maxTokens ?? params.maxTokens,
-          jsonMode: true,
-          userId: opts.userId,
-          signal: signalAvecDelai(
-            opts.signal,
-            opts.delaiAppelMs ?? DELAI_APPEL_MS,
-          ),
-          fetchImpl: opts.fetchImpl,
-        })
+        const signal = signalAvecDelai(
+          opts.signal,
+          opts.delaiAppelMs ?? DELAI_APPEL_MS,
+        )
+        const res =
+          spec.provider === 'anthropic'
+            ? await completeAnthropic({
+                spec,
+                messages: opts.messages,
+                apiKey,
+                effort: params.claude?.effort ?? 'low',
+                maxTokens: opts.maxTokens ?? params.claude?.maxTokens ?? 8000,
+                signal,
+                fetchImpl: opts.fetchImpl,
+              })
+            : await complete({
+                spec,
+                messages: opts.messages,
+                apiKey,
+                temperature: opts.temperature ?? params.temperature,
+                maxTokens: opts.maxTokens ?? params.maxTokens,
+                jsonMode: true,
+                userId: opts.userId,
+                signal,
+                fetchImpl: opts.fetchImpl,
+              })
 
         usage = res.usage
 
@@ -250,6 +285,7 @@ export async function runAiTask<T = unknown>(
 
         await opts.recordUsage?.({
           jobId: opts.jobId,
+          userId: opts.userId,
           provider: spec.provider,
           model: spec.model,
           promptTokens: usage.promptTokens,
@@ -265,6 +301,12 @@ export async function runAiTask<T = unknown>(
           attempts,
         }
       } catch (e) {
+        // Un refus ou une réponse tronquée de Claude a consommé des jetons :
+        // l'erreur les porte.
+        const porte = (e as { usage?: TokenUsage } | null)?.usage
+        if (porte && usage.promptTokens === 0 && usage.completionTokens === 0) {
+          usage = porte
+        }
         if (outcome === 'network_error') {
           if (e instanceof HttpError) outcome = 'http_error'
           else if (e instanceof EmptyContentError) outcome = 'empty_content'
@@ -290,6 +332,7 @@ export async function runAiTask<T = unknown>(
         if (usage.promptTokens > 0 || usage.completionTokens > 0) {
           await opts.recordUsage?.({
             jobId: opts.jobId,
+            userId: opts.userId,
             provider: spec.provider,
             model: spec.model,
             promptTokens: usage.promptTokens,

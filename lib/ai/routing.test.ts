@@ -79,7 +79,10 @@ describe('table de routage', () => {
       expect(MODELS[key].capabilities).toContain('vision')
     }
 
+    // Claude Haiku 5.5 en tête depuis le 11 octobre 2026 ; la chaîne
+    // d'avant reste le secours.
     expect(ROUTES.correction).toEqual([
+      'claudeHaiku',
       'deepseekVision',
       'glmPro',
       'qwenVlFlash',
@@ -501,5 +504,193 @@ describe('délai par appel', () => {
     // Le délai a joué : l'appel pendu n'a pas tenu la tâche.
     expect(Date.now() - debut).toBeLessThan(2000)
     expect(resultat.attempts[0].outcome).toBe('network_error')
+  })
+})
+
+/** Réponse au format Anthropic Messages, réflexion vide en tête comme Haiku 5.5. */
+function reponseClaude(
+  texte: string,
+  options: { stop?: string; usage?: Record<string, number> } = {},
+) {
+  return new Response(
+    JSON.stringify({
+      id: 'msg_test',
+      type: 'message',
+      role: 'assistant',
+      model: 'claude-haiku-5-5',
+      content: [
+        { type: 'thinking', thinking: '', signature: 'sig' },
+        { type: 'text', text: texte },
+      ],
+      stop_reason: options.stop ?? 'end_turn',
+      stop_sequence: null,
+      usage: options.usage ?? {
+        input_tokens: 300,
+        output_tokens: 400,
+        cache_read_input_tokens: 2000,
+        cache_creation_input_tokens: 0,
+      },
+    }),
+    { status: 200, headers: { 'content-type': 'application/json' } },
+  )
+}
+
+const ENV_CLAUDE = { ...ENV, ANTHROPIC_API_KEY: 'an' } as unknown as NodeJS.ProcessEnv
+
+const TOUR_VALIDE = {
+  evaluation: null,
+  suite: { type: 'question', texte: 'Qu’est-ce qui distingue le contrôle a priori ?' },
+}
+
+describe('Claude (Anthropic)', () => {
+  it('passe Claude en premier sur le tuteur, sans température, avec l’effort', async () => {
+    const corps: Array<Record<string, unknown>> = []
+    const impl = vi.fn(async (_url: unknown, init?: unknown) => {
+      corps.push(JSON.parse((init as { body: string }).body))
+      return reponseClaude(JSON.stringify(TOUR_VALIDE))
+    }) as unknown as typeof fetch
+
+    const res = await runAiTask({
+      task: 'tuteur',
+      messages: [
+        { role: 'system', content: 'Tu es le tuteur. Le cours : …' },
+        { role: 'user', content: 'Commence.' },
+      ],
+      env: ENV_CLAUDE,
+      fetchImpl: impl,
+      retryDelayMs: 0,
+    })
+
+    expect(res.provider).toBe('anthropic')
+    expect(res.model).toBe('claude-haiku-5-5')
+    expect(corps).toHaveLength(1)
+    expect(corps[0].temperature).toBeUndefined()
+    expect(corps[0].output_config).toEqual({ effort: 'low' })
+    // Le système est un bloc mis en cache, hors des messages.
+    expect(corps[0].system).toEqual([
+      {
+        type: 'text',
+        text: 'Tu es le tuteur. Le cours : …',
+        cache_control: { type: 'ephemeral' },
+      },
+    ])
+    expect((corps[0].messages as unknown[]).length).toBe(1)
+  })
+
+  it('corrige en effort moyen, images en URL', async () => {
+    const corps: Array<Record<string, unknown>> = []
+    const correction = {
+      grade: 12,
+      maxGrade: 20,
+      rubric: [{ criterion: 'Fond', points: 12, maxPoints: 20 }],
+      feedback: { summary: 'Bien.', strengths: [], improvements: [] },
+    }
+    const impl = vi.fn(async (_url: unknown, init?: unknown) => {
+      corps.push(JSON.parse((init as { body: string }).body))
+      return reponseClaude(JSON.stringify(correction))
+    }) as unknown as typeof fetch
+
+    const res = await runAiTask({
+      task: 'correction',
+      messages: [
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: 'Corrige.' },
+            { type: 'image_url', image_url: { url: 'https://stockage/copie.jpg' } },
+          ],
+        },
+      ],
+      env: ENV_CLAUDE,
+      fetchImpl: impl,
+      retryDelayMs: 0,
+    })
+
+    expect(res.provider).toBe('anthropic')
+    expect(corps[0].output_config).toEqual({ effort: 'medium' })
+    expect(corps[0].max_tokens).toBe(8000)
+    const contenu = (corps[0].messages as Array<{ content: unknown[] }>)[0].content
+    expect(contenu[1]).toEqual({ type: 'image', source: { type: 'url', url: 'https://stockage/copie.jpg' } })
+  })
+
+  it('bascule sur DeepSeek quand Claude refuse, et consigne le refus', async () => {
+    const consignes: Array<{ provider: string; promptTokens: number }> = []
+    let i = 0
+    const impl = vi.fn(async () => {
+      i += 1
+      return i === 1
+        ? reponseClaude('', { stop: 'refusal', usage: { input_tokens: 500, output_tokens: 10 } })
+        : reponse(TOUR_VALIDE)
+    }) as unknown as typeof fetch
+
+    const res = await runAiTask({
+      task: 'tuteur',
+      messages: [{ role: 'user', content: 'Commence.' }],
+      env: ENV_CLAUDE,
+      fetchImpl: impl,
+      retryDelayMs: 0,
+      recordUsage: (e) => {
+        consignes.push({ provider: e.provider, promptTokens: e.promptTokens })
+      },
+    })
+
+    expect(res.provider).toBe('deepseek')
+    expect(res.attempts[0]).toMatchObject({ provider: 'anthropic', outcome: 'network_error' })
+    // Le refus a consommé 500 jetons : ils sont consignés.
+    expect(consignes[0]).toEqual({ provider: 'anthropic', promptTokens: 500 })
+  })
+
+  it('réessaie Claude sur 429 avant de basculer', async () => {
+    let i = 0
+    const impl = vi.fn(async () => {
+      i += 1
+      return i === 1
+        ? new Response(JSON.stringify({ type: 'error', error: { type: 'rate_limit_error', message: 'lent' } }), {
+            status: 429,
+            headers: { 'content-type': 'application/json' },
+          })
+        : reponseClaude(JSON.stringify(TOUR_VALIDE))
+    }) as unknown as typeof fetch
+
+    const res = await runAiTask({
+      task: 'tuteur',
+      messages: [{ role: 'user', content: 'Commence.' }],
+      env: ENV_CLAUDE,
+      fetchImpl: impl,
+      retryDelayMs: 0,
+    })
+
+    expect(res.provider).toBe('anthropic')
+    expect(res.attempts.map((a) => a.outcome)).toEqual(['http_error', 'success'])
+  })
+
+  it('saute Claude sans clé et passe au secours', async () => {
+    const { impl } = fetchSequence(reponse(TOUR_VALIDE))
+    const res = await runAiTask({
+      task: 'tuteur',
+      messages: [{ role: 'user', content: 'Commence.' }],
+      env: ENV,
+      fetchImpl: impl,
+      retryDelayMs: 0,
+    })
+    expect(res.provider).toBe('deepseek')
+    expect(res.attempts[0]).toMatchObject({ provider: 'anthropic', outcome: 'skipped_capability' })
+  })
+
+  it('facture le cache lu à 0,1 fois l’entrée, et le long prompt au tarif haut', () => {
+    // 300 non mis en cache + 2 000 lus en cache, 400 en sortie.
+    const court = estimateCost(MODELS.claudeHaiku, {
+      promptTokens: 2300,
+      completionTokens: 400,
+      cacheHitTokens: 2000,
+    })
+    expect(court).toBeCloseTo((300 * 0.1 + 2000 * 0.01 + 400 * 0.5) / 1e6, 9)
+
+    const long = estimateCost(MODELS.claudeHaiku, {
+      promptTokens: 150_000,
+      completionTokens: 1000,
+      cacheHitTokens: 0,
+    })
+    expect(long).toBeCloseTo((150_000 * 0.5 + 1000 * 2.5) / 1e6, 9)
   })
 })

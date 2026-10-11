@@ -2,8 +2,10 @@ import { isDeepSeekPeakHour } from './peak-hours'
 import type { ModelSpec, Pricing, ProviderId } from './types'
 
 /**
- * Fournisseurs IA, tous au format OpenAI Chat Completions.
- * Source : docs/STACK-IA.md, vérifié le 8 septembre 2026.
+ * Fournisseurs IA. DeepSeek, Qwen et GLM parlent le format OpenAI Chat
+ * Completions (`client.ts`) ; Anthropic passe par son SDK (`anthropic.ts`).
+ * Source : docs/STACK-IA.md, vérifié le 8 septembre 2026 ; Anthropic le
+ * 11 octobre 2026.
  */
 export type ProviderSpec = {
   id: ProviderId
@@ -36,6 +38,13 @@ export const PROVIDERS: Record<ProviderId, ProviderSpec> = {
     baseUrl: 'https://api.z.ai/api/paas/v4',
     apiKeyEnv: 'ZAI_API_KEY',
     headers: { 'accept-language': 'en-US,en' },
+  },
+  anthropic: {
+    id: 'anthropic',
+    label: 'Anthropic',
+    // Indicatif : l'appel passe par le SDK, qui connaît son adresse.
+    baseUrl: 'https://api.anthropic.com',
+    apiKeyEnv: 'ANTHROPIC_API_KEY',
   },
 }
 
@@ -105,12 +114,36 @@ export const MODELS = {
     reasoningEffort: 'high',
     pricing: { input: 1.4, cacheHit: 1.4, output: 4.4 },
   },
+  /**
+   * Claude Haiku 5.5, le modèle le moins cher d'Anthropic (arbitrage du
+   * 11 octobre 2026) : le tuteur de maîtrise et la correction de copie.
+   * Vision native ; réflexion adaptative toujours active, réglée par l'effort.
+   * Cache lu à 0,1 fois l'entrée ; au-delà de 100 000 jetons de prompt, le
+   * tarif est quintuplé.
+   */
+  claudeHaiku: {
+    provider: 'anthropic',
+    model: 'claude-haiku-5-5',
+    capabilities: ['text', 'vision', 'thinking'],
+    pricing: { input: 0.1, cacheHit: 0.01, output: 0.5 },
+    longContext: {
+      seuil: 100_000,
+      pricing: { input: 0.5, cacheHit: 0.05, output: 2.5 },
+    },
+  },
 } as const satisfies Record<string, ModelSpec>
 
 export type ModelKey = keyof typeof MODELS
 
-/** Tarif applicable à l'instant donné. */
-export function pricingAt(spec: ModelSpec, at: Date = new Date()): Pricing {
+/** Tarif applicable à l'instant donné, pour la longueur du prompt. */
+export function pricingAt(
+  spec: ModelSpec,
+  at: Date = new Date(),
+  promptTokens = 0,
+): Pricing {
+  if (spec.longContext && promptTokens > spec.longContext.seuil) {
+    return spec.longContext.pricing
+  }
   return spec.peakPricing && isDeepSeekPeakHour(at)
     ? spec.peakPricing
     : spec.pricing
@@ -122,7 +155,7 @@ export function estimateCost(
   usage: { promptTokens: number; completionTokens: number; cacheHitTokens: number },
   at: Date = new Date(),
 ): number {
-  const tarif = pricingAt(spec, at)
+  const tarif = pricingAt(spec, at, usage.promptTokens)
 
   // Les jetons servis par le cache sont comptés à part : on les retire de
   // l'assiette d'entrée pour ne pas les facturer deux fois.

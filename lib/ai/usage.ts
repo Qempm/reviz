@@ -17,6 +17,7 @@ export const recordAiUsage: UsageRecorder = async (entry) => {
 
     const { error } = await supabase.from('ai_usage').insert({
       job_id: entry.jobId ?? null,
+      user_id: entry.userId ?? null,
       provider: entry.provider,
       model: entry.model,
       prompt_tokens: entry.promptTokens,

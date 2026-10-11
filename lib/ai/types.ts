@@ -28,7 +28,7 @@ export const EMPTY_USAGE: TokenUsage = {
 /** Ce que le fournisseur sait faire — sert à filtrer la chaîne de secours. */
 export type Capability = 'text' | 'vision' | 'thinking'
 
-export type ProviderId = 'deepseek' | 'qwen' | 'glm'
+export type ProviderId = 'deepseek' | 'qwen' | 'glm' | 'anthropic'
 
 /** Tarifs en dollars par million de jetons. */
 export type Pricing = {
@@ -38,6 +38,9 @@ export type Pricing = {
 }
 
 export type ReasoningEffort = 'low' | 'high' | 'max'
+
+/** Effort de Claude (`output_config.effort`) : le seul levier de dépense de Haiku 5.5. */
+export type EffortClaude = 'low' | 'medium' | 'high'
 
 export type ModelSpec = {
   provider: ProviderId
@@ -57,6 +60,12 @@ export type ModelSpec = {
    * 06:00–10:00 UTC en semaine depuis le 16/08/2026 (docs/STACK-IA.md § 1.2).
    */
   peakPricing?: Pricing
+  /**
+   * Tarif des longs prompts. Claude Haiku 5.5 facture cinq fois plus cher
+   * au-delà de 100 000 jetons de prompt : `seuil` en jetons, `pricing`
+   * au-delà.
+   */
+  longContext?: { seuil: number; pricing: Pricing }
 }
 
 export type AttemptOutcome =

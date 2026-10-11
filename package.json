@@ -21,6 +21,7 @@
     "db:types:check": "npm run db:types && git diff --exit-code --stat lib/supabase/database.types.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.133.0",
     "@supabase/ssr": "0.12.7",
     "@supabase/supabase-js": "2.116.0",
     "canvas-confetti": "^1.9.4",

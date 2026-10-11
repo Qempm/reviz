@@ -50,6 +50,7 @@ export type Database = {
           model: string
           prompt_tokens: number
           provider: string
+          user_id: string | null
         }
         Insert: {
           cache_hit_tokens?: number
@@ -61,6 +62,7 @@ export type Database = {
           model: string
           prompt_tokens?: number
           provider: string
+          user_id?: string | null
         }
         Update: {
           cache_hit_tokens?: number
@@ -72,6 +74,7 @@ export type Database = {
           model?: string
           prompt_tokens?: number
           provider?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -993,6 +996,140 @@ export type Database = {
           },
         ]
       }
+      telechargements: {
+        Row: {
+          appareil: string
+          created_at: string
+          id: number
+          jour: string
+          source: string
+        }
+        Insert: {
+          appareil?: string
+          created_at?: string
+          id?: never
+          jour?: string
+          source?: string
+        }
+        Update: {
+          appareil?: string
+          created_at?: string
+          id?: never
+          jour?: string
+          source?: string
+        }
+        Relationships: []
+      }
+      tuteur_messages: {
+        Row: {
+          created_at: string
+          evaluation: Json | null
+          id: string
+          role: string
+          session_id: string
+          texte: string
+        }
+        Insert: {
+          created_at?: string
+          evaluation?: Json | null
+          id?: string
+          role: string
+          session_id: string
+          texte: string
+        }
+        Update: {
+          created_at?: string
+          evaluation?: Json | null
+          id?: string
+          role?: string
+          session_id?: string
+          texte?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tuteur_messages_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "tuteur_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tuteur_sessions: {
+        Row: {
+          chapter_id: string
+          course_id: string
+          created_at: string
+          essai: boolean
+          finished_at: string | null
+          id: string
+          score: number | null
+          statut: string
+          user_id: string
+          verdict: string | null
+        }
+        Insert: {
+          chapter_id: string
+          course_id: string
+          created_at?: string
+          essai?: boolean
+          finished_at?: string | null
+          id?: string
+          score?: number | null
+          statut?: string
+          user_id: string
+          verdict?: string | null
+        }
+        Update: {
+          chapter_id?: string
+          course_id?: string
+          created_at?: string
+          essai?: boolean
+          finished_at?: string | null
+          id?: string
+          score?: number | null
+          statut?: string
+          user_id?: string
+          verdict?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tuteur_sessions_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapter_stats"
+            referencedColumns: ["chapter_id"]
+          },
+          {
+            foreignKeyName: "tuteur_sessions_chapter_id_fkey"
+            columns: ["chapter_id"]
+            isOneToOne: false
+            referencedRelation: "chapters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tuteur_sessions_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "course_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tuteur_sessions_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tuteur_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       universities: {
         Row: {
           city: string | null
@@ -1290,6 +1427,20 @@ export type Database = {
       }
     }
     Functions: {
+      admin_paiements: {
+        Args: { limite?: number }
+        Returns: {
+          cree_le: string
+          id: string
+          montant: number
+          operateur: string
+          pack: string
+          prenom: string
+          statut: string
+          telephone: string
+        }[]
+      }
+      admin_tableau: { Args: never; Returns: Json }
       anonymiser_compte: { Args: { p_user: string }; Returns: Json }
       can_read_course: { Args: { target: string }; Returns: boolean }
       claim_job: {
@@ -1482,6 +1633,7 @@ export type Database = {
         | "correction_done"
         | "referral"
         | "adjustment"
+        | "mastery_check"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1650,6 +1802,7 @@ export const Constants = {
         "correction_done",
         "referral",
         "adjustment",
+        "mastery_check",
       ],
     },
   },

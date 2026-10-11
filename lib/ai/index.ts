@@ -31,6 +31,7 @@ export {
   flashcardsPayloadSchema,
   questionsPayloadSchema,
   studentCardPayloadSchema,
+  tuteurTourSchema,
   questionSchema,
   flashcardSchema,
   TASK_SCHEMAS,
@@ -42,17 +43,20 @@ export type {
   Question,
   QuestionsPayload,
   StudentCardPayload,
+  TuteurTour,
 } from './schemas'
 
 export { MODELS, PROVIDERS, estimateCost, pricingAt } from './providers'
 export type { ModelKey, ProviderSpec } from './providers'
 
 export { complete, extractJson, parseUsage, HttpError, EmptyContentError } from './client'
+export { completeAnthropic, versClaude, usageClaude, texteClaude } from './anthropic'
 export { AiError } from './types'
 export type {
   Attempt,
   ChatMessage,
   Capability,
+  EffortClaude,
   ModelSpec,
   Pricing,
   ProviderId,

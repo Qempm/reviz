@@ -241,6 +241,37 @@ export const studentCardPayloadSchema = z.object({
 
 export type StudentCardPayload = z.infer<typeof studentCardPayloadSchema>
 
+/**
+ * Un tour du tuteur de maîtrise.
+ *
+ * `evaluation` juge la réponse que l'étudiant vient de donner ; elle est
+ * nulle au premier tour, quand il n'a encore rien répondu. `suite` est la
+ * question suivante, ou le bilan quand les trois questions sont faites.
+ */
+export const tuteurTourSchema = z.object({
+  evaluation: z
+    .object({
+      niveau: z.enum(['juste', 'partiel', 'faux']),
+      retour: z.string().trim().min(1).max(600),
+    })
+    .nullable()
+    .default(null),
+  suite: z.discriminatedUnion('type', [
+    z.object({
+      type: z.literal('question'),
+      texte: z.string().trim().min(5).max(500),
+    }),
+    z.object({
+      type: z.literal('fin'),
+      verdict: z.enum(['maitrise', 'a_revoir']),
+      bilan: z.string().trim().min(1).max(800),
+      aRevoir: z.array(z.string().trim().min(1).max(200)).max(5).default([]),
+    }),
+  ]),
+})
+
+export type TuteurTour = z.infer<typeof tuteurTourSchema>
+
 /** Schémas indexés par tâche, pour le routage. */
 export const TASK_SCHEMAS = {
   questions: questionsPayloadSchema,
@@ -249,6 +280,7 @@ export const TASK_SCHEMAS = {
   correction: correctionPayloadSchema,
   transcription: transcriptionPayloadSchema,
   student_card: studentCardPayloadSchema,
+  tuteur: tuteurTourSchema,
 } as const
 
 export type AiTask = keyof typeof TASK_SCHEMAS
