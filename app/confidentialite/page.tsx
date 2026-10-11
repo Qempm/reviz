@@ -15,7 +15,7 @@ export const metadata = {
   description: 'Ce que Reviz garde, pourquoi, et comment tout effacer.',
 }
 
-const MISE_A_JOUR = '1er octobre 2026'
+const MISE_A_JOUR = '11 octobre 2026'
 
 const SECTIONS: { titre: string; paragraphes: string[] }[] = [
   {
@@ -39,7 +39,7 @@ const SECTIONS: { titre: string; paragraphes: string[] }[] = [
     titre: 'Qui les voit',
     paragraphes: [
       'Les étudiants de ta faculté voient ton prénom, ton avatar et tes points dans le classement et la ligue. Un cours que tu choisis de partager avec ta faculté devient lisible par elle ; les autres restent à toi.',
-      'Pour lire un cours ou une copie, Reviz envoie le texte ou la photo à un fournisseur d’intelligence artificielle : DeepSeek, et en secours Alibaba Cloud (Qwen) ou Zhipu (GLM). Leurs serveurs peuvent se trouver hors de ton pays, notamment en Chine et à Singapour. Ils traitent la demande et renvoient le résultat ; Reviz ne leur donne ni ton nom ni ton adresse.',
+      'Pour lire un cours, corriger une copie ou mener le tuteur, Reviz envoie le texte, la photo ou ta réponse à un fournisseur d’intelligence artificielle : Anthropic (Claude) et DeepSeek, et en secours Alibaba Cloud (Qwen) ou Zhipu (GLM). Leurs serveurs peuvent se trouver hors de ton pays, notamment aux États-Unis, en Chine et à Singapour. Ils traitent la demande et renvoient le résultat ; Reviz ne leur donne ni ton nom ni ton adresse.',
       'Les paiements passent par FedaPay, qui reçoit ton numéro, ton nom et ton adresse e-mail pour envoyer la demande de paiement sur ton téléphone.',
       'La base de données et les fichiers sont hébergés par Supabase, le site et le serveur par Vercel.',
     ],

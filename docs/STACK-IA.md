@@ -277,6 +277,50 @@ le forcer à `low` pour tout ce qui n'est pas une correction.
 
 ---
 
+## 5. Anthropic — Claude Haiku 5.5 (tuteur, puis correction)
+
+Ajouté le 11 octobre 2026 : le modèle le moins cher d'Anthropic, pour le
+tuteur de maîtrise et en tête de la correction de copie.
+
+### 5.1 Paramètres
+
+| Clé | Valeur |
+|---|---|
+| Modèle | `claude-haiku-5-5` |
+| Clé | `ANTHROPIC_API_KEY` (serveur seulement, jamais dans l'APK) |
+| SDK | `@anthropic-ai/sdk` (`lib/ai/anthropic.ts`), même contrat que `complete()` |
+| Contexte | 1 M de jetons, sortie 128 k |
+
+### 5.2 Prix (par million de tokens, USD)
+
+| | Jusqu'à 100 000 jetons de prompt | Au-delà |
+|---|---|---|
+| Entrée | 0,10 | 0,50 |
+| Sortie | 0,50 | 2,50 |
+| Cache lu | 0,01 | 0,05 |
+
+Une vérification de maîtrise (4 tours, chapitre en cache) coûte environ
+0,005 $ ; une copie de 8 pages, de l'ordre de 0,01 à 0,02 $.
+
+### 5.3 Ce qui diffère des autres fournisseurs
+
+- **Pas de `temperature`, `top_p`, `top_k`** : refusés (400). Le levier est
+  `output_config.effort` : `low` pour le tuteur, `medium` pour la
+  correction.
+- **Réflexion adaptative toujours active** : la réponse peut commencer par
+  des blocs `thinking` vides ; on lit les blocs `text`. La réflexion compte
+  dans `max_tokens` (4 000 pour le tuteur, 8 000 pour la correction).
+- **Pas de préremplissage** : la conversation finit par l'étudiant.
+- **Refus de sécurité** (`stop_reason: "refusal"`) sans secours serveur pour
+  ce modèle : l'appel lève et la chaîne passe au fournisseur suivant, en
+  consignant les jetons consommés.
+- **Cache de prompt** : le message `system` (consignes et texte du
+  chapitre) est marqué `cache_control: ephemeral` ; il doit rester identique
+  d'un tour à l'autre (`consigneTuteur`), sinon le cache ne sert jamais.
+- Les images partent en URL signée du stockage (`source: { type: 'url' }`).
+
+---
+
 ## 4. Intégration n8n
 
 ### 4.1 Credentials à créer (une fois)

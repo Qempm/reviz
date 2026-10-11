@@ -19,7 +19,7 @@ export const metadata = {
   description: 'Ce que tu peux attendre de Reviz, ce que tu achètes avec un pack, et ce qui est interdit.',
 }
 
-const MISE_A_JOUR = '7 octobre 2026'
+const MISE_A_JOUR = '11 octobre 2026'
 
 const EDITEUR = {
   nom: 'À COMPLÉTER',
@@ -30,11 +30,21 @@ const EDITEUR = {
   tribunaux: 'À COMPLÉTER',
 }
 
+/**
+ * Tant que l'identité n'est pas fournie, ses phrases ne s'affichent pas :
+ * une page publique ne montre jamais « À COMPLÉTER ».
+ */
+const EDITEUR_CONNU = !Object.values(EDITEUR).includes('À COMPLÉTER')
+
 const SECTIONS: { titre: string; paragraphes: string[] }[] = [
   {
     titre: 'Qui édite Reviz',
     paragraphes: [
-      `Reviz est édité par ${EDITEUR.nom} (${EDITEUR.statut}), ${EDITEUR.siege}, ${EDITEUR.immatriculation}. Pour nous joindre : ${EDITEUR.contact}, ou depuis l’application : Profil, Aide, puis « Nous écrire ».`,
+      ...(EDITEUR_CONNU
+        ? [
+            `Reviz est édité par ${EDITEUR.nom} (${EDITEUR.statut}), ${EDITEUR.siege}, ${EDITEUR.immatriculation}. Pour nous joindre : ${EDITEUR.contact}, ou depuis l’application : Profil, Aide, puis « Nous écrire ».`,
+          ]
+        : ['Pour nous joindre : depuis l’application, Profil, Aide, puis « Nous écrire ».']),
       'En créant un compte, tu acceptes ces conditions. Elles valent pour l’application Android, l’application web et le site.',
     ],
   },
@@ -73,6 +83,7 @@ const SECTIONS: { titre: string; paragraphes: string[] }[] = [
       'Un pack se paie une seule fois. Il n’y a aucun abonnement, aucun prélèvement automatique et rien à résilier : à la fin de la durée, le pack s’arrête. Tes cours, tes questions, tes fiches et ton historique restent consultables ; il faut un nouveau pack pour ajouter un cours ou faire corriger une copie.',
       'Le pack commence dès que le paiement est confirmé. Acheter un pack pendant qu’un autre court ne repousse pas le premier : les deux comptent en même temps, et les corrections restantes s’additionnent.',
       'Le pack Découverte est gratuit, une seule fois par compte.',
+      'Le tuteur, qui vérifie après une série de QCM que tu sais expliquer un chapitre, fait partie des packs. Chaque compte a droit à un essai gratuit, une seule fois ; avec un pack actif, jusqu’à 20 vérifications par jour.',
       'Pour que le service reste rapide pour tout le monde, chaque pack a des limites : 150 pages par cours, 200 questions préparées par cours, 300 questions répondues par jour et 5 corrections par jour, même avec un pack sans limite de matières.',
     ],
   },
@@ -114,7 +125,9 @@ const SECTIONS: { titre: string; paragraphes: string[] }[] = [
     titre: 'Si ces conditions changent',
     paragraphes: [
       'Elles peuvent évoluer avec l’application. Un changement qui te concerne est annoncé dans l’application avant de s’appliquer. Un pack déjà payé reste régi par les conditions du jour de son achat.',
-      `En cas de désaccord, on cherche d’abord une solution ensemble. À défaut, les tribunaux de ${EDITEUR.tribunaux} sont compétents.`,
+      EDITEUR_CONNU
+        ? `En cas de désaccord, on cherche d’abord une solution ensemble. À défaut, les tribunaux de ${EDITEUR.tribunaux} sont compétents.`
+        : 'En cas de désaccord, on cherche d’abord une solution ensemble.',
     ],
   },
 ]

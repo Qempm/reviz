@@ -311,8 +311,10 @@ commission n'avait encore été versée (grand livre à 0 F).
 ### Les quatre routes de la correction
 
 `POST /api/corrections/preparer` — `{ copie: {mime, taille}, pages?, sujet?,
-courseId?, typeEpreuve?, bareme? }`. `pages` : jusqu'à trois pages de plus,
-signées en `champ: 'page'` dans l'ordre (`copie-2`, `copie-3`…).
+courseId?, typeEpreuve?, bareme? }`. `pages` : jusqu'à sept pages de plus (8 en tout
+depuis le 11 octobre 2026), signées en `champ: 'page'` dans l'ordre
+(`copie-2` … `copie-8`). Claude Haiku 5.5 corrige en premier, DeepSeek,
+GLM et Qwen ensuite.
 `typeEpreuve` (`devoir` | `interrogation` | `partiel` | `examen` | `td`) et
 `bareme` (5 à 100) sont gardés dans `feedback.demande` jusqu'à la
 correction, qui les revalide ; avec `courseId`, la correction est jugée
@@ -383,6 +385,46 @@ la réponse, et `jobs` n'est lisible par aucun client. Une lecture trop floue
 laisse le profil en `pending`, indiscernable du traitement en cours ; les deux
 demandent la même chose à l'étudiant — rien —, donc l'écran affiche « on
 regarde ta carte » passé une minute d'attente.
+
+### Le tuteur de maîtrise
+
+Trois questions ouvertes sur un chapitre, après une série de QCM ; chaque
+réponse tapée est jugée, puis un bilan. **Réservé aux packs, un essai
+gratuit par compte, 20 sessions par jour** (`lib/metier/tuteur.ts`, garanti
+aussi par la base : index unique partiel et déclencheur, migration
+`20261011120000`). Claude Haiku 5.5 répond, DeepSeek Flash en secours.
+
+`POST /api/tuteur/demarrer` — `{ courseId, chapterId }` →
+`{ sessionId, essai, suite: { type: 'question', texte, numero: 1, total: 3 } }`.
+
+`POST /api/tuteur/repondre` — `{ sessionId, reponse }` (1 500 caractères au
+plus) → `{ evaluation: { niveau: 'juste' | 'partiel' | 'faux', retour },
+suite }`, où `suite` est la question suivante ou, après la troisième
+réponse, `{ type: 'fin', verdict: 'maitrise' | 'a_revoir', score, bilan,
+aRevoir }`. Le verdict se calcule (deux points sur trois, une réponse
+partielle valant 0,5) ; 30 XP (`mastery_check`) pour un chapitre maîtrisé.
+
+Refus (`motif`) : `invalide` 400, `essai-utilise` 402, `plafond-du-jour`
+429, `introuvable` 404, `terminee` 409, `ia-indisponible` 503. Si aucun
+fournisseur ne pose la première question, la session est effacée : l'essai
+n'est pas consommé.
+
+### L'espace administrateur et les téléchargements
+
+`/admin` (page web, connexion par e-mail et code, `shouldCreateUser:
+false`) est réservé aux adresses de `ADMIN_EMAILS`. `middleware.ts`, limité
+à `/admin` et `/api/admin`, renouvelle la session par cookie.
+
+`GET /api/admin/flux` → `{ tableau, paiements, le }` : ce que la page relit
+toutes les 15 s. Vérifie la session et `ADMIN_EMAILS` elle-même (401, 403).
+Les chiffres viennent de `admin_tableau()` et `admin_paiements(limite)`,
+fonctions réservées au rôle de service (migration `20261011130000`) ; les
+numéros sont masqués (`lib/admin/regles.ts`) avant de quitter le serveur.
+
+`GET /telecharger?depuis=accueil|app` — note le clic dans `telechargements`
+(jour, source, famille d'appareil ; ni IP ni identifiant), puis redirige en
+302 vers l'APK. Les boutons de `/` et `/app` y passent ; `version.json`
+(mises à jour depuis l'application) reste en lien direct.
 
 ### `POST /api/profile/delete`
 
