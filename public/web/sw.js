@@ -17,7 +17,7 @@
 //
 // `scripts/web.mjs` remplace VERSION et FICHIERS à chaque `npm run web`.
 
-const VERSION = "9246bbddc5d7";
+const VERSION = "dc6eed727556";
 const FICHIERS = [
   "assets/AssetManifest.bin",
   "assets/AssetManifest.bin.json",

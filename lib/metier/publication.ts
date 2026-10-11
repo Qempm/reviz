@@ -13,7 +13,7 @@
  */
 
 /** La version publiée, telle que `pubspec.yaml` la déclare. */
-export const VERSION = '2.8.3'
+export const VERSION = '2.9.0'
 
 /**
  * En dessous, l'application refuse de servir.
@@ -38,11 +38,11 @@ export const VERSION_MINIMALE = '2.0.0'
 export const MAINTENANCE = false
 
 export const NOTES =
-  'Sans réseau, tout se lit : tes cours, ton chemin, tes QCM, tes fiches et ' +
-  'tes corrections restent sur ton téléphone.'
+  'Nouveau : le tuteur vérifie que tu sais expliquer un chapitre, en trois ' +
+  'questions. Et tes copies se corrigent jusqu’à 8 pages.'
 
 /** Date de la publication, au format `AAAA-MM-JJ`. */
-export const DATE = '2026-10-04'
+export const DATE = '2026-10-11'
 
 /**
  * Le fichier, quand il existe.
@@ -74,9 +74,9 @@ export type Apk =
 
 export const APK: Apk = {
   publie: true,
-  url: 'https://github.com/Qempm/reviz/releases/download/v2.8.3/reviz-2.8.3.apk',
-  tailleOctets: 65_819_515,
-  sha256: '313d99ea4d11027ad46118a0b31f2c0116356bc6d4d5ebf5b9d4500d11b1d009',
+  url: 'https://github.com/Qempm/reviz/releases/download/v2.9.0/reviz-2.9.0.apk',
+  tailleOctets: 65_917_991,
+  sha256: '7a4e423d2200a8fdc036a88a01e57c19b95f698b07ddfffcd98800ed581b9859',
 }
 
 /**
