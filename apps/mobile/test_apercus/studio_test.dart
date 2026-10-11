@@ -39,6 +39,10 @@ import 'package:reviz/ecrans/corriger.dart';
 import 'package:reviz/ecrans/cours.dart';
 import 'package:reviz/ecrans/fiches.dart';
 import 'package:reviz/ecrans/galerie.dart';
+import 'package:reviz/ecrans/tuteur.dart';
+import 'package:reviz/donnees/tuteur.dart';
+import 'package:reviz/donnees/api.dart';
+import 'package:reviz/metier/tuteur.dart';
 import 'package:reviz/ecrans/gains.dart';
 import 'package:reviz/ecrans/inscription.dart';
 import 'package:reviz/ecrans/ligue.dart';
@@ -855,6 +859,75 @@ Widget _surOnglet(Widget ecran, int onglet) => Scaffold(
 
 // -------------------------------------------------------------------- Banc
 
+/// Le tuteur du studio : trois questions vraisemblables sur le contrôle de
+/// constitutionnalité, puis un bilan.
+class _TuteurStudio implements SourceTuteur {
+  var _n = 0;
+
+  static const _questions = [
+    'Explique la différence entre le contrôle a priori et le contrôle a posteriori.',
+    'Qui peut saisir la Cour constitutionnelle pour un contrôle a posteriori ?',
+    'Que devient une loi déclarée contraire à la Constitution ?',
+  ];
+  static const _niveaux = [NiveauReponse.juste, NiveauReponse.partiel, NiveauReponse.juste];
+  static const _retours = [
+    'C’est juste : a priori avant la promulgation, a posteriori sur une loi déjà en vigueur.',
+    'En partie : un citoyen peut la saisir, mais aussi un juge lors d’un procès (exception d’inconstitutionnalité).',
+    'Exact : elle ne peut pas être promulguée, ou cesse de s’appliquer.',
+  ];
+
+  @override
+  Future<Reponse<DemarrageTuteur>> demarrer({
+    required String coursId,
+    required String chapitreId,
+  }) async => const Reponse.succes(
+    DemarrageTuteur(
+      sessionId: 's1',
+      essai: true,
+      question: QuestionTuteur(texte: _TuteurStudio._q0, numero: 1, total: 3),
+    ),
+  );
+
+  static const _q0 =
+      'Explique la différence entre le contrôle a priori et le contrôle a posteriori.';
+
+  @override
+  Future<Reponse<TourTuteur>> repondre({
+    required String sessionId,
+    required String reponse,
+  }) async {
+    final i = _n++;
+    final ev = EvaluationTuteur(niveau: _niveaux[i], retour: _retours[i]);
+    if (i < 2) {
+      return Reponse.succes(
+        TourTuteur(
+          evaluation: ev,
+          suite: QuestionTuteur(texte: _questions[i + 1], numero: i + 2, total: 3),
+        ),
+      );
+    }
+    return Reponse.succes(
+      TourTuteur(
+        evaluation: ev,
+        suite: const FinTuteur(
+          maitrise: true,
+          score: 2,
+          bilan:
+              'Tu sais expliquer les deux contrôles et leurs effets. Revois qui peut saisir la Cour : c’est la seule notion encore fragile.',
+          aRevoir: ['La saisine de la Cour constitutionnelle'],
+        ),
+      ),
+    );
+  }
+}
+
+Future<void> _repondreTuteur(WidgetTester t, String texte) async {
+  await t.enterText(find.byType(TextField), texte);
+  await t.pump(const Duration(milliseconds: 200));
+  await _taper(t, find.text('Envoyer'));
+  await t.pump(const Duration(milliseconds: 600));
+}
+
 typedef _Geste =
     Future<void> Function(WidgetTester tester, ProviderContainer c);
 
@@ -1496,6 +1569,40 @@ void main() {
       remplacements: matiere,
     ),
   );
+  // ---- Le tuteur de maîtrise.
+  testWidgets(
+    '34-tuteur',
+    (t) => _cliche(
+      t,
+      '34-tuteur',
+      const EcranTuteur(coursId: 'c1', chapitreId: 'ch1'),
+      remplacements: [depotTuteurProvider.overrideWithValue(_TuteurStudio())],
+      geste: (t, _) async {
+        await _repondreTuteur(
+          t,
+          'A priori, la loi est contrôlée avant sa promulgation ; a posteriori, après, quand elle s’applique déjà.',
+        );
+        await _repondreTuteur(t, 'Un citoyen.');
+      },
+    ),
+  );
+
+  testWidgets(
+    '35-tuteur-bilan',
+    (t) => _cliche(
+      t,
+      '35-tuteur-bilan',
+      const EcranTuteur(coursId: 'c1', chapitreId: 'ch1'),
+      hauteur: 2200,
+      remplacements: [depotTuteurProvider.overrideWithValue(_TuteurStudio())],
+      geste: (t, _) async {
+        await _repondreTuteur(t, 'Avant la promulgation, puis après.');
+        await _repondreTuteur(t, 'Un citoyen.');
+        await _repondreTuteur(t, 'Elle ne s’applique plus.');
+      },
+    ),
+  );
+
   // ---- Le design system : chaque composant, tel que l'app le dessine.
   testWidgets(
     '33-galerie-long',

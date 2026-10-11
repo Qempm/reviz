@@ -469,6 +469,10 @@ class _ResultatState extends State<_Resultat> {
 
   bool _confettisLances = false;
 
+  /// Le tuteur s'ouvre sur une série d'un chapitre, enregistrée, en ligne.
+  bool get _tuteurPossible =>
+      widget.chapitreId != null && widget.resultat != null && !widget.gardee;
+
   /// Dans `didChangeDependencies` et non `initState` : on y lit `MediaQuery`.
   ///
   /// Les confettis partaient ici sans condition, en ignorant le mouvement
@@ -683,10 +687,28 @@ class _ResultatState extends State<_Resultat> {
               ),
               const SizedBox(height: Espaces.x8),
             ],
+            // Le tuteur : après une série sur un chapitre, vérifier qu'on
+            // sait l'expliquer, pas seulement reconnaître la réponse. Il
+            // devient l'action principale quand il n'y a pas d'erreur à
+            // revoir d'abord.
+            if (_tuteurPossible) ...[
+              Bouton(
+                libelle: Fr.tuteur.bouton,
+                icone: Icons.forum_outlined,
+                variante: _erreurs > 0
+                    ? VarianteBouton.secondaire
+                    : VarianteBouton.principal,
+                onTap: () => context.pushReplacement(
+                  Chemins.tuteur(widget.coursId, widget.chapitreId!),
+                ),
+              ),
+              const SizedBox(height: Espaces.x8),
+            ],
             Bouton(
               libelle: Fr.session.refaire,
               icone: Icons.restart_alt,
-              variante: _erreurs > 0 && widget.resultat != null
+              variante:
+                  (_erreurs > 0 && widget.resultat != null) || _tuteurPossible
                   ? VarianteBouton.secondaire
                   : VarianteBouton.principal,
               onTap: () => context.pushReplacement(

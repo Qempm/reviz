@@ -35,6 +35,7 @@ import 'ecrans/profil.dart';
 import 'ecrans/reviser.dart';
 import 'ecrans/suppression.dart';
 import 'ecrans/session.dart';
+import 'ecrans/tuteur.dart';
 import 'metier/selection.dart';
 import 'etat/fournisseurs.dart';
 import 'i18n/fr.dart';
@@ -82,6 +83,10 @@ abstract final class Chemins {
   }
 
   static String fiches(String id) => '/cours/$id/fiches';
+
+  /// Le tuteur de maîtrise sur un chapitre du cours.
+  static String tuteur(String id, String chapitre) =>
+      '/cours/$id/tuteur/$chapitre';
   static String correction(String id) => '/corrections/$id';
   static String paiement(String id) => '/boutique/paiement/$id';
   static const payer = '/boutique/payer';
@@ -260,6 +265,14 @@ GoRouter creerRouteur(Ref ref) {
                     parentNavigatorKey: racine,
                     builder: (_, etat) =>
                         EcranFiches(coursId: etat.pathParameters['id'] ?? ''),
+                  ),
+                  GoRoute(
+                    path: 'tuteur/:chapitre',
+                    parentNavigatorKey: racine,
+                    builder: (_, etat) => EcranTuteur(
+                      coursId: etat.pathParameters['id'] ?? '',
+                      chapitreId: etat.pathParameters['chapitre'] ?? '',
+                    ),
                   ),
                 ],
               ),

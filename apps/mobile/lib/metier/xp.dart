@@ -15,6 +15,7 @@ enum MotifXp {
   streakBonus('streak_bonus'),
   courseAdded('course_added'),
   correctionDone('correction_done'),
+  masteryCheck('mastery_check'),
   referral('referral'),
   adjustment('adjustment');
 
@@ -66,6 +67,7 @@ const Map<MotifXp, int> bareme = {
   MotifXp.dailyGoal: 30,
   MotifXp.courseAdded: 25,
   MotifXp.correctionDone: 40,
+  MotifXp.masteryCheck: 30,
   MotifXp.referral: 500,
 };
 

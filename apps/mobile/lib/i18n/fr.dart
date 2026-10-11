@@ -17,6 +17,7 @@ abstract final class Fr {
   static const reviser = _Reviser();
   static const cours = _Cours();
   static const session = _Session();
+  static const tuteur = _Tuteur();
   static const fiches = _Fiches();
   static const boutique = _Boutique();
   static const gains = _Gains();
@@ -1305,6 +1306,47 @@ class _Cours {
   final String etatSansQuestions = 'Sans questions';
 }
 
+/// Le tuteur de maîtrise : trois questions ouvertes après une série.
+class _Tuteur {
+  const _Tuteur();
+
+  final String titre = 'Vérifie ta maîtrise';
+  final String bouton = 'Vérifie ta maîtrise';
+  final String sousTitre =
+      'Trois questions sur ce chapitre. Réponds avec tes mots : on juge le '
+      'fond, pas l’orthographe.';
+  final String essai =
+      'Essai gratuit. Ensuite, le tuteur fait partie des packs.';
+  String question(int n, int total) => 'Question $n sur $total';
+  final String demarrage = 'Le tuteur lit ton chapitre…';
+  final String reflexion = 'Le tuteur lit ta réponse…';
+  final String champ = 'Ta réponse';
+  final String champAide = 'Explique avec tes mots, en quelques phrases.';
+  final String envoyer = 'Envoyer';
+  final String juste = 'Juste';
+  final String partiel = 'En partie';
+  final String faux = 'Pas encore';
+  final String maitriseTitre = 'Chapitre maîtrisé !';
+  final String aRevoirTitre = 'Encore un effort';
+  String score(int justes, int total) =>
+      '$justes réponse${justes > 1 ? 's' : ''} juste${justes > 1 ? 's' : ''} sur $total';
+  final String xp = '+30 XP';
+  final String notions = 'À revoir';
+  final String revoirChapitre = 'Revoir le chapitre';
+  final String terminer = 'Terminer';
+  final String reseau = 'Il faut du réseau pour le tuteur.';
+  final String packTitre = 'Le tuteur fait partie des packs';
+  final String packDetail =
+      'Tu as déjà pris ton essai gratuit. Avec un pack, tu vérifies chaque '
+      'chapitre, jusqu’à 20 fois par jour.';
+  final String packSansAchat =
+      'Tu as déjà pris ton essai gratuit. Le tuteur s’ouvre avec un pack.';
+  final String voirPacks = 'Voir les packs';
+  final String erreurTitre = 'Le tuteur ne répond pas';
+  final String reessayer = 'Réessayer';
+  final String quitter = 'Revenir au cours';
+}
+
 class _Session {
   const _Session();
 
@@ -1360,6 +1402,7 @@ class _Session {
     'streak_bonus': 'Bonus de série',
     'course_added': 'Cours ajouté',
     'correction_done': 'Correction faite',
+    'mastery_check': 'Maîtrise vérifiée',
     'referral': 'Parrainage',
     'adjustment': 'Ajustement',
   };

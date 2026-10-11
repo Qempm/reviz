@@ -54,12 +54,23 @@ class ApiReviz {
   final Dio _stockage;
 
   /// Appelle une route et déplie l'enveloppe `{ ok, data | error }`.
+  ///
+  /// `delai` remplace le délai de réception de 30 s, pour les routes qui
+  /// attendent un modèle (le tuteur).
   Future<Reponse<T>> poster<T>(
     String chemin, {
     Object? corps,
     T Function(Map<String, dynamic>)? depuis,
+    Duration? delai,
   }) {
-    return _appeler(() => _dio.post<dynamic>(chemin, data: corps), depuis);
+    return _appeler(
+      () => _dio.post<dynamic>(
+        chemin,
+        data: corps,
+        options: delai == null ? null : Options(receiveTimeout: delai),
+      ),
+      depuis,
+    );
   }
 
   /// Lit une route. Même enveloppe, même rejeu sur 401.

@@ -7,6 +7,7 @@ import '../donnees/depots.dart';
 import '../donnees/modeles.dart';
 import '../donnees/reseau.dart';
 import '../donnees/supabase.dart';
+import '../donnees/tuteur.dart';
 import '../donnees/version.dart';
 import '../donnees/file_hors_ligne.dart';
 import '../donnees/push.dart';
@@ -40,6 +41,12 @@ final depotClassementProvider = Provider((_) => const DepotClassement());
 final depotCorrectionsProvider = Provider((_) => const DepotCorrections());
 final depotReseauProvider = Provider((_) => const DepotReseau());
 final depotVersionProvider = Provider((_) => DepotVersion());
+
+/// Le tuteur de maîtrise. Une interface : les tests y branchent une fausse
+/// source, sans réseau.
+final depotTuteurProvider = Provider<SourceTuteur>(
+  (ref) => DepotTuteur(ref.read(apiProvider)),
+);
 
 /// Flux d'authentification de Supabase, tel quel.
 ///
