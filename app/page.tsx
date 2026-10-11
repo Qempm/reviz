@@ -48,7 +48,8 @@ export const metadata = {
   },
 }
 
-const LIEN = APK.publie ? APK.url : '/app'
+// `/telecharger` compte le clic (espace administrateur) puis renvoie vers l'APK.
+const LIEN = APK.publie ? '/telecharger?depuis=accueil' : '/app'
 
 // Les classes qui reviennent.
 const CONTENU = 'mx-auto max-w-[1200px] px-4 sm:px-8 lg:px-10'

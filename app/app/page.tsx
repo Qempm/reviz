@@ -101,7 +101,7 @@ export default function Telechargement() {
         <section className="rounded-card bg-reviz-card p-space-16 shadow-card">
           <h2 className="text-headline-md text-reviz-ink">Télécharger</h2>
           <a
-            href={APK.url}
+            href="/telecharger?depuis=app"
             className="mt-space-12 flex h-14 items-center justify-center rounded-xl bg-reviz-yellow text-headline-md text-reviz-on-yellow shadow-tactile active:translate-y-[2px]"
           >
             Télécharger Reviz {VERSION}
