@@ -245,6 +245,18 @@ demande ne part pas ; **503** sans clé secrète valide.
 L'environnement FedaPay se lit sur le préfixe de la clé : `sk_sandbox_` →
 `sandbox-api.fedapay.com`, `sk_live_` → `api.fedapay.com`.
 
+**Carte bancaire (2.10.0)** : `{ packCode, moyen: 'carte' }` → `{ paiementId,
+transactionId, montantFcfa, url }`. FedaPay n'accepte la carte que sur sa
+page hébergée : la transaction est créée avec `callback_url` =
+`<origine>/paiement/retour?paiement=<id>`, et la route rend l'`url` du jeton,
+que l'application ouvre dans le navigateur. Ni opérateur ni numéro exigés (le
+numéro du profil est envoyé à FedaPay s'il existe) ; la ligne `payments` porte
+`operator = 'carte'`, `phone = null`. L'issue arrive comme pour le Mobile
+Money, par le webhook ou par `/api/payments/status` ; le `status` de l'adresse
+de retour ne décide rien. Proposée dans tous les pays, et seule pour « Autre
+pays » (`moyensDuPays`, `lib/metier/operateurs.ts`). Sans `moyen`, rien ne
+change : Mobile Money, 426 compris.
+
 ### `GET /api/payments/status[?id=<paiementId>]`
 
 → `{ id, status, amount_fcfa, pack_code, created_at }`, `status` valant

@@ -214,7 +214,9 @@ export function TableauDirect({
                       <td className="py-3 pr-3">{p.prenom ?? '—'}</td>
                       <td className="py-3 pr-3">{p.pack ? (PACKS[p.pack] ?? p.pack) : '—'}</td>
                       <td className="py-3 pr-3 text-right font-semibold tabular-nums">{fcfa(p.montant)}</td>
-                      <td className="py-3 pr-3">{p.operateur ?? '—'}</td>
+                      <td className="py-3 pr-3">
+                        {p.operateur === 'carte' ? 'Carte bancaire' : (p.operateur ?? '—')}
+                      </td>
                       <td className="py-3 pr-3 tabular-nums text-reviz-muted">{p.telephone}</td>
                       <td className="py-3">
                         <span className={`rounded-full px-3 py-1 text-xs font-semibold ${s.classe}`}>{s.libelle}</span>

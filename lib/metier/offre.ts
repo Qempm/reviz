@@ -184,7 +184,7 @@ export const FAQ: Array<{ question: string; reponse: string }> = [
   {
     question: 'Est-ce que je serai prélevé chaque mois ?',
     reponse:
-      'Non. Jamais. Tu paies un pack une fois en Mobile Money, il dure le nombre de jours annoncé, et il s’arrête. Aucun abonnement automatique, rien à résilier. À la fin, tes cours restent à toi et tu continues à réviser gratuitement.',
+      'Non. Jamais. Tu paies un pack une fois, en Mobile Money ou par carte bancaire, il dure le nombre de jours annoncé, et il s’arrête. Aucun abonnement automatique, rien à résilier. À la fin, tes cours restent à toi et tu continues à réviser gratuitement.',
   },
   {
     question: 'En quoi c’est différent de ChatGPT ?',

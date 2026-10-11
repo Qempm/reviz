@@ -6,25 +6,31 @@ import {
   type PaymentProvider,
 } from '@/lib/payments/provider'
 import { normaliserTelephone } from '@/lib/auth/phone'
-import { modeFedaPay, OPERATEURS } from '@/lib/metier/operateurs'
+import { MOYEN_CARTE, modeFedaPay, OPERATEURS } from '@/lib/metier/operateurs'
 
 /**
  * POST /api/payments/init
  *
- * Ouvre un paiement Mobile Money **qui se fait entièrement dans
+ * Ouvre un paiement, de deux façons.
+ *
+ * **Mobile Money (`moyen: 'mobile'`, par défaut), entièrement dans
  * l'application** : la route crée la transaction FedaPay, puis envoie la
  * demande directement au téléphone de l'étudiant (`POST /v1/{mode}`). Il la
  * valide avec son code secret ; l'application suit l'issue par
- * `/api/payments/status?id=…`.
+ * `/api/payments/status?id=…`. Seuls les opérateurs payables « sans
+ * redirection » sont acceptés (`lib/metier/operateurs.ts`).
  *
- * Avant le 29 septembre 2026, la route rendait le lien de la page hébergée
- * FedaPay, que l'application ouvrait dans un navigateur. Le propriétaire a
- * voulu que rien ne fasse sortir de Reviz : seuls les opérateurs payables
- * « sans redirection » sont acceptés (`lib/metier/operateurs.ts`).
+ * **Carte bancaire (`moyen: 'carte'`, 11 octobre 2026), pour tout le monde**,
+ * même hors des pays où Reviz a un opérateur : FedaPay n'accepte la carte
+ * que sur sa page de paiement hébergée. La route rend son adresse (`url`),
+ * que l'application ouvre dans le navigateur ; FedaPay y renvoie l'étudiant
+ * à la fin (`/paiement/retour`). Le statut de ce retour ne décide rien :
+ * l'issue arrive par le webhook ou par `/api/payments/status`, comme pour le
+ * Mobile Money. Ni opérateur ni numéro n'est exigé.
  *
- * **Le client ne dit que son numéro et son opérateur.** Le prix vient de la
- * base, le prénom du profil, l'e-mail de la session : un appel bricolé ne
- * choisit ni combien payer, ni au nom de qui.
+ * **Le client ne dit que son moyen, son numéro et son opérateur.** Le prix
+ * vient de la base, le prénom du profil, l'e-mail de la session : un appel
+ * bricolé ne choisit ni combien payer, ni au nom de qui.
  *
  * Historique : convertie au lot D (cookies seuls, enveloppe à plat, réponses
  * en anglais) ; seule voie d'initiation depuis le retrait de la Server Action
@@ -39,6 +45,8 @@ const corpsSchema = z.object({
     'semestre',
     'rattrapage',
   ]),
+  // Absent : Mobile Money, comme avant la 2.10.0.
+  moyen: z.enum(['mobile', MOYEN_CARTE]).optional(),
   // Facultatifs **pour le schéma seulement** : la 2.2.0 n'envoyait que le
   // pack (elle ouvrait la page FedaPay). On la reconnaît à leur absence, pour
   // lui dire de se mettre à jour plutôt que « vérifie le numéro ».
@@ -63,9 +71,10 @@ export async function POST(request: Request) {
   }
 
   const { packCode, operateur, telephone } = analyse.data
+  const carte = analyse.data.moyen === MOYEN_CARTE
   const userId = appelant.user.id
 
-  if (!operateur || !telephone) {
+  if (!carte && (!operateur || !telephone)) {
     return refus(
       426,
       'mise-a-jour',
@@ -73,8 +82,10 @@ export async function POST(request: Request) {
     )
   }
 
-  const numero = normaliserTelephone(telephone)
-  if (!numero.ok) {
+  // Le numéro : exigé pour le Mobile Money, facultatif pour la carte (il
+  // aide FedaPay à reconnaître le client, rien de plus).
+  const numero = telephone ? normaliserTelephone(telephone) : null
+  if (!carte && !numero?.ok) {
     return refus(
       400,
       'telephone-invalide',
@@ -92,17 +103,21 @@ export async function POST(request: Request) {
     return refus(
       503,
       'fournisseur-absent',
-      'Le paiement Mobile Money n’est pas encore disponible.',
+      'Le paiement n’est pas encore disponible.',
     )
   }
 
-  const mode = modeFedaPay(operateur, numero.pays.code, fournisseur.sandbox)
-  if (!mode) {
-    return refus(
-      400,
-      'operateur-indisponible',
-      `Cet opérateur ne se paie pas encore dans Reviz pour ce pays (${numero.pays.nom}).`,
-    )
+  let mode: string | null = null
+  if (!carte) {
+    if (!numero?.ok || !operateur) return refus(400, 'entree-invalide', 'Vérifie le numéro.')
+    mode = modeFedaPay(operateur, numero.pays.code, fournisseur.sandbox)
+    if (!mode) {
+      return refus(
+        400,
+        'operateur-indisponible',
+        `Cet opérateur ne se paie pas encore dans Reviz pour ce pays (${numero.pays.nom}).`,
+      )
+    }
   }
 
   // Le prix vient de la base, jamais du client.
@@ -120,7 +135,7 @@ export async function POST(request: Request) {
         .eq('pack_code', 'decouverte'),
       appelant.supabase
         .from('profiles')
-        .select('first_name')
+        .select('first_name, phone')
         .eq('id', userId)
         .maybeSingle(),
     ])
@@ -140,6 +155,17 @@ export async function POST(request: Request) {
     )
   }
 
+  // Pour la carte sans numéro saisi, celui du profil s'il est valable.
+  const numeroClient =
+    numero?.ok
+      ? numero
+      : profil?.phone
+        ? normaliserTelephone(profil.phone)
+        : null
+  const telephoneFedaPay = numeroClient?.ok
+    ? { national: numeroClient.national, pays: numeroClient.pays.code }
+    : null
+
   const admin = createAdminClient()
 
   const { data: paiement, error: erreurPaiement } = await admin
@@ -148,8 +174,8 @@ export async function POST(request: Request) {
       user_id: userId,
       provider: 'fedapay',
       amount_fcfa: pack.price_fcfa,
-      operator: operateur,
-      phone: numero.e164,
+      operator: carte ? MOYEN_CARTE : operateur,
+      phone: carte ? null : numero?.ok ? numero.e164 : null,
       status: 'pending',
       pack_code: packCode,
     })
@@ -171,9 +197,8 @@ export async function POST(request: Request) {
     return refus(502, motif, message)
   }
 
-  const telephoneFedaPay = { national: numero.national, pays: numero.pays.code }
-
-  // 1. La transaction et son jeton.
+  // 1. La transaction et son jeton. Pour la carte, FedaPay renvoie
+  //    l'étudiant sur notre page de retour, servie par ce même domaine.
   const transaction = await fournisseur.initPayment({
     userId,
     paiementId: paiement.id,
@@ -184,6 +209,11 @@ export async function POST(request: Request) {
       email: appelant.user.email ?? null,
       telephone: telephoneFedaPay,
     },
+    ...(carte
+      ? {
+          callbackUrl: `${new URL(request.url).origin}/paiement/retour?paiement=${paiement.id}`,
+        }
+      : {}),
   })
 
   if (!transaction.ok) {
@@ -194,29 +224,40 @@ export async function POST(request: Request) {
     )
   }
 
+  if (carte && !transaction.url) {
+    return echouer(
+      'fournisseur',
+      'La page de paiement par carte n’a pas pu s’ouvrir. Réessaie dans un instant.',
+      'jeton sans url',
+    )
+  }
+
   // `provider_ref` avant la demande : si le webhook arrive très vite, il
   // doit déjà pouvoir rattacher la transaction à ce paiement.
   await admin
     .from('payments')
     .update({
       provider_ref: transaction.transactionId,
-      raw: { mode },
+      raw: carte ? { moyen: MOYEN_CARTE } : { mode },
     })
     .eq('id', paiement.id)
 
-  // 2. La demande, envoyée au téléphone.
-  const demande = await fournisseur.envoyerDemande({
-    token: transaction.token,
-    mode,
-    telephone: telephoneFedaPay,
-  })
+  // 2. Mobile Money : la demande, envoyée au téléphone. La carte se paie
+  //    sur la page FedaPay, que l'application ouvre.
+  if (!carte && mode && telephoneFedaPay) {
+    const demande = await fournisseur.envoyerDemande({
+      token: transaction.token,
+      mode,
+      telephone: telephoneFedaPay,
+    })
 
-  if (!demande.ok) {
-    return echouer(
-      'demande-refusee',
-      'La demande n’a pas pu partir vers ton téléphone. Vérifie le numéro et l’opérateur, puis réessaie.',
-      demande.error,
-    )
+    if (!demande.ok) {
+      return echouer(
+        'demande-refusee',
+        'La demande n’a pas pu partir vers ton téléphone. Vérifie le numéro et l’opérateur, puis réessaie.',
+        demande.error,
+      )
+    }
   }
 
   return Response.json({
@@ -225,6 +266,7 @@ export async function POST(request: Request) {
       paiementId: paiement.id,
       transactionId: transaction.transactionId,
       montantFcfa: pack.price_fcfa,
+      ...(carte ? { url: transaction.url } : {}),
     },
   })
 }

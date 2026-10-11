@@ -58,6 +58,15 @@ export default async function RetourPaiement({
     <main className="mx-auto flex min-h-screen w-full max-w-[440px] flex-col justify-center gap-space-12 px-space-16 py-space-32">
       <h1 className="text-headline-xl text-reviz-ink">{titre}</h1>
       <p className="text-body-md text-reviz-muted">{corps}</p>
+      {/* Payé par carte depuis un ordinateur : l'application est dans un
+          autre onglet, ou s'ouvre ici. Sur téléphone, il suffit de revenir
+          dans l'application, qui relit le paiement en reprenant la main. */}
+      <a
+        href="/web"
+        className="text-label-md font-semibold text-reviz-ink underline underline-offset-4"
+      >
+        Ouvrir Reviz dans le navigateur
+      </a>
     </main>
   )
 }

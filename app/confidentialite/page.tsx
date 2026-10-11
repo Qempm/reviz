@@ -40,7 +40,7 @@ const SECTIONS: { titre: string; paragraphes: string[] }[] = [
     paragraphes: [
       'Les étudiants de ta faculté voient ton prénom, ton avatar et tes points dans le classement et la ligue. Un cours que tu choisis de partager avec ta faculté devient lisible par elle ; les autres restent à toi.',
       'Pour lire un cours, corriger une copie ou mener le tuteur, Reviz envoie le texte, la photo ou ta réponse à un fournisseur d’intelligence artificielle : Anthropic (Claude) et DeepSeek, et en secours Alibaba Cloud (Qwen) ou Zhipu (GLM). Leurs serveurs peuvent se trouver hors de ton pays, notamment aux États-Unis, en Chine et à Singapour. Ils traitent la demande et renvoient le résultat ; Reviz ne leur donne ni ton nom ni ton adresse.',
-      'Les paiements passent par FedaPay, qui reçoit ton numéro, ton nom et ton adresse e-mail pour envoyer la demande de paiement sur ton téléphone.',
+      'Les paiements passent par FedaPay, qui reçoit ton nom, ton adresse e-mail et, en Mobile Money, ton numéro pour envoyer la demande de paiement sur ton téléphone. Si tu paies par carte bancaire, tu saisis ta carte chez FedaPay : Reviz ne reçoit ni ne garde jamais ton numéro de carte.',
       'La base de données et les fichiers sont hébergés par Supabase, le site et le serveur par Vercel.',
     ],
   },

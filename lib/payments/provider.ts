@@ -33,6 +33,12 @@ export type InitPaymentResult =
        * pour envoyer la demande au téléphone de l'étudiant.
        */
       token: string
+      /**
+       * La page de paiement hébergée par FedaPay, rendue avec le jeton :
+       * c'est là que se paie la carte bancaire, que FedaPay n'accepte pas
+       * « sans redirection ».
+       */
+      url: string | null
       amount: number
     }
   | {
@@ -61,8 +67,11 @@ export type EtatTransaction = {
 export type ClientPaiement = {
   prenom: string | null
   email: string | null
-  /** Le numéro **national**, sans indicatif, et le pays en ISO (`BJ`). */
-  telephone: { national: string; pays: string }
+  /**
+   * Le numéro **national**, sans indicatif, et le pays en ISO (`BJ`).
+   * Facultatif pour la carte bancaire : il n'est envoyé que s'il est connu.
+   */
+  telephone: { national: string; pays: string } | null
 }
 
 export type ResultatDemande = { ok: true } | { ok: false; error: string }
@@ -75,6 +84,8 @@ export interface PaymentProvider {
     amount: number
     packCode: string
     client: ClientPaiement
+    /** Retour après la page de paiement hébergée (carte bancaire). */
+    callbackUrl?: string
   }): Promise<InitPaymentResult>
 
   /**
@@ -166,6 +177,11 @@ class FedaPayProvider implements PaymentProvider {
     amount: number
     packCode: string
     client: ClientPaiement
+    /**
+     * Où FedaPay renvoie l'étudiant après la page de paiement (carte). Le
+     * statut qu'elle porte ne décide rien : seuls l'API et le webhook font foi.
+     */
+    callbackUrl?: string
   }): Promise<InitPaymentResult> {
     try {
       const { client } = opts
@@ -180,11 +196,16 @@ class FedaPayProvider implements PaymentProvider {
         customer: {
           ...(client.prenom ? { firstname: client.prenom } : {}),
           ...(client.email ? { email: client.email } : {}),
-          phone_number: {
-            number: client.telephone.national,
-            country: client.telephone.pays.toLowerCase(),
-          },
+          ...(client.telephone
+            ? {
+                phone_number: {
+                  number: client.telephone.national,
+                  country: client.telephone.pays.toLowerCase(),
+                },
+              }
+            : {}),
         },
+        ...(opts.callbackUrl ? { callback_url: opts.callbackUrl } : {}),
         custom_metadata: {
           user_id: opts.userId,
           pack_code: opts.packCode,
@@ -212,6 +233,7 @@ class FedaPayProvider implements PaymentProvider {
       const jeton = await this.appeler('POST', `/transactions/${id}/token`)
       const corpsJeton = (await jeton.json().catch(() => null)) as {
         token?: unknown
+        url?: unknown
       } | null
 
       // La doc le type en entier, le SDK le rend en chaîne : les deux passent.
@@ -227,6 +249,7 @@ class FedaPayProvider implements PaymentProvider {
         ok: true,
         transactionId: String(id),
         token: String(token),
+        url: typeof corpsJeton?.url === 'string' ? corpsJeton.url : null,
         amount: opts.amount,
       }
     } catch (error) {

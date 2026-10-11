@@ -179,6 +179,7 @@ describe('FedaPayProvider.initPayment', () => {
       ok: true,
       transactionId: '42',
       token: 'JETON',
+      url: 'https://process.fedapay.com/JETON',
       amount: 1500,
     })
 
@@ -196,7 +197,8 @@ describe('FedaPayProvider.initPayment', () => {
       email: 'awa@exemple.com',
       phone_number: { number: '0197123456', country: 'bj' },
     })
-    // Plus de page de retour : rien ne fait sortir de l'application.
+    // Mobile Money : pas de page de retour, rien ne fait sortir de
+    // l'application.
     expect(corps.callback_url).toBeUndefined()
     expect(corps.custom_metadata).toEqual({
       user_id: opts.userId,
@@ -208,6 +210,47 @@ describe('FedaPayProvider.initPayment', () => {
       'https://sandbox-api.fedapay.com/v1/transactions/42/token',
     )
     expect(appels.mock.calls[1][1]?.method).toBe('POST')
+  })
+
+  it('carte bancaire : page de retour, et pas de numéro s’il est inconnu', async () => {
+    const appels = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(
+        reponse({ 'v1/transaction': { id: 43, status: 'pending' } }, true, 201),
+      )
+      .mockResolvedValueOnce(
+        reponse({ token: 'JETON', url: 'https://process.fedapay.com/JETON' }),
+      )
+
+    const resultat = await new FedaPayProvider('sk_sandbox_x').initPayment({
+      ...opts,
+      client: { ...opts.client, telephone: null },
+      callbackUrl: 'https://revizapp.fun/paiement/retour?paiement=p1',
+    })
+
+    expect(resultat).toMatchObject({
+      ok: true,
+      url: 'https://process.fedapay.com/JETON',
+    })
+    const corps = JSON.parse(String(appels.mock.calls[0][1]?.body))
+    expect(corps.callback_url).toBe(
+      'https://revizapp.fun/paiement/retour?paiement=p1',
+    )
+    expect(corps.customer).toEqual({
+      firstname: 'Awa',
+      email: 'awa@exemple.com',
+    })
+  })
+
+  it('rend une url nulle si FedaPay n’en donne pas', async () => {
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(
+        reponse({ 'v1/transaction': { id: 44, status: 'pending' } }, true, 201),
+      )
+      .mockResolvedValueOnce(reponse({ token: 'JETON' }))
+
+    const resultat = await new FedaPayProvider('sk_sandbox_x').initPayment(opts)
+    expect(resultat).toMatchObject({ ok: true, url: null })
   })
 
   it('va en production avec une clé live', async () => {

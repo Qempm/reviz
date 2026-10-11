@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { MODE_TEST, modeFedaPay, operateursDuPays } from './operateurs'
+import {
+  MODE_TEST,
+  MOYEN_CARTE,
+  modeFedaPay,
+  moyensDuPays,
+  operateursDuPays,
+} from './operateurs'
 
 describe('operateursDuPays', () => {
   it('propose les trois réseaux du Bénin', () => {
@@ -44,5 +50,21 @@ describe('modeFedaPay', () => {
     expect(modeFedaPay('mtn', 'BJ', true)).toBe(MODE_TEST)
     // Un essai doit refuser ce que la production refuserait.
     expect(modeFedaPay('celtiis', 'TG', true)).toBeNull()
+  })
+})
+
+describe('moyensDuPays', () => {
+  it('ajoute la carte bancaire aux opérateurs du pays', () => {
+    expect(moyensDuPays('BJ')).toEqual(['mtn', 'moov', 'celtiis', MOYEN_CARTE])
+    expect(moyensDuPays('SN')).toEqual(['free', MOYEN_CARTE])
+  })
+
+  it('propose la carte seule là où Reviz n’a pas d’opérateur', () => {
+    expect(moyensDuPays('BF')).toEqual([MOYEN_CARTE])
+    expect(moyensDuPays('FR')).toEqual([MOYEN_CARTE])
+  })
+
+  it('la carte n’est pas un opérateur Mobile Money', () => {
+    expect(modeFedaPay(MOYEN_CARTE, 'BJ', false)).toBeNull()
   })
 })

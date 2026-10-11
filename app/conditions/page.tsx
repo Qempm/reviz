@@ -90,14 +90,14 @@ const SECTIONS: { titre: string; paragraphes: string[] }[] = [
   {
     titre: 'Le paiement',
     paragraphes: [
-      'Le paiement se fait par Mobile Money, par l’intermédiaire de FedaPay. La demande arrive sur ton téléphone, et c’est toi qui la valides avec ton code secret : Reviz ne voit jamais ce code. Le pack s’active quand FedaPay confirme le paiement.',
+      'Le paiement se fait par Mobile Money ou par carte bancaire, par l’intermédiaire de FedaPay. En Mobile Money, la demande arrive sur ton téléphone, et c’est toi qui la valides avec ton code secret : Reviz ne voit jamais ce code. Par carte, tu saisis ta carte sur la page sécurisée de FedaPay : Reviz ne voit jamais ton numéro de carte. Le pack s’active quand FedaPay confirme le paiement.',
     ],
   },
   {
     titre: 'Remboursement',
     paragraphes: [
       'Un pack te donne accès tout de suite à un service numérique : une fois activé, il n’est pas remboursé pour un simple changement d’avis.',
-      'Si ton compte Mobile Money a été débité et que ton pack ne s’est pas activé, écris-nous avec la date et le numéro utilisé : on active ton pack ou on te rembourse.',
+      'Si ton compte Mobile Money ou ta carte a été débité et que ton pack ne s’est pas activé, écris-nous avec la date et le moyen de paiement utilisé : on active ton pack ou on te rembourse.',
       'Si une panne de notre côté t’empêche d’utiliser ce que ton pack prévoit, écris-nous dans les 7 jours : on prolonge ton pack d’autant, ou on te rembourse.',
     ],
   },

@@ -12,6 +12,11 @@
  * la page hébergée : ils ne figurent pas ici, et un étudiant de ces réseaux
  * ne se voit rien proposer plutôt qu'un bouton qui le ferait sortir.
  *
+ * **La carte bancaire (11 octobre 2026), elle, passe par la page hébergée**
+ * — FedaPay n'a pas de mode « sans redirection » pour la carte. Elle est
+ * proposée partout, en plus des opérateurs du pays, et seule là où Reviz n'a
+ * pas d'opérateur (« Autre pays ») : `moyensDuPays`.
+ *
  * Porté tel quel dans `apps/mobile/lib/metier/operateurs.dart` : l'écran
  * doit savoir quoi proposer sans aller-retour, mais c'est le serveur qui
  * décide.
@@ -56,4 +61,17 @@ export function modeFedaPay(
   const mode = MODES[codePays.toUpperCase()]?.[operateur as Operateur]
   if (!mode) return null
   return sandbox ? MODE_TEST : mode
+}
+
+/** La carte bancaire : un moyen de paiement, pas un opérateur. */
+export const MOYEN_CARTE = 'carte'
+
+export type MoyenPaiement = Operateur | typeof MOYEN_CARTE
+
+/**
+ * Ce qu'un étudiant peut choisir pour payer depuis un pays : ses opérateurs
+ * Mobile Money s'il en a, et la carte bancaire, toujours.
+ */
+export function moyensDuPays(codePays: string): MoyenPaiement[] {
+  return [...operateursDuPays(codePays), MOYEN_CARTE]
 }
