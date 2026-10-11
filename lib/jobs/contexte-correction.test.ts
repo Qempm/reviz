@@ -18,6 +18,17 @@ describe('ordonnerPages', () => {
     expect(r[0].chemin).toBe('u/c/copie.jpg')
   })
 
+  it('range huit pages dans l’ordre des numéros, pas des chaînes', () => {
+    const chemins = ['u/c/sujet.jpg', ...[8, 3, 6, 2, 7, 5, 4].map((n) => `u/c/copie-${n}.jpg`), 'u/c/copie.jpg']
+    const r = ordonnerPages(chemins)
+    expect(r.map((p) => p.chemin)).toEqual([
+      'u/c/copie.jpg',
+      ...[2, 3, 4, 5, 6, 7, 8].map((n) => `u/c/copie-${n}.jpg`),
+      'u/c/sujet.jpg',
+    ])
+    expect(r[7].etiquette).toBe('Page 8 de la copie')
+  })
+
   it('une seule page se dit « Copie »', () => {
     expect(ordonnerPages(['u/c/copie.jpg'])[0].etiquette).toBe('Copie')
   })

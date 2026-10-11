@@ -48,8 +48,11 @@ const fichier = z.object({
   taille: z.number().int().positive().max(TAILLE_MAX_COPIE),
 })
 
-/** Pages de copie au-delà de la première. */
-export const PAGES_SUPPLEMENTAIRES_MAX = 3
+/**
+ * Pages de copie au-delà de la première : 8 pages en tout depuis le
+ * 11 octobre 2026 (une copie double et ses intercalaires). C'était 4.
+ */
+export const PAGES_SUPPLEMENTAIRES_MAX = 7
 
 
 export const entreeCorrection = z.object({

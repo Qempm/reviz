@@ -57,7 +57,8 @@ class _EcranCorrigerState extends ConsumerState<EcranCorriger> {
   String? _type;
   int _bareme = 20;
 
-  static const _pagesMax = 4;
+  /// Le serveur en accepte autant (`PAGES_SUPPLEMENTAIRES_MAX` + 1).
+  static const _pagesMax = 8;
 
   bool _envoi = false;
   double _part = 0;
