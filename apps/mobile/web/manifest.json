@@ -7,7 +7,7 @@
     "display": "standalone",
     "background_color": "#FCEFD0",
     "theme_color": "#FCEFD0",
-    "description": "Tes cours en QCM et en fiches, tes copies corrigées. Révision pour les étudiants d’Afrique francophone.",
+    "description": "Tes cours en QCM et en fiches, tes copies corrigées. Révision pour les élèves et les étudiants.",
     "orientation": "any",
     "prefer_related_applications": false,
     "icons": [

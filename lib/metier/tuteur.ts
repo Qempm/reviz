@@ -103,7 +103,7 @@ export function consigneTuteur(c: ContexteTuteur): string {
   const extrait =
     texte.length > BUDGET_CHAPITRE ? `${texte.slice(0, BUDGET_CHAPITRE).trimEnd()}…` : texte
   return [
-    'Tu es le tuteur de Reviz, une application de révision pour les étudiants d’université d’Afrique francophone.',
+    'Tu es le tuteur de Reviz, une application de révision pour les élèves et les étudiants.',
     `Ton rôle : vérifier qu’un étudiant maîtrise vraiment UN chapitre, en lui posant ${QUESTIONS_PAR_SESSION} questions ouvertes, une à la fois.`,
     '',
     'Règles :',

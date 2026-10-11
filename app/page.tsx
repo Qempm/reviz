@@ -131,7 +131,7 @@ const CONTRASTES = [
     nous: 'Il lit ton propre cours — PDF, Word ou photo — et en tire des QCM et des fiches, chapitre par chapitre.',
   },
   {
-    eux: 'Il corrige « dans l’absolu » : il sanctionne ce qui n’était pas au programme et attend d’un L1 la rigueur d’un master.',
+    eux: 'Il corrige « dans l’absolu » : il sanctionne ce qui n’était pas au programme et attend de toi la rigueur d’un niveau qui n’est pas le tien.',
     nous: 'Il corrige ta copie d’après ton cours, ton année et ta filière, et te dit quels chapitres revoir.',
   },
   {
@@ -245,7 +245,7 @@ export default function Accueil() {
                 <path d="M22 10L12 5 2 10l10 5 10-5z" />
                 <path d="M6 12v5c3 2 9 2 12 0v-5" />
               </svg>
-              Pour les étudiants du Bénin, du Togo, de Côte d’Ivoire et du Sénégal
+              Pour les élèves et les étudiants
             </span>
             <h1 className="font-titre text-[48px] leading-[0.98] tracking-[-0.015em] sm:text-[72px] lg:text-[96px]">
               Ton cours.
@@ -448,7 +448,7 @@ export default function Accueil() {
           <div className="flex flex-wrap items-center gap-10 md:gap-14">
             <div className="flex min-w-0 flex-[1_1_380px] flex-col gap-[18px]">
               <h2 className="text-balance font-titre text-[32px] leading-[1.05] sm:text-[40px] lg:text-[48px]">
-                Pensé pour l’amphi, pas pour la Silicon Valley
+                Pensé pour ta vraie vie d’élève
               </h2>
               <p className="text-[17px] leading-relaxed text-reviz-muted sm:text-lg">
                 Tout est en français, et l’application tient sur un Android milieu de gamme, même la veille d’un
@@ -466,7 +466,7 @@ export default function Accueil() {
             <div className="relative h-[360px] min-w-0 flex-[1_1_440px] sm:h-[440px]">
               <Image
                 src="/landing/photo-classe.webp"
-                alt="Une étudiante révise sur son téléphone, en amphi"
+                alt="Une étudiante révise sur son téléphone, en classe"
                 width={1100}
                 height={614}
                 sizes="(max-width: 640px) 70vw, 400px"
@@ -582,7 +582,7 @@ export default function Accueil() {
         <div className={`${CONTENU} flex flex-wrap items-center justify-between gap-4 pb-safe pt-6 text-sm font-medium text-reviz-muted`}>
           <p className="flex items-center gap-2.5 pb-8">
             <Image src="/landing/logo.png" alt="" width={28} height={28} className="rounded-lg" />© 2026 Reviz · Fait
-            pour les étudiants d’Afrique francophone
+            pour les élèves et les étudiants
           </p>
           <p className="flex flex-wrap gap-[18px] pb-8">
             <Link href="/app" className="text-reviz-muted underline underline-offset-4">Installer</Link>

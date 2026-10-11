@@ -655,7 +655,7 @@ function situationEtudiant(s: {
 type Situation = Parameters<typeof situationEtudiant>[0]
 
 function consigneQuestions(titre: string, texte: string, situation: Situation = {}): string {
-  return `Tu prépares des questions de révision pour un étudiant d'université d'Afrique francophone${situationEtudiant(situation)}.
+  return `Tu prépares des questions de révision pour un étudiant${situationEtudiant(situation)}.
 
 Voici un chapitre du cours « ${titre} » :
 
@@ -682,7 +682,7 @@ Rien que du JSON, sans texte avant ni après.`
 }
 
 function consigneFiches(titre: string, texte: string, situation: Situation = {}): string {
-  return `Tu prépares des fiches de révision pour un étudiant d'université d'Afrique francophone${situationEtudiant(situation)}.
+  return `Tu prépares des fiches de révision pour un étudiant${situationEtudiant(situation)}.
 
 Voici un chapitre du cours « ${titre} » :
 
@@ -994,7 +994,7 @@ const verifyCardSchema = z.object({
 })
 
 /** Consigne de lecture d'une carte étudiante. */
-const CONSIGNE_CARTE = `Tu lis la photo d'une carte d'étudiant d'une université d'Afrique francophone.
+const CONSIGNE_CARTE = `Tu lis la photo d'une carte d'étudiant ou d'élève, délivrée par un établissement scolaire ou universitaire.
 
 Tu ne devines rien. Ce que tu ne lis pas clairement, tu le rends à null.
 

@@ -95,7 +95,7 @@ export function consigneCorrection(c: ContexteCorrection): string {
   const precedentes = (c.precedentes ?? []).filter((p) => p.sur > 0)
 
   const parties = [
-    `Tu es un professeur d'université d'Afrique francophone qui corrige la copie d'un de tes étudiants.`,
+    `Tu es un professeur qui corrige la copie d'un de tes étudiants.`,
     situation.length ? `\n${situation.join('\n')}` : '',
     `
 Les images sont étiquetées : « Page N de la copie », et « Sujet » s'il y en a un.
