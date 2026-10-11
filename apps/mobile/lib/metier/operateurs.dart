@@ -8,6 +8,10 @@
 /// directement sur le téléphone, et l'étudiant la valide avec son code
 /// secret, sans jamais quitter Reviz. Wave, Orange et le Burkina Faso ne se
 /// paient que sur la page hébergée de FedaPay : ils n'apparaissent pas.
+///
+/// **La carte bancaire (2.10.0) passe, elle, par la page hébergée** : FedaPay
+/// n'a pas de mode « sans redirection » pour la carte. Elle est proposée
+/// partout, en plus des opérateurs du pays, et seule pour « Autre pays ».
 library;
 
 /// Un opérateur, tel que le serveur le nomme, et tel que l'étudiant le lit.
@@ -41,3 +45,7 @@ const Map<String, List<Operateur>> _parPays = {
 /// Les opérateurs proposés pour un pays ; vide s'il n'y en a aucun.
 List<Operateur> operateursDuPays(String codePays) =>
     _parPays[codePays.toUpperCase()] ?? const [];
+
+/// La carte bancaire : un moyen de paiement, pas un opérateur. Même code que
+/// le serveur (`MOYEN_CARTE`).
+const moyenCarte = 'carte';

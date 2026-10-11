@@ -55,3 +55,21 @@ double pointsTuteur(List<NiveauReponse> niveaux) => niveaux.fold(
 );
 
 bool estMaitrise(List<NiveauReponse> niveaux) => pointsTuteur(niveaux) >= 2;
+
+/// Le chapitre d'une série qui n'en nomme pas : celui qui a le plus de
+/// questions, le premier rencontré en cas d'égalité. C'est lui que le tuteur
+/// propose de vérifier en fin de série — sans lui, les séries lancées par
+/// « Réviser » ou « Continuer » ne menaient jamais au tuteur.
+String? chapitreDominant(Iterable<String?> chapitres) {
+  // Une table insérée dans l'ordre de première apparition : à égalité, le
+  // premier rencontré l'emporte.
+  final compte = <String, int>{};
+  for (final c in chapitres) {
+    if (c != null) compte[c] = (compte[c] ?? 0) + 1;
+  }
+  String? meilleur;
+  for (final MapEntry(:key, :value) in compte.entries) {
+    if (meilleur == null || value > compte[meilleur]!) meilleur = key;
+  }
+  return meilleur;
+}

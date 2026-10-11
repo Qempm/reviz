@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:reviz/composants/feuille_tuteur.dart';
 import 'package:reviz/donnees/api.dart';
+import 'package:reviz/donnees/depots.dart';
+import 'package:reviz/donnees/modeles.dart';
 import 'package:reviz/donnees/tuteur.dart';
 import 'package:reviz/ecrans/tuteur.dart';
 import 'package:reviz/etat/fournisseurs.dart';
 import 'package:reviz/i18n/fr.dart';
 import 'package:reviz/metier/acces.dart';
+import 'package:reviz/metier/maitrise.dart';
 import 'package:reviz/metier/tuteur.dart';
 import 'package:reviz/theme/theme.dart';
 
@@ -46,11 +50,13 @@ class _FauxTuteur implements SourceTuteur {
   }) async {
     reponsesRecues.add(reponse);
     final n = reponsesRecues.length;
-    final niveau = (niveaux ?? const [
-      NiveauReponse.juste,
-      NiveauReponse.partiel,
-      NiveauReponse.juste,
-    ])[n - 1];
+    final niveau =
+        (niveaux ??
+        const [
+          NiveauReponse.juste,
+          NiveauReponse.partiel,
+          NiveauReponse.juste,
+        ])[n - 1];
     final evaluation = EvaluationTuteur(
       niveau: niveau,
       retour: 'Retour sur la réponse $n.',
@@ -122,6 +128,121 @@ Future<void> _repondre(WidgetTester tester, String texte) async {
 }
 
 void main() {
+  group('le chapitre que le tuteur propose', () {
+    test('celui qui a le plus de questions dans la série', () {
+      expect(chapitreDominant(['a', 'b', 'b', null, 'a', 'b']), 'b');
+    });
+
+    test('le premier rencontré en cas d’égalité', () {
+      expect(chapitreDominant(['a', 'b', 'b', 'a']), 'a');
+    });
+
+    test('aucun quand les questions ne disent pas leur chapitre', () {
+      expect(chapitreDominant([null, null]), isNull);
+      expect(chapitreDominant(const []), isNull);
+    });
+  });
+
+  group('la feuille du tuteur', () {
+    ChapitreDuChemin chapitre(
+      String id,
+      int index,
+      String titre, {
+      int tentees = 0,
+      int couronnes = 0,
+      int questions = 10,
+    }) => ChapitreDuChemin(
+      chapitre: ApercuChapitre(
+        id: id,
+        index: index,
+        titre: titre,
+        nbQuestions: questions,
+        nbFiches: 2,
+        nbTentees: tentees,
+        taux: tentees == 0 ? null : 0.8,
+        aRevoir: false,
+      ),
+      maitrise: Maitrise(
+        etat: couronnes > 0 ? EtatChapitre.couronne : EtatChapitre.aDecouvrir,
+        couronnes: couronnes,
+        total: questions,
+        tentees: tentees,
+        justes: tentees,
+      ),
+    );
+
+    Future<void> poser(
+      WidgetTester tester, {
+      bool essaiUtilise = false,
+      Size taille = const Size(375, 812),
+    }) async {
+      tester.view.physicalSize = taille;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            cheminProvider('c1').overrideWith(
+              (_) async => [
+                chapitre(
+                  'ch1',
+                  0,
+                  'Le contrôle de constitutionnalité',
+                  tentees: 10,
+                  couronnes: 2,
+                ),
+                chapitre('ch2', 1, 'Les sources du droit'),
+                chapitre('ch3', 2, 'Sans QCM', questions: 0),
+              ],
+            ),
+            boutiqueProvider.overrideWith(
+              (_) async => const DonneesBoutique(packs: [], abonnements: []),
+            ),
+            essaiTuteurUtiliseProvider.overrideWith((_) async => essaiUtilise),
+          ],
+          child: MaterialApp(
+            theme: themeReviz,
+            home: const Scaffold(body: FeuilleTuteur(coursId: 'c1')),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('les chapitres travaillés d’abord, et l’essai offert', (
+      tester,
+    ) async {
+      await poser(tester);
+
+      expect(find.text(Fr.tuteur.droitEssai), findsOneWidget);
+      expect(find.text(Fr.tuteur.revises.toUpperCase()), findsOneWidget);
+      expect(find.text(Fr.tuteur.pasEncore.toUpperCase()), findsOneWidget);
+      expect(find.text('Le contrôle de constitutionnalité'), findsOneWidget);
+      expect(find.text(Fr.tuteur.couronnes(2)), findsOneWidget);
+      expect(find.text('Les sources du droit'), findsOneWidget);
+      // Un chapitre sans QCM n'a rien à vérifier.
+      expect(find.text('Sans QCM'), findsNothing);
+      final premier = tester.getTopLeft(
+        find.text('Le contrôle de constitutionnalité'),
+      );
+      final second = tester.getTopLeft(find.text('Les sources du droit'));
+      expect(premier.dy, lessThan(second.dy));
+    });
+
+    testWidgets('l’essai pris, il dit que le tuteur fait partie des packs', (
+      tester,
+    ) async {
+      await poser(tester, essaiUtilise: true);
+      expect(find.text(Fr.tuteur.droitPacks), findsOneWidget);
+      expect(find.text(Fr.tuteur.droitEssai), findsNothing);
+    });
+
+    testWidgets('ne déborde pas à 320 px', (tester) async {
+      await poser(tester, taille: const Size(320, 640));
+      expect(tester.takeException(), isNull);
+    });
+  });
+
   group('règles du tuteur', () {
     test('ouvre avec un pack, puis l’essai, une seule fois', () {
       final actif = AccesActif(
@@ -170,7 +291,10 @@ void main() {
         final source = _FauxTuteur();
         await _poser(tester, source, taille: Size(largeur, 812));
 
-        expect(find.text('Quand intervient le contrôle a priori ?'), findsOneWidget);
+        expect(
+          find.text('Quand intervient le contrôle a priori ?'),
+          findsOneWidget,
+        );
         expect(find.text(Fr.tuteur.question(1, 3)), findsOneWidget);
 
         await _repondre(tester, 'Avant la promulgation de la loi.');

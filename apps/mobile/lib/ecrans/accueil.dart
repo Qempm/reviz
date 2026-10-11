@@ -11,6 +11,7 @@ import '../composants/carte_serie.dart';
 import '../composants/chargement.dart';
 import '../composants/coquille.dart';
 import '../composants/etat_vide.dart';
+import '../composants/feuille_tuteur.dart';
 import '../composants/mascotte.dart';
 import '../composants/progression.dart';
 import '../donnees/api.dart';
@@ -22,6 +23,7 @@ import '../i18n/fr.dart';
 import '../metier/acces.dart';
 import '../metier/examen.dart';
 import '../metier/serie.dart';
+import '../metier/tuteur.dart';
 import '../routage.dart';
 import '../theme/jetons.dart';
 import '../theme/typographie.dart';
@@ -160,6 +162,9 @@ class _Contenu extends StatelessWidget {
           // Un compte sans pack : le pack gratuit, proposé ici et pas au
           // fond du profil. Rien ne s'affiche une fois qu'il a servi.
           const _CarteGratuit(),
+
+          // Le tuteur de maîtrise, sur le dernier cours ouvert.
+          _CarteTuteur(cours: donnees.dernierCours),
 
           // L'app web installée (iPhone sans compte Apple) : l'invitation à
           // activer les notifications, qui exige un toucher.
@@ -574,6 +579,66 @@ class _CarteGratuitState extends ConsumerState<_CarteGratuit> {
             variante: VarianteBouton.secondaire,
             chargement: _enCours,
             onTap: _enCours ? null : _activer,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// « Ton tuteur t'attend » : la porte du tuteur sur le dernier cours.
+/// Seulement quand il peut s'ouvrir — un pack, ou l'essai gratuit encore
+/// libre — et que ce cours a des QCM. Bouton secondaire : l'écran garde un
+/// seul bouton principal, « Continuer ».
+class _CarteTuteur extends ConsumerWidget {
+  const _CarteTuteur({required this.cours});
+
+  final ApercuCours? cours;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final c = cours;
+    final acces = ref.watch(boutiqueProvider).value?.acces;
+    final essai = ref.watch(essaiTuteurUtiliseProvider).value;
+    if (c == null || !c.pret || c.nbQuestions == 0 || acces == null) {
+      return const SizedBox.shrink();
+    }
+    // Sans pack, seulement si l'essai est sûrement libre.
+    if (droitTuteur(acces: acces, essaiUtilise: essai ?? true) ==
+        DroitTuteur.essaiUtilise) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: Espaces.x12),
+      child: Carte(
+        enfants: [
+          Row(
+            children: [
+              const TeteMascotte(etat: EtatMascotte.curieux, taille: 56),
+              const SizedBox(width: Espaces.x12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(Fr.tuteur.carteTitre, style: Typo.headlineSm),
+                    const SizedBox(height: Espaces.x2),
+                    Text(
+                      Fr.tuteur.carteDetail,
+                      style: Typo.labelSm.copyWith(color: Couleurs.attenue),
+                    ),
+                    const SizedBox(height: Espaces.x8),
+                    const PuceDroitTuteur(),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          Bouton(
+            libelle: Fr.tuteur.carteBouton,
+            icone: Icons.chat_bubble_outline,
+            variante: VarianteBouton.secondaire,
+            onTap: () => ouvrirFeuilleTuteur(context, c.id),
           ),
         ],
       ),

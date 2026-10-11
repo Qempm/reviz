@@ -16,9 +16,9 @@ class _DepotFaux extends DepotBoutique {
   _DepotFaux({this.statuts = const [], this.ouverture});
 
   final List<Reponse<String>> statuts;
-  final Reponse<String>? ouverture;
+  final Reponse<PaiementOuvert>? ouverture;
   int interrogations = 0;
-  final List<(String, String, String)> demandes = [];
+  final List<(String, String?, String?, bool)> demandes = [];
   String? numeroPasse;
 
   @override
@@ -31,13 +31,14 @@ class _DepotFaux extends DepotBoutique {
   }
 
   @override
-  Future<Reponse<String>> ouvrirPaiement(
+  Future<Reponse<PaiementOuvert>> ouvrirPaiement(
     ApiReviz api, {
     required String codePack,
-    required String operateur,
-    required String telephoneE164,
+    String? operateur,
+    String? telephoneE164,
+    bool carte = false,
   }) async {
-    demandes.add((codePack, operateur, telephoneE164));
+    demandes.add((codePack, operateur, telephoneE164, carte));
     return ouverture!;
   }
 
@@ -202,7 +203,9 @@ void main() {
       WidgetTester tester,
       _DepotFaux depot, {
       String? telephone,
-      Size taille = const Size(375, 812),
+      // Haut : le pays et le moyen de paiement allongent l'écran, et une
+      // liste ne construit pas ce qui est loin sous le bord.
+      Size taille = const Size(375, 1600),
     }) async {
       await _poser(
         tester,
@@ -245,25 +248,62 @@ void main() {
       await tester.enterText(find.byType(TextField), '+225 07 12 34 56 78');
       await tester.pump();
 
-      // Côte d'Ivoire : MTN seul, choisi d'office.
+      // Côte d'Ivoire : MTN seul, choisi d'office — la coche du pays et
+      // celle de l'opérateur.
       expect(find.text('MTN MoMo'), findsOneWidget);
       expect(find.text('Moov Money'), findsNothing);
-      expect(find.byIcon(Icons.check), findsOneWidget);
+      expect(find.byIcon(Icons.check), findsNWidgets(2));
     });
 
-    testWidgets('dit quand un pays ne se paie pas encore dans l’app', (
+    testWidgets('propose la carte bancaire à côté du Mobile Money', (
       tester,
     ) async {
-      final depot = _DepotFaux();
+      await ouvrir(tester, _DepotFaux(), telephone: '+2290197123456');
+
+      expect(find.text('Carte bancaire'), findsOneWidget);
+      await tester.tap(find.text('Carte bancaire'));
+      await tester.pump();
+
+      // Par carte : ni numéro, ni Mobile Money, ni code secret.
+      expect(find.byType(TextField), findsNothing);
+      expect(find.textContaining('Mobile Money'), findsNothing);
+      expect(find.textContaining('code secret'), findsNothing);
+      expect(find.text('Payer 500 F par carte'), findsOneWidget);
+    });
+
+    testWidgets('« Autre pays » : la carte seule, choisie d’office', (
+      tester,
+    ) async {
+      final depot = _DepotFaux(
+        ouverture: const Reponse.echec('La page de paiement est fermée.'),
+      );
       await ouvrir(tester, depot);
+
+      await tester.ensureVisible(find.text('Autre pays'));
+      await tester.tap(find.text('Autre pays'));
+      await tester.pump();
+
+      expect(find.text('MTN MoMo'), findsNothing);
+      expect(find.byType(TextField), findsNothing);
+      expect(find.textContaining('Mobile Money'), findsNothing);
+
+      await tester.ensureVisible(find.text('Payer 500 F par carte'));
+      await tester.tap(find.text('Payer 500 F par carte'));
+      await tester.pumpAndSettle();
+
+      // Le pack et le moyen, rien d'autre : ni opérateur, ni numéro.
+      expect(depot.demandes, [('controle', null, null, true)]);
+      expect(find.text('La page de paiement est fermée.'), findsOneWidget);
+    });
+
+    testWidgets('un pays sans opérateur passe à la carte', (tester) async {
+      await ouvrir(tester, _DepotFaux());
 
       await tester.enterText(find.byType(TextField), '+226 70 12 34 56');
       await tester.pump();
 
-      expect(find.textContaining('Burkina Faso'), findsOneWidget);
-      await tester.tap(find.text('Payer 500 F'));
-      await tester.pump();
-      expect(depot.demandes, isEmpty);
+      expect(find.text('Payer 500 F par carte'), findsOneWidget);
+      expect(find.byType(TextField), findsNothing);
     });
 
     testWidgets('envoie le pack, l’opérateur et le numéro — rien d’autre', (
@@ -277,17 +317,20 @@ void main() {
       await ouvrir(tester, depot, telephone: '+2290197123456');
 
       // Sans opérateur choisi, rien ne part.
+      await tester.ensureVisible(find.text('Payer 500 F'));
       await tester.tap(find.text('Payer 500 F'));
       await tester.pump();
-      expect(find.text('Choisis ton opérateur.'), findsOneWidget);
+      expect(find.text('Choisis comment payer.'), findsOneWidget);
       expect(depot.demandes, isEmpty);
 
+      await tester.ensureVisible(find.text('MTN MoMo'));
       await tester.tap(find.text('MTN MoMo'));
       await tester.pump();
+      await tester.ensureVisible(find.text('Payer 500 F'));
       await tester.tap(find.text('Payer 500 F'));
       await tester.pumpAndSettle();
 
-      expect(depot.demandes, [('controle', 'mtn', '+2290197123456')]);
+      expect(depot.demandes, [('controle', 'mtn', '+2290197123456', false)]);
       // Le message du serveur, tel quel.
       expect(
         find.text('La demande n’a pas pu partir vers ton téléphone.'),

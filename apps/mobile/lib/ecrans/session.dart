@@ -20,6 +20,7 @@ import '../i18n/fr.dart';
 import '../metier/selection.dart';
 import '../metier/identifiant.dart';
 import '../metier/niveaux.dart';
+import '../metier/tuteur.dart' show chapitreDominant;
 import '../routage.dart';
 import '../theme/jetons.dart';
 import '../theme/typographie.dart';
@@ -274,6 +275,11 @@ class _SessionState extends ConsumerState<_Session> {
         gardee: _gardee,
         coursId: widget.coursId,
         chapitreId: widget.chapitreId,
+        // Une série sans chapitre (« Réviser », « Continuer ») propose le
+        // tuteur sur celui qu'elle a le plus travaillé.
+        chapitreTuteur:
+            widget.chapitreId ??
+            chapitreDominant(widget.questions.map((q) => q.chapitreId)),
         resultat: _resultat,
         erreur: _erreurEnvoi,
         etats: _etats,
@@ -428,6 +434,7 @@ class _Resultat extends StatefulWidget {
   const _Resultat({
     required this.coursId,
     this.chapitreId,
+    this.chapitreTuteur,
     required this.resultat,
     required this.erreur,
     required this.etats,
@@ -441,6 +448,10 @@ class _Resultat extends StatefulWidget {
 
   final String coursId;
   final String? chapitreId;
+
+  /// Le chapitre que le tuteur propose de vérifier : celui de la série, ou
+  /// le plus présent dans ses questions.
+  final String? chapitreTuteur;
   final ResultatSession? resultat;
 
   /// L'XP totale avant cette session ; `null` si le profil n'était pas lu.
@@ -469,9 +480,11 @@ class _ResultatState extends State<_Resultat> {
 
   bool _confettisLances = false;
 
-  /// Le tuteur s'ouvre sur une série d'un chapitre, enregistrée, en ligne.
+  /// Le tuteur se propose après chaque série enregistrée. Gardée hors
+  /// ligne, il reste visible mais grisé : il lui faut le réseau.
   bool get _tuteurPossible =>
-      widget.chapitreId != null && widget.resultat != null && !widget.gardee;
+      widget.chapitreTuteur != null &&
+      (widget.resultat != null || widget.gardee);
 
   /// Dans `didChangeDependencies` et non `initState` : on y lit `MediaQuery`.
   ///
@@ -692,23 +705,68 @@ class _ResultatState extends State<_Resultat> {
             // devient l'action principale quand il n'y a pas d'erreur à
             // revoir d'abord.
             if (_tuteurPossible) ...[
-              Bouton(
-                libelle: Fr.tuteur.bouton,
-                icone: Icons.forum_outlined,
-                variante: _erreurs > 0
-                    ? VarianteBouton.secondaire
-                    : VarianteBouton.principal,
-                onTap: () => context.pushReplacement(
-                  Chemins.tuteur(widget.coursId, widget.chapitreId!),
-                ),
+              Consumer(
+                builder: (context, ref, _) {
+                  final chapitre = ref
+                      .watch(cheminProvider(widget.coursId))
+                      .value
+                      ?.where((c) => c.chapitre.id == widget.chapitreTuteur)
+                      .firstOrNull
+                      ?.chapitre;
+                  final titre = chapitre == null
+                      ? null
+                      : (chapitre.titre ??
+                            Fr.matiere.chapitre(chapitre.index - 1, null));
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Bouton(
+                        libelle: Fr.tuteur.bouton,
+                        icone: Icons.forum_outlined,
+                        variante: _erreurs > 0 || widget.gardee
+                            ? VarianteBouton.secondaire
+                            : VarianteBouton.principal,
+                        onTap: widget.gardee
+                            ? null
+                            : () => context.pushReplacement(
+                                Chemins.tuteur(
+                                  widget.coursId,
+                                  widget.chapitreTuteur!,
+                                ),
+                              ),
+                      ),
+                      if (titre != null) ...[
+                        const SizedBox(height: Espaces.x4),
+                        Text(
+                          Fr.tuteur.surChapitre(titre),
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: Typo.labelSm.copyWith(
+                            color: Couleurs.attenue,
+                          ),
+                        ),
+                      ],
+                    ],
+                  );
+                },
               ),
+              if (widget.gardee) ...[
+                const SizedBox(height: Espaces.x4),
+                Text(
+                  Fr.tuteur.reseau,
+                  textAlign: TextAlign.center,
+                  style: Typo.labelSm.copyWith(color: Couleurs.attenue),
+                ),
+              ],
               const SizedBox(height: Espaces.x8),
             ],
             Bouton(
               libelle: Fr.session.refaire,
               icone: Icons.restart_alt,
               variante:
-                  (_erreurs > 0 && widget.resultat != null) || _tuteurPossible
+                  (_erreurs > 0 && widget.resultat != null) ||
+                      (_tuteurPossible && !widget.gardee)
                   ? VarianteBouton.secondaire
                   : VarianteBouton.principal,
               onTap: () => context.pushReplacement(

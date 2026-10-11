@@ -21,6 +21,7 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:reviz/composants/bandeau.dart';
 import 'package:reviz/composants/coquille.dart';
+import 'package:reviz/composants/feuille_tuteur.dart';
 import 'package:reviz/donnees/api.dart';
 import 'package:reviz/donnees/depots.dart';
 import 'package:reviz/donnees/modeles.dart';
@@ -41,7 +42,6 @@ import 'package:reviz/ecrans/fiches.dart';
 import 'package:reviz/ecrans/galerie.dart';
 import 'package:reviz/ecrans/tuteur.dart';
 import 'package:reviz/donnees/tuteur.dart';
-import 'package:reviz/donnees/api.dart';
 import 'package:reviz/metier/tuteur.dart';
 import 'package:reviz/ecrans/gains.dart';
 import 'package:reviz/ecrans/inscription.dart';
@@ -312,6 +312,7 @@ final _chemin = [
 const _questions = [
   QuestionQcm(
     id: 'q1',
+    chapitreId: 'ch4',
     enonce:
         'Selon ton cours, qu’est-ce qui distingue le contrôle de '
         'constitutionnalité a priori du contrôle a posteriori ?',
@@ -329,6 +330,7 @@ const _questions = [
   ),
   QuestionQcm(
     id: 'q2',
+    chapitreId: 'ch4',
     enonce:
         'À quelle date la Constitution béninoise actuellement en vigueur '
         'a-t-elle été promulguée ?',
@@ -346,6 +348,7 @@ const _questions = [
   ),
   QuestionQcm(
     id: 'q3',
+    chapitreId: 'ch4',
     enonce: 'Quel événement ouvre le Renouveau démocratique au Bénin ?',
     options: [
       'Le coup d’État de 1972',
@@ -359,6 +362,7 @@ const _questions = [
   ),
   QuestionQcm(
     id: 'q4',
+    chapitreId: 'ch4',
     enonce: 'Qui peut saisir la Cour constitutionnelle au Bénin ?',
     options: [
       'Tout citoyen',
@@ -372,6 +376,7 @@ const _questions = [
   ),
   QuestionQcm(
     id: 'q5',
+    chapitreId: 'ch4',
     enonce: 'Combien de temps dure le mandat présidentiel ?',
     options: ['Quatre ans', 'Cinq ans', 'Six ans', 'Sept ans'],
     reponse: 'Cinq ans',
@@ -380,6 +385,7 @@ const _questions = [
   ),
   QuestionQcm(
     id: 'q6',
+    chapitreId: 'ch4',
     enonce: 'Une Constitution « rigide » est une Constitution…',
     options: [
       'dont la révision suit une procédure plus lourde que la loi',
@@ -752,6 +758,7 @@ List<Override> get _socle => [
   accueilProvider.overrideWith((_) async => _accueil()),
   coursProvider.overrideWith((_) async => _cours),
   boutiqueProvider.overrideWith((_) async => _boutique()),
+  essaiTuteurUtiliseProvider.overrideWith((_) async => false),
   ligueProvider.overrideWith((_) async => _ligue()),
   accesCorrectionProvider.overrideWith((_) async => _acces),
   serviceRappelsProvider.overrideWithValue(_RappelsFactices()),
@@ -1194,14 +1201,17 @@ void main() {
     WidgetTester t,
     String nom, {
     bool fermer = false,
+    double? hauteur,
   }) {
     var lectures = 0;
     return _cliche(
       t,
       nom,
       const EcranSession(coursId: 'c1'),
+      hauteur: hauteur ?? _hauteur,
       remplacements: [
         sessionCours,
+        cheminProvider('c1').overrideWith((_) async => _chemin),
         profilProvider.overrideWith(
           (_) async => _profil(xp: lectures++ == 0 ? 1200 : 1290),
         ),
@@ -1240,6 +1250,10 @@ void main() {
   testWidgets(
     '12-resultat',
     (t) => serieComplete(t, '12-resultat', fermer: true),
+  );
+  testWidgets(
+    '12-resultat-long',
+    (t) => serieComplete(t, '12-resultat-long', fermer: true, hauteur: 1500),
   );
 
   // ---- Fiches
@@ -1599,6 +1613,48 @@ void main() {
         await _repondreTuteur(t, 'Avant la promulgation, puis après.');
         await _repondreTuteur(t, 'Un citoyen.');
         await _repondreTuteur(t, 'Elle ne s’applique plus.');
+      },
+    ),
+  );
+
+  // ---- Les portes du tuteur (2.10.0) : la bulle du cours, et sa feuille.
+  testWidgets(
+    '36-feuille-tuteur',
+    (t) => _cliche(
+      t,
+      '36-feuille-tuteur',
+      const EcranCours(coursId: 'c1'),
+      remplacements: coursC1,
+      geste: (t, _) async {
+        await t.tap(find.byType(BulleTuteur));
+        await t.pumpAndSettle();
+      },
+    ),
+  );
+
+  // ---- Payer par carte bancaire (2.10.0).
+  testWidgets(
+    '37-payer-carte',
+    (t) => _cliche(
+      t,
+      '37-payer-carte',
+      const EcranPayer(
+        pack: PackBoutique(
+          code: 'partiel',
+          libelle: 'Partiel',
+          description: 'Tout le mois des partiels.',
+          prixFcfa: 2000,
+          dureeJours: 30,
+          correctionsIncluses: 10,
+          plafondMatieres: null,
+        ),
+        emailCompte: 'awa.dossou@gmail.com',
+      ),
+      hauteur: 1100,
+      geste: (t, _) async {
+        await t.ensureVisible(find.text('Carte bancaire'));
+        await t.tap(find.text('Carte bancaire'));
+        await t.pumpAndSettle();
       },
     ),
   );

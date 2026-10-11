@@ -48,6 +48,24 @@ final depotTuteurProvider = Provider<SourceTuteur>(
   (ref) => DepotTuteur(ref.read(apiProvider)),
 );
 
+/// L'essai gratuit du tuteur est-il déjà pris ? Lu sous RLS dans
+/// `tuteur_sessions` (l'étudiant lit ses propres sessions), pour que la
+/// feuille du tuteur dise « Essai gratuit » ou « Fait partie des packs »
+/// avant d'appeler. Le serveur reste l'autorité. Invalidé quand une session
+/// démarre.
+final essaiTuteurUtiliseProvider = FutureProvider<bool>((ref) async {
+  ref.watch(authProvider);
+  final lignes = await lu(
+    'tuteur/essai',
+    () async => await supabase
+        .from('tuteur_sessions')
+        .select('id')
+        .eq('essai', true)
+        .limit(1),
+  );
+  return lignes is List && lignes.isNotEmpty;
+});
+
 /// Flux d'authentification de Supabase, tel quel.
 ///
 /// C'est lui qui commande la redirection du routeur : une session qui expire

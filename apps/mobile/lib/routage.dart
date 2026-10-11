@@ -88,7 +88,8 @@ abstract final class Chemins {
   static String tuteur(String id, String chapitre) =>
       '/cours/$id/tuteur/$chapitre';
   static String correction(String id) => '/corrections/$id';
-  static String paiement(String id) => '/boutique/paiement/$id';
+  static String paiement(String id, {bool carte = false}) =>
+      '/boutique/paiement/$id${carte ? '?moyen=carte' : ''}';
   static const payer = '/boutique/payer';
 }
 
@@ -189,8 +190,10 @@ GoRouter creerRouteur(Ref ref) {
           GoRoute(
             path: 'paiement/:id',
             parentNavigatorKey: racine,
-            builder: (_, etat) =>
-                EcranPaiement(paiementId: etat.pathParameters['id']!),
+            builder: (_, etat) => EcranPaiement(
+              paiementId: etat.pathParameters['id']!,
+              carte: etat.uri.queryParameters['moyen'] == 'carte',
+            ),
           ),
         ],
       ),

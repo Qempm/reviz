@@ -105,6 +105,13 @@ class _EcranTuteurState extends ConsumerState<EcranTuteur> {
           _echec = ReponseEchec(erreur, motif: motif, statut: statut);
       }
     });
+    // L'essai vient d'être pris (ou était déjà pris) : la feuille et la
+    // carte de l'accueil doivent le savoir.
+    final essaiPris = switch (r) {
+      ReponseSucces(:final data) => data.essai,
+      ReponseEchec(:final motif) => motif == 'essai-utilise',
+    };
+    if (essaiPris) ref.invalidate(essaiTuteurUtiliseProvider);
   }
 
   Future<void> _envoyer() async {

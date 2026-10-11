@@ -383,7 +383,7 @@ class _Boutique {
   final String essaiTitre = 'Pas encore sûr ? Essaie gratuitement.';
   final String activerDecouverte = 'Activer gratuitement';
   final String decouverteUtilisee = 'Découverte déjà utilisée';
-  final String mobileMoney = 'Mobile Money, sans quitter l’application';
+  final String mobileMoney = 'Mobile Money ou carte bancaire';
   final String ouvertureImpossible =
       'Le paiement n’a pas pu s’ouvrir. Réessaie dans un instant.';
 
@@ -391,9 +391,7 @@ class _Boutique {
   final String payerTitre = 'Payer ton pack';
   final String auNomDe = 'Au nom de';
   final String numeroPaiement = 'Ton numéro Mobile Money';
-  final String aideNumero =
-      'Celui qui recevra la demande de paiement. Pour un numéro hors du '
-      'Bénin, commence par l’indicatif (+228, +225…).';
+  final String aideNumero = 'Celui qui recevra la demande de paiement.';
   final String numeroInvalide = 'Ce numéro ne ressemble pas à un numéro.';
   final String operateurTitre = 'Ton opérateur';
   final String choisisOperateur = 'Choisis ton opérateur.';
@@ -404,11 +402,28 @@ class _Boutique {
       'code secret Mobile Money. Paiement unique, aucun prélèvement '
       'automatique.';
 
+  // Pays et carte bancaire (2.10.0)
+  final String paysTitre = 'Ton pays';
+  final String autrePays = 'Autre pays';
+  final String moyenTitre = 'Comment tu paies';
+  final String carteBancaire = 'Carte bancaire';
+  final String choisisMoyen = 'Choisis comment payer.';
+  String payerCarte(int prix) => 'Payer ${milliers(prix)} F par carte';
+  final String commentCaMarcheCarte =
+      'Tu vas saisir ta carte (Visa, Mastercard) sur une page de paiement '
+      'sécurisée. Reviz ne voit jamais ton numéro de carte. Paiement unique, '
+      'aucun prélèvement automatique.';
+  final String pageImpossible =
+      'La page de paiement n’a pas pu s’ouvrir. Réessaie dans un instant.';
+
   // Suivi du paiement
   final String attenteTitre = 'On attend la confirmation';
   final String attenteDetail =
       'Une demande de paiement arrive sur ton téléphone : valide-la avec ton '
       'code secret. Reviz active ton pack dès que c’est confirmé.';
+  final String attenteDetailCarte =
+      'Termine ton paiement sur la page qui s’est ouverte, puis reviens '
+      'ici : Reviz active ton pack dès que c’est confirmé.';
   final String reessayer = 'Réessayer';
   final String reussiTitre = 'Ton pack est actif !';
   final String reussiDetail =
@@ -1345,6 +1360,28 @@ class _Tuteur {
   final String erreurTitre = 'Le tuteur ne répond pas';
   final String reessayer = 'Réessayer';
   final String quitter = 'Revenir au cours';
+
+  // --- Les portes vers le tuteur (2.10.0)
+  final String bulle = 'Ton tuteur';
+  final String bulleAide = 'Ouvrir le tuteur : vérifier un chapitre';
+  final String feuilleDetail =
+      'Choisis un chapitre. Trois questions, tu réponds avec tes mots, et tu '
+      'sais ce qui est acquis.';
+  final String droitEssai = 'Essai gratuit';
+  final String droitPack = 'Inclus dans ton pack';
+  final String droitPacks = 'Fait partie des packs';
+  final String revises = 'Déjà révisés';
+  final String pasEncore = 'Pas encore révisés';
+  final String aucunChapitre =
+      'Ce cours n’a pas encore de chapitre avec des QCM.';
+  String couronnes(int n) =>
+      n == 0 ? 'Aucune couronne' : '$n couronne${n > 1 ? 's' : ''} sur 3';
+  String surChapitre(String titre) => 'Sur « $titre »';
+  final String carteTitre = 'Ton tuteur t’attend';
+  final String carteDetail =
+      'Trois questions sur un chapitre, comme à l’oral. Tu sauras si tu sais '
+      'vraiment l’expliquer.';
+  final String carteBouton = 'Vérifier un chapitre';
 }
 
 class _Session {

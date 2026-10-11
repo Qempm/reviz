@@ -29,11 +29,16 @@ class EcranPaiement extends ConsumerStatefulWidget {
   const EcranPaiement({
     super.key,
     required this.paiementId,
+    this.carte = false,
     this.intervalle = const Duration(seconds: 4),
     this.patience = const Duration(minutes: 10),
   });
 
   final String paiementId;
+
+  /// Payé par carte, sur la page FedaPay : l'attente ne parle pas de code
+  /// secret ni de téléphone.
+  final bool carte;
 
   /// Réglables pour les tests ; les valeurs par défaut sont celles de l'app.
   final Duration intervalle;
@@ -130,7 +135,9 @@ class _EcranPaiementState extends ConsumerState<EcranPaiement>
       _Etape.attente => (
         EtatMascotte.telephone,
         Fr.boutique.attenteTitre,
-        Fr.boutique.attenteDetail,
+        widget.carte
+            ? Fr.boutique.attenteDetailCarte
+            : Fr.boutique.attenteDetail,
       ),
       _Etape.reussi => (
         EtatMascotte.bravo,

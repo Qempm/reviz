@@ -12,6 +12,7 @@ import 'package:flutter/foundation.dart' show compute;
 import '../metier/acces.dart';
 import '../metier/maitrise.dart';
 import '../metier/notifications.dart';
+import '../metier/operateurs.dart' show moyenCarte;
 import '../metier/selection.dart';
 import 'api.dart';
 import 'cache.dart';
@@ -878,6 +879,14 @@ class DonneesBoutique {
       abonnements.any((a) => a.code == CodePack.decouverte.sql);
 }
 
+/// Un paiement ouvert : son identifiant, et pour la carte la page FedaPay.
+class PaiementOuvert {
+  const PaiementOuvert({required this.id, this.url});
+
+  final String id;
+  final String? url;
+}
+
 class DepotBoutique {
   const DepotBoutique();
 
@@ -922,25 +931,34 @@ class DepotBoutique {
     );
   }
 
-  /// Ouvre un paiement et envoie la demande au téléphone de l'étudiant.
+  /// Ouvre un paiement.
   ///
-  /// Le client n'envoie que le pack, l'opérateur et le numéro : le prix vient
-  /// de la base, le nom et l'e-mail du profil et de la session, côté serveur.
-  /// Rend l'identifiant du paiement à suivre.
-  Future<Reponse<String>> ouvrirPaiement(
+  /// Mobile Money : le serveur envoie la demande au téléphone de l'étudiant.
+  /// Carte bancaire (`carte: true`) : il rend l'adresse de la page de
+  /// paiement FedaPay, que l'écran ouvre dans le navigateur.
+  ///
+  /// Le client n'envoie que le pack, le moyen, l'opérateur et le numéro : le
+  /// prix vient de la base, le nom et l'e-mail du profil et de la session,
+  /// côté serveur. Rend l'identifiant du paiement à suivre.
+  Future<Reponse<PaiementOuvert>> ouvrirPaiement(
     ApiReviz api, {
     required String codePack,
-    required String operateur,
-    required String telephoneE164,
+    String? operateur,
+    String? telephoneE164,
+    bool carte = false,
   }) {
-    return api.poster<String>(
+    return api.poster<PaiementOuvert>(
       '/api/payments/init',
       corps: {
         'packCode': codePack,
-        'operateur': operateur,
-        'telephone': telephoneE164,
+        if (carte) 'moyen': moyenCarte,
+        'operateur': ?operateur,
+        'telephone': ?telephoneE164,
       },
-      depuis: (data) => data['paiementId'] as String,
+      depuis: (data) => PaiementOuvert(
+        id: data['paiementId'] as String,
+        url: data['url'] as String?,
+      ),
     );
   }
 

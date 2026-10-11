@@ -7,6 +7,7 @@ import '../composants/carte.dart';
 import '../composants/chargement.dart';
 import '../composants/chemin.dart';
 import '../composants/etat_vide.dart';
+import '../composants/feuille_tuteur.dart';
 import '../composants/mascotte.dart';
 import '../composants/progression.dart';
 import '../composants/puce.dart';
@@ -126,9 +127,21 @@ class _EcranCoursState extends ConsumerState<EcranCours> {
   Widget build(BuildContext context) {
     final coursId = widget.coursId;
     final cours = ref.watch(unCoursProvider(coursId));
+    final pret = (_frais ?? cours.value)?.pret ?? false;
+    // La bulle du tuteur, dès qu'un chapitre a des QCM à vérifier.
+    final aVerifier =
+        pret &&
+        (ref
+                .watch(cheminProvider(coursId))
+                .value
+                ?.any((c) => c.chapitre.nbQuestions > 0) ??
+            false);
 
     return Scaffold(
       backgroundColor: Couleurs.fond,
+      floatingActionButton: aVerifier
+          ? BulleTuteur(onTap: () => ouvrirFeuilleTuteur(context, coursId))
+          : null,
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
@@ -348,7 +361,8 @@ class _Contenu extends ConsumerWidget {
           _ => const Chargement.bloc(hauteur: 240),
         },
 
-        const SizedBox(height: Espaces.x32),
+        // La place de la bulle du tuteur, sous le dernier chapitre.
+        const SizedBox(height: 96),
       ],
     );
   }
